@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS: EasyCopySettings = {
 	addToMenu: true,
 	showNotice: true,
 	useHeadingAsDisplayText: true,
-	linkFormat: LinkFormat.MDLINK,
+	linkFormat: LinkFormat.WIKILINK,
 	customizeTargets: false,
 	enableInlineCode: true,
 	enableBold: true,
