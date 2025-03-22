@@ -60,7 +60,8 @@ This works almost the same as heading links, so I implemented it too!
 ## 🪄 How to Use
 
 1. The simplest way is to use the default hotkey `Ctrl+Alt+C` (which you can customize) — just place your cursor inside the specific text and press the hotkey to copy.
-2. The plugin also supports right-click menu operations (which can be disabled in settings if not needed)
+2. The plugin also supports right-click menu operations (which can be disabled in settings if not needed)![menu-item](assets/menu-item.png)
+
 3. Of course, you can also trigger it by searching for "Contextual Copy" in the command palette — it works the same as the hotkey!
 
 
