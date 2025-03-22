@@ -1,7 +1,6 @@
 # Easy Copy - Make Copying Smart and Simple!
 
-[中文文档](./README-zh.md)
-
+English | [中文文档](./README-zh.md)
 
 
 ## ✨ Features
@@ -23,7 +22,7 @@ So I created this plugin - just place your cursor inside the inline code, and co
 
 Just like this:
 
-![demo](assets\demo-copy)
+![demo](assets/demo-copy.gif)
 
 > It also supports copying bold text, highlighted text, italic text.
 > (If you don't need these features, you can disable them in the settings)
@@ -35,7 +34,7 @@ As for heading links, that's another long-standing issue.
 Default heading links display as a long text string, but I wanted to **show only the heading text** — using it as the Display Text!
 So I added this feature to the plugin as well:
 
-![copy-heading](assets\copy-heading)
+![copy-heading](assets/copy-heading.gif)
 
 It would copy the heading text as the display text:
 
@@ -54,7 +53,7 @@ The difference looks like this:
 ### Block Links — They're Just Block Links!
 This works almost the same as heading links, so I implemented it too!
 
-![copy-block-id](assets\copy-block-id)
+![copy-block-id](assets/copy-block-id.png)
 
 
 

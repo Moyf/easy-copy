@@ -1,5 +1,5 @@
 # Easy Copy - 让复制变得简单又智能！
-[English](./README.md)
+[English](./README.md) | 中文文档
 
 
 
@@ -22,7 +22,7 @@
 
 就像这样：
 
-![演示](assets\demo-copy)
+![演示](assets/demo-copy.gif)
 
 > 它同时也支持复制加粗文本、高亮文本、斜体文本。
 > （如果你不需要这些功能，可以在设置中关闭它们）
@@ -34,7 +34,7 @@
 默认的标题链接会显示为很长的一段文本，我希望能**只显示标题的文本**——也就是将它作为显示文本！
 所以我在这个插件中同样添加了这个功能：
 
-![](assets\copy-heading)
+![copy-heading](assets/copy-heading.gif)
 
 
 
@@ -48,12 +48,12 @@
 
 它们的差异看起来像是这样：
 
-![图片占位符](assets/heading-compare.png)
+![heading-compare](assets/heading-compare.png)
 
 ### 块链接——就是块链接！
 这与标题链接几乎一样，所以我也实现了它！
 
-![](assets\copy-block-id)
+![copy-block-id](assets/copy-block-id.png)
 
 
 
