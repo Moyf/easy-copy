@@ -229,7 +229,7 @@ export default class EasyCopy extends Plugin {
 	 */
 	private getBlockId(str: string): string | null {
 		// 提取当前光标所在行的像是 ^block-id-123 这样的 block id
-		const regex = /\s+\^([a-zA-Z0-9_-]+)\s*/;
+		const regex = /(?:^|\s+)\^([a-zA-Z0-9_-]+)(?:\s*|$)/;
 		const match = str.match(regex);
 		
 		if (match) {

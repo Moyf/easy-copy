@@ -1,94 +1,106 @@
-# Obsidian Sample Plugin
+# Easy Copy - Make Copying Smart and Simple!
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+[中文文档](./README-zh.md)
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
 
-## First time developing plugins?
+## ✨ Features
 
-Quick starting guide for new plugin devs:
+- 🧙‍♂️ **Smart Detection** - Automatically identifies and copies different types of content based on cursor position
+- 🔍 **Multiple Format Support** - Copy inline code, bold text, highlighted text, italic text, block IDs, and heading links
+- 🌐 **Multilingual Support** - Full support for English, Simplified Chinese, and Traditional Chinese
+- 🎛️ **Highly Customizable** - Enable or disable specific copy features as needed
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
 
-## Releasing new releases
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## 🤔 Why use this plugin
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### Inline Code — Just the Text Inside!
+I often use `inline code` for debug commands or keywords and need to quickly copy the content inside the `` ` `` symbols.
+In the past, I had to carefully select the text wrapped inside... which was quite tedious!
+**I want to directly copy the text inside the inline code**
+So I created this plugin - just place your cursor inside the inline code, and copy with a single keystroke!
 
-## Adding your plugin to the community plugin list
+Just like this:
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+![demo](assets\demo-copy)
 
-## How to use
+> It also supports copying bold text, highlighted text, italic text.
+> (If you don't need these features, you can disable them in the settings)
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
 
-## Manually installing the plugin
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+### Heading Links — Display Just the Heading Text!
+As for heading links, that's another long-standing issue.
+Default heading links display as a long text string, but I wanted to **show only the heading text** — using it as the Display Text!
+So I added this feature to the plugin as well:
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+![copy-heading](assets\copy-heading)
 
-## Funding URL
+It would copy the heading text as the display text:
 
-You can include funding URLs where people who use your plugin can financially support it.
+```md
+From:
+[[note-name#heading-text]]
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+To:
+[[note-name#heading-text|heading-text]]
 ```
 
-If you have multiple URLs, you can also do:
+The difference looks like this:
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
+![heading-compare](assets/heading-compare.png)
 
-## API Documentation
+### Block Links — They're Just Block Links!
+This works almost the same as heading links, so I implemented it too!
 
-See https://github.com/obsidianmd/obsidian-api
+![copy-block-id](assets\copy-block-id)
+
+
+
+## 🪄 How to Use
+
+1. The simplest way is to use the default hotkey `Ctrl+Alt+C` (which you can customize) — just place your cursor inside the specific text and press the hotkey to copy.
+2. The plugin also supports right-click menu operations (which can be disabled in settings if not needed)
+3. Of course, you can also trigger it by searching for "Contextual Copy" in the command palette — it works the same as the hotkey!
+
+
+
+## 🔧 Settings
+
+### General Settings
+
+- **Add to Menu** - Add the command to the context menu
+- **Show Notice** - Display a notification when content is copied
+- **Use Heading as Display Text** - Use the heading text as display text in links
+
+### Format Settings
+
+- **Link Format** - The format to use when copying heading links (Markdown link or Wiki link)
+  - Markdown link: `(text)[link]`
+  - Wiki link: `[[link|text]]`
+
+
+### Copy Target Settings
+
+- **Customize Targets** - When enabled, you can customize which elements can be copied
+  - **Enable Inline Code** - Enable copying inline code, like `code example`
+  - **Enable Bold Text** - Enable copying bold text, like **bold example**
+  - **Enable Highlighted Text** - Enable copying highlighted text, like ==highlight example==
+  - **Enable Italic Text** - Enable copying italic text, like *italic example*
+
+
+
+## 🛠️ Installation
+
+Currently, the plugin is not yet available in the official store. You'll need to install it using the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin.
+
+I'll update this section once it's available in the official store!
+
+
+
+## 🤝 Contribution
+
+Issues and feature requests are welcome! If you'd like to contribute to this project, feel free to submit a PR.
+
+This plugin really improved my workflow, and I hope it can help you too! 🌟
