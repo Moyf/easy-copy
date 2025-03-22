@@ -11,13 +11,23 @@ interface EasyCopySettings {
 	showNotice: boolean;
 	useHeadingAsDisplayText: boolean;
 	linkFormat: LinkFormat;
+	customizeTargets: boolean;
+	enableInlineCode: boolean;
+	enableBold: boolean;
+	enableHighlight: boolean;
+	enableItalic: boolean;
 }
 
 const DEFAULT_SETTINGS: EasyCopySettings = {
 	addToMenu: true,
 	showNotice: true,
 	useHeadingAsDisplayText: true,
-	linkFormat: LinkFormat.MDLINK
+	linkFormat: LinkFormat.MDLINK,
+	customizeTargets: false,
+	enableInlineCode: true,
+	enableBold: true,
+	enableHighlight: true,
+	enableItalic: false
 }
 
 export default class EasyCopy extends Plugin {
@@ -130,8 +140,8 @@ export default class EasyCopy extends Plugin {
 			return;
 		}
 		
-		// 2. 检查是否包含行内代码或块ID
-		if (curLine.includes('`') || curLine.includes('^')) {
+		// 2. 检查是否包含行内代码
+		if ((!this.settings.customizeTargets || this.settings.enableInlineCode) && curLine.includes('`')) {
 			// 尝试提取行内代码
 			const inlineCode = this.getInlineCode(curLine, curCh);
 			if (inlineCode) {
@@ -141,7 +151,10 @@ export default class EasyCopy extends Plugin {
 				}
 				return;
 			}
-			
+		}
+		
+		// 3. 检查是否包含块ID
+		if (curLine.includes('^')) {
 			// 尝试提取块ID
 			const blockId = this.getBlockId(curLine);
 			if (blockId) {
@@ -152,6 +165,42 @@ export default class EasyCopy extends Plugin {
 				navigator.clipboard.writeText(blockIdLink);
 				if (this.settings.showNotice) {
 					new Notice(this.t('block-id-copied'));
+				}
+				return;
+			}
+		}
+		
+		// 4. 检查是否包含加粗文本
+		if ((!this.settings.customizeTargets || this.settings.enableBold) && curLine.includes('**')) {
+			const boldText = this.getBoldText(curLine, curCh);
+			if (boldText) {
+				navigator.clipboard.writeText(boldText);
+				if (this.settings.showNotice) {
+					new Notice(this.t('bold-copied'));
+				}
+				return;
+			}
+		}
+		
+		// 5. 检查是否包含高亮文本
+		if ((!this.settings.customizeTargets || this.settings.enableHighlight) && curLine.includes('==')) {
+			const highlightText = this.getHighlightText(curLine, curCh);
+			if (highlightText) {
+				navigator.clipboard.writeText(highlightText);
+				if (this.settings.showNotice) {
+					new Notice(this.t('highlight-copied'));
+				}
+				return;
+			}
+		}
+		
+		// 6. 检查是否包含斜体文本
+		if ((!this.settings.customizeTargets || this.settings.enableItalic) && (curLine.includes('*') || curLine.includes('_'))) {
+			const italicText = this.getItalicText(curLine, curCh);
+			if (italicText) {
+				navigator.clipboard.writeText(italicText);
+				if (this.settings.showNotice) {
+					new Notice(this.t('italic-copied'));
 				}
 				return;
 			}
@@ -228,6 +277,68 @@ export default class EasyCopy extends Plugin {
 	}
 
 	/**
+	 * 提取加粗文本
+	 */
+	private getBoldText(str: string, cursor: number): string | null {
+		// 查找光标前后的 ** 标记
+		const start = str.lastIndexOf('**', cursor - 1);
+		const end = str.indexOf('**', cursor);
+		
+		if (start === -1 || end === -1) {
+			return null;
+		}
+		
+		return str.substring(start + 2, end);
+	}
+	
+	/**
+	 * 提取高亮文本
+	 */
+	private getHighlightText(str: string, cursor: number): string | null {
+		// 查找光标前后的 == 标记
+		const start = str.lastIndexOf('==', cursor - 1);
+		const end = str.indexOf('==', cursor);
+		
+		if (start === -1 || end === -1) {
+			return null;
+		}
+		
+		return str.substring(start + 2, end);
+	}
+	
+	/**
+	 * 提取斜体文本
+	 */
+	private getItalicText(str: string, cursor: number): string | null {
+		// 尝试查找使用 * 的斜体
+		let start = str.lastIndexOf('*', cursor - 1);
+		if (start > 0 && str.charAt(start - 1) === '*') {
+			// 这可能是加粗文本的一部分，跳过
+			start = str.lastIndexOf('*', start - 2);
+		}
+		
+		let end = str.indexOf('*', cursor);
+		if (end > 0 && end + 1 < str.length && str.charAt(end + 1) === '*') {
+			// 这可能是加粗文本的一部分，跳过
+			end = str.indexOf('*', end + 2);
+		}
+		
+		if (start !== -1 && end !== -1) {
+			return str.substring(start + 1, end);
+		}
+		
+		// 尝试查找使用 _ 的斜体
+		start = str.lastIndexOf('_', cursor - 1);
+		end = str.indexOf('_', cursor);
+		
+		if (start !== -1 && end !== -1) {
+			return str.substring(start + 1, end);
+		}
+		
+		return null;
+	}
+
+	/**
 	 * 初始化国际化设置，使用Obsidian的语言设置
 	 */
 	private initializeI18n(): void {
@@ -287,7 +398,27 @@ class EasyCopySettingTab extends PluginSettingTab {
 				await this.plugin.saveSettings();
 			}));
 
+		new Setting(containerEl)
+			.setName(this.plugin.t('show-notice'))
+			.setDesc(this.plugin.t('show-notice-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.showNotice)
+				.onChange(async (value) => {
+					this.plugin.settings.showNotice = value;
+					await this.plugin.saveSettings();
+				}));
+
 		containerEl.createEl('h2', {text: this.plugin.t('format')});
+
+		new Setting(containerEl)
+			.setName(this.plugin.t('use-heading-as-display'))
+			.setDesc(this.plugin.t('use-heading-as-display-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.useHeadingAsDisplayText)
+				.onChange(async (value) => {
+					this.plugin.settings.useHeadingAsDisplayText = value;
+					await this.plugin.saveSettings();
+				}));
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('link-format'))
@@ -300,5 +431,62 @@ class EasyCopySettingTab extends PluginSettingTab {
 					this.plugin.settings.linkFormat = value as LinkFormat;
 					await this.plugin.saveSettings();
 				}));
+
+		containerEl.createEl('h2', {text: this.plugin.t('target')});
+
+		new Setting(containerEl)
+			.setName(this.plugin.t('customize-targets'))
+			.setDesc(this.plugin.t('customize-targets-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.customizeTargets)
+				.onChange(async (value) => {
+					this.plugin.settings.customizeTargets = value;
+					await this.plugin.saveSettings();
+					// 重新渲染设置界面以显示或隐藏目标选项
+					this.display();
+				}));
+
+		// 只有当自定义复制对象选项开启时才显示具体的复制对象选项
+		if (this.plugin.settings.customizeTargets) {
+			new Setting(containerEl)
+				.setName(this.plugin.t('enable-inline-code'))
+				.setDesc(this.plugin.t('enable-inline-code-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.enableInlineCode)
+					.onChange(async (value) => {
+						this.plugin.settings.enableInlineCode = value;
+						await this.plugin.saveSettings();
+					}));
+
+			new Setting(containerEl)
+				.setName(this.plugin.t('enable-bold'))
+				.setDesc(this.plugin.t('enable-bold-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.enableBold)
+					.onChange(async (value) => {
+						this.plugin.settings.enableBold = value;
+						await this.plugin.saveSettings();
+					}));
+
+			new Setting(containerEl)
+				.setName(this.plugin.t('enable-highlight'))
+				.setDesc(this.plugin.t('enable-highlight-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.enableHighlight)
+					.onChange(async (value) => {
+						this.plugin.settings.enableHighlight = value;
+						await this.plugin.saveSettings();
+					}));
+
+			new Setting(containerEl)
+				.setName(this.plugin.t('enable-italic'))
+				.setDesc(this.plugin.t('enable-italic-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.enableItalic)
+					.onChange(async (value) => {
+						this.plugin.settings.enableItalic = value;
+						await this.plugin.saveSettings();
+					}));
+		}
 	}
 }

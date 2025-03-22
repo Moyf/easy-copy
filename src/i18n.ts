@@ -11,7 +11,12 @@ export type TranslationKey =
 	| 'note-link-copied' | 'heading-copied' | 'general' | 'format' 
 	| 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc' | 'link-format'
-	| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy';
+	| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
+	| 'target' | 'enable-bold' | 'enable-bold-desc' | 'enable-highlight'
+	| 'enable-highlight-desc' | 'enable-italic' | 'enable-italic-desc'
+	| 'bold-copied' | 'highlight-copied' | 'italic-copied'
+	| 'customize-targets' | 'customize-targets-desc' | 'enable-inline-code'
+	| 'enable-inline-code-desc';
 
 // 本地化翻译字典
 export const translations: Record<Language, Record<TranslationKey, string>> = {
@@ -23,10 +28,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'block-id-copied': 'Block ID link copied!',
 		'note-link-copied': 'Note link copied!',
 		'heading-copied': 'Heading link copied!',
+		'bold-copied': 'Bold text copied!',
+		'highlight-copied': 'Highlighted text copied!',
+		'italic-copied': 'Italic text copied!',
 		
 		// 设置界面
 		'general': 'General',
 		'format': 'Format',
+		'target': 'Target',
 		'add-to-menu': 'Add to menu',
 		'add-to-menu-desc': 'Add the command to the context menu',
 		'show-notice': 'Show notice',
@@ -37,6 +46,16 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-format-desc': 'The format of the link when you copy heading link',
 		'markdown-link': 'Markdown link',
 		'wiki-link': 'Wiki link',
+		'customize-targets': 'Customize targets',
+		'customize-targets-desc': 'Enable to customize which elements can be copied',
+		'enable-inline-code': 'Enable inline code',
+		'enable-inline-code-desc': 'Enable copying inline code like `code example`',
+		'enable-bold': 'Enable bold text',
+		'enable-bold-desc': 'Enable copying bold text like **bold example**',
+		'enable-highlight': 'Enable highlighted text',
+		'enable-highlight-desc': 'Enable copying highlighted text like ==highlight example==',
+		'enable-italic': 'Enable italic text',
+		'enable-italic-desc': 'Enable copying italic text like *italic example*',
 		
 		// 命令名称
 		'contextual-copy': 'Contextual Copy'
@@ -49,10 +68,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'block-id-copied': '块ID链接已复制！',
 		'note-link-copied': '笔记链接已复制！',
 		'heading-copied': '标题链接已复制！',
+		'bold-copied': '加粗文本已复制！',
+		'highlight-copied': '高亮文本已复制！',
+		'italic-copied': '斜体文本已复制！',
 		
 		// 设置界面
 		'general': '常规',
 		'format': '格式',
+		'target': '复制对象',
 		'add-to-menu': '添加到菜单',
 		'add-to-menu-desc': '将命令添加到右键菜单',
 		'show-notice': '显示通知',
@@ -63,6 +86,16 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-format-desc': '复制标题链接时使用的格式',
 		'markdown-link': 'Markdown链接',
 		'wiki-link': 'Wiki链接',
+		'customize-targets': '自定义复制对象',
+		'customize-targets-desc': '启用后可以自定义哪些元素可以被复制',
+		'enable-inline-code': '启用行内代码',
+		'enable-inline-code-desc': '启用复制行内代码，如 `代码示例`',
+		'enable-bold': '启用加粗文本',
+		'enable-bold-desc': '启用复制加粗文本，如 **加粗示例**',
+		'enable-highlight': '启用高亮文本',
+		'enable-highlight-desc': '启用复制高亮文本，如 ==高亮示例==',
+		'enable-italic': '启用斜体文本',
+		'enable-italic-desc': '启用复制斜体文本，如 *斜体示例*',
 		
 		// 命令名称
 		'contextual-copy': '智能复制'
@@ -75,10 +108,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'block-id-copied': '塊ID連結已複製！',
 		'note-link-copied': '筆記連結已複製！',
 		'heading-copied': '標題連結已複製！',
+		'bold-copied': '加粗文本已複製！',
+		'highlight-copied': '高亮文本已複製！',
+		'italic-copied': '斜體文本已複製！',
 		
 		// 設置界面
 		'general': '常規',
 		'format': '格式',
+		'target': '複製對象',
 		'add-to-menu': '添加到菜單',
 		'add-to-menu-desc': '將命令添加到右鍵菜單',
 		'show-notice': '顯示通知',
@@ -89,6 +126,16 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-format-desc': '複製標題連結時使用的格式',
 		'markdown-link': 'Markdown連結',
 		'wiki-link': 'Wiki連結',
+		'customize-targets': '自定義複製對象',
+		'customize-targets-desc': '啟用後可以自定義哪些元素可以被複製',
+		'enable-inline-code': '啟用行內代碼',
+		'enable-inline-code-desc': '啟用複製行內代碼，如 `代碼示例`',
+		'enable-bold': '啟用加粗文本',
+		'enable-bold-desc': '啟用複製加粗文本，如 **加粗示例**',
+		'enable-highlight': '啟用高亮文本',
+		'enable-highlight-desc': '啟用複製高亮文本，如 ==高亮示例==',
+		'enable-italic': '啟用斜體文本',
+		'enable-italic-desc': '啟用複製斜體文本，如 *斜體示例*',
 		
 		// 命令名称
 		'contextual-copy': '智能複製'
