@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
+	"id": "easy-copy",
+	"name": "Easy Copy",
+	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Easily copy the text inside inline code, or quickly obtain a elegant link to heading.",
+	"author": "Moy",
+	"authorUrl": "https://github.com/Moyf",
 	"isDesktopOnly": false
 }

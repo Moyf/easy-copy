@@ -6,6 +6,8 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"local-build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && npm run copy-to-vault",
+		"copy-to-vault": "node scripts/copy-to-vault.mjs",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [],
