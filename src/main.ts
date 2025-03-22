@@ -385,9 +385,6 @@ class EasyCopySettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		// 加一个二级标题
-		containerEl.createEl('h2', {text: this.plugin.t('general')});
-
 		new Setting(containerEl)
 			.setName(this.plugin.t('add-to-menu'))
 			.setDesc(this.plugin.t('add-to-menu-desc'))

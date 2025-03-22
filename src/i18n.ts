@@ -8,7 +8,7 @@ export enum Language {
 // 定义翻译键值类型
 export type TranslationKey = 
 	| 'no-file' | 'no-content' | 'inline-code-copied' | 'block-id-copied' 
-	| 'note-link-copied' | 'heading-copied' | 'general' | 'format' 
+	| 'note-link-copied' | 'heading-copied' |  'format' 
 	| 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc' | 'link-format'
 	| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
@@ -33,7 +33,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'italic-copied': 'Italic text copied!',
 		
 		// 设置界面
-		'general': 'General',
 		'format': 'Format',
 		'target': 'Target',
 		'add-to-menu': 'Add to menu',
@@ -73,7 +72,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'italic-copied': '斜体文本已复制！',
 		
 		// 设置界面
-		'general': '常规',
 		'format': '格式',
 		'target': '复制对象',
 		'add-to-menu': '添加到菜单',
@@ -113,7 +111,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'italic-copied': '斜體文本已複製！',
 		
 		// 設置界面
-		'general': '常規',
 		'format': '格式',
 		'target': '複製對象',
 		'add-to-menu': '添加到菜單',
