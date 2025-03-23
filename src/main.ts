@@ -1,34 +1,7 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, Menu } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, Menu } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
-
-enum LinkFormat {
-	MDLINK = 'markdown-link',
-	WIKILINK = 'wiki-link'
-}
-
-interface EasyCopySettings {
-	addToMenu: boolean;
-	showNotice: boolean;
-	useHeadingAsDisplayText: boolean;
-	linkFormat: LinkFormat;
-	customizeTargets: boolean;
-	enableInlineCode: boolean;
-	enableBold: boolean;
-	enableHighlight: boolean;
-	enableItalic: boolean;
-}
-
-const DEFAULT_SETTINGS: EasyCopySettings = {
-	addToMenu: true,
-	showNotice: true,
-	useHeadingAsDisplayText: true,
-	linkFormat: LinkFormat.WIKILINK,
-	customizeTargets: false,
-	enableInlineCode: true,
-	enableBold: true,
-	enableHighlight: true,
-	enableItalic: false
-}
+import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat } from './type';
+import { EasyCopySettingTab } from './settingTab';
 
 export default class EasyCopy extends Plugin {
 	settings: EasyCopySettings;
@@ -116,6 +89,140 @@ export default class EasyCopy extends Plugin {
 	}
 
 	/**
+	 * 获取当前行的上下文类型
+	 * @param editor 
+	 * @param view 
+	 * @returns ContextData
+	 */
+	private determineContextType(editor: Editor, view: MarkdownView): ContextData {
+		// 获取当前文件和光标信息
+		const file = view.file;
+		if (!file) {
+			new Notice(this.t('no-file'));
+			return { type: ContextType.NULL, curLine: '', match: null, range: null };
+		}
+	
+		const cursor = editor.getCursor();
+		const curLine = editor.getLine(cursor.line);
+		const curCh = cursor.ch;
+	
+		// 根据光标位置解析内容类型
+		const beforeCursor = curLine.slice(0, curCh); // 光标前的内容
+		const afterCursor = curLine.slice(curCh); // 光标后的内容
+		
+		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID
+		const matchers = [
+			{ type: ContextType.BOLD, regex: /\*\*([^*]+)\*\*/g , enable: this.settings.enableBold},
+			// 使用前后断言 (?<!\*) 和 (?!\*)，确保 * 不被包裹在 ** 中。
+			{ type: ContextType.ITALIC, regex: /(?<!\*)\*([^*]+)\*(?!\*)/g , enable: this.settings.customizeTargets && this.settings.enableItalic},
+			{ type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g , enable: this.settings.customizeTargets && this.settings.enableHighlight},
+			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: this.settings.customizeTargets && this.settings.enableStrikethrough},
+			{ type: ContextType.INLINECODE, regex: /`([^`]+)`/g , enable: this.settings.customizeTargets && this.settings.enableInlineCode},
+			{ type: ContextType.INLINELATEX, regex: /\$([^$]*)\$/g , enable: this.settings.customizeTargets && this.settings.enableInlineLatex},
+			{ type: ContextType.BLOCKID, regex: /\^([a-zA-Z0-9_-]+)/g , enable: true}, // 块ID不需要判断enable
+		];
+	
+		for (const matcher of matchers) {
+			if (!matcher.enable) continue; // 如果当前类型未启用，则跳过
+			const matchInfo = this.getMatchInfo(beforeCursor, afterCursor, matcher.regex);
+			if (matchInfo) {
+				return {
+					type: matcher.type,
+					curLine,
+					match: matchInfo.content, // 返回内容，不包括语法
+					range: matchInfo.range,
+				};
+			}
+		}
+
+		// 检测链接
+		if (this.settings.customizeTargets && this.settings.enableLink) {
+			const linkInfo = this.isCursorInLink(beforeCursor, afterCursor);
+			if (linkInfo) {
+				return {
+					type: linkInfo.type,
+					curLine,
+					match: linkInfo.content,
+					range: linkInfo.range,
+				};
+			}
+		}
+	
+		// 如果当前行是标题行，且光标不在其他 Markdown 语法范围内，则返回标题类型
+		const headingRegex = /^(#+)\s/; // 标题正则表达式
+		if (headingRegex.test(curLine)) {
+			const match = curLine.match(headingRegex);
+			const headingContent = curLine.replace(headingRegex, '').trim();
+			return {
+				type: ContextType.HEADING,
+				curLine,
+				match: headingContent, // 返回内容，不包括语法
+				range: match ? [match[0].length, curLine.length] : null,
+			};
+		}
+	
+		// 默认返回空值
+		return { type: ContextType.NULL, curLine, match: null, range: null };
+	}
+	
+	/**
+	 * 获取光标所在的匹配信息
+	 * @param beforeCursor 光标前的文本
+	 * @param afterCursor 光标后的文本
+	 * @param regex 匹配的正则表达式
+	 * @returns 匹配信息，包括匹配内容和范围
+	 */
+	private getMatchInfo(beforeCursor: string, afterCursor: string, regex: RegExp): { content: string; range: [number, number] } | null {
+		let match;
+		while ((match = regex.exec(beforeCursor + afterCursor)) !== null) {
+			const matchStart = match.index;
+			const matchEnd = match.index + match[0].length;
+	
+			// 判断光标是否在匹配范围内
+			if (beforeCursor.length >= matchStart && beforeCursor.length <= matchEnd) {
+				return {
+					content: match[1], // 返回内容，不包括语法
+					range: [matchStart, matchEnd],
+				};
+			}
+		}
+		return null;
+	}
+
+	private isCursorInLink(beforeCursor: string, afterCursor: string): {type: ContextType.LINKTITLE | ContextType.LINEURL, content: string, range: [number, number]} | null {
+		// 匹配链接的正则表达式
+		const linkRegex = /\[([^\]]*?)\]\(([^)]*?)\)/g;
+
+		const fullText = beforeCursor + afterCursor;
+		let match: RegExpExecArray | null;
+		while ((match = linkRegex.exec(fullText)) !== null) {
+			const linkStart = match.index; // 链接的起始位置
+			const linkEnd = linkStart + match[0].length; // 链接的结束位置
+	
+			// 光标位置
+			const cursorPos = beforeCursor.length;
+	
+			// 判断光标是否在当前链接范围内
+			if (cursorPos >= linkStart && cursorPos <= linkEnd) {
+				const bracketStart = linkStart + 1; // `[` 后的位置
+				const bracketEnd = linkStart + match[1].length + 1; // `]` 的位置
+				const parenStart = bracketEnd + 2; // `(` 后的位置
+				const parenEnd = parenStart + match[2].length; // `)` 的位置
+	
+				// 判断光标在 [] 还是 ()
+				if (cursorPos >= bracketStart && cursorPos <= bracketEnd) {
+					return { type: ContextType.LINKTITLE, content: match[1], range: [bracketStart, bracketEnd] };
+				} else if (cursorPos >= parenStart && cursorPos <= parenEnd) {
+					return { type: ContextType.LINEURL, content: match[2], range: [parenStart, parenEnd] };
+				}
+			}
+		}
+
+		// 如果光标不在任何链接中，返回 null
+		return null;
+	}
+
+	/**
 	 * 智能复制功能：根据光标位置复制不同类型的内容
 	 * 支持复制行内代码、块ID链接和标题链接
 	 */
@@ -126,141 +233,111 @@ export default class EasyCopy extends Plugin {
 			new Notice(this.t('no-file'));
 			return;
 		}
-
-		const cursor = editor.getCursor();
-		const curLine = editor.getLine(cursor.line);
-		const curCh = cursor.ch;
 		
 		// 获取文件名（去除.md后缀）
 		const filename = file.basename;
-		
-		// 1. 检查是否是标题行
-		if (curLine.startsWith('#')) {
-			this.copyHeadingLink(curLine, filename);
+
+		// 获取当前行的上下文类型
+		const contextType = this.determineContextType(editor, view);
+		console.log('contextType:', contextType);
+		if (contextType.type == ContextType.NULL) {
+			new Notice(this.t('no-content'));
 			return;
 		}
-		
-		// 2. 检查是否包含行内代码
-		if ((!this.settings.customizeTargets || this.settings.enableInlineCode) && curLine.includes('`')) {
-			// 尝试提取行内代码
-			const inlineCode = this.getInlineCode(curLine, curCh);
-			if (inlineCode) {
-				navigator.clipboard.writeText(inlineCode);
-				if (this.settings.showNotice) {
-					new Notice(this.t('inline-code-copied'));
-				}
-				return;
-			}
-		}
-		
-		// 3. 检查是否包含块ID
-		if (curLine.includes('^')) {
-			// 尝试提取块ID
-			const blockId = this.getBlockId(curLine);
-			if (blockId) {
-				const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK 
-					? `[[${filename}#^${blockId}]]` 
-					: `[${blockId}](${filename}#^${blockId})`;
-				
-				navigator.clipboard.writeText(blockIdLink);
-				if (this.settings.showNotice) {
-					new Notice(this.t('block-id-copied'));
-				}
-				return;
-			}
-		}
-		
-		// 4. 检查是否包含加粗文本
-		if ((!this.settings.customizeTargets || this.settings.enableBold) && curLine.includes('**')) {
-			const boldText = this.getBoldText(curLine, curCh);
-			if (boldText) {
-				navigator.clipboard.writeText(boldText);
+
+		switch (contextType.type) {
+			case ContextType.BOLD:
+				navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('bold-copied'));
 				}
 				return;
-			}
-		}
-		
-		// 5. 检查是否包含高亮文本
-		if ((!this.settings.customizeTargets || this.settings.enableHighlight) && curLine.includes('==')) {
-			const highlightText = this.getHighlightText(curLine, curCh);
-			if (highlightText) {
-				navigator.clipboard.writeText(highlightText);
-				if (this.settings.showNotice) {
-					new Notice(this.t('highlight-copied'));
-				}
-				return;
-			}
-		}
-		
-		// 6. 检查是否包含斜体文本
-		if ((!this.settings.customizeTargets || this.settings.enableItalic) && (curLine.includes('*') || curLine.includes('_'))) {
-			const italicText = this.getItalicText(curLine, curCh);
-			if (italicText) {
-				navigator.clipboard.writeText(italicText);
+			case ContextType.ITALIC:
+				navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('italic-copied'));
 				}
 				return;
-			}
+			case ContextType.HIGHLIGHT:
+				navigator.clipboard.writeText(contextType.match!);
+				if (this.settings.showNotice) {
+					new Notice(this.t('highlight-copied'));
+				}
+				return;
+			case ContextType.STRIKETHROUGH:
+				navigator.clipboard.writeText(contextType.match!);
+				if (this.settings.showNotice) {
+					new Notice(this.t('strikethrough-copied'));
+				}
+				return;
+			case ContextType.INLINECODE:
+				navigator.clipboard.writeText(contextType.match!);
+				if (this.settings.showNotice) {
+					new Notice(this.t('inline-code-copied'));
+				}
+				return;
+			case ContextType.INLINELATEX:
+				navigator.clipboard.writeText(contextType.match!);
+				if (this.settings.showNotice) {
+					new Notice(this.t('inline-latex-copied'));
+				}
+				return;
+			
+			case ContextType.LINKTITLE:
+			case ContextType.LINEURL:
+				// 复制链接标题或链接地址
+				navigator.clipboard.writeText(contextType.match!);
+				if (this.settings.showNotice) {
+					new Notice(this.t('link-copied'));
+				}
+				return;
+			case ContextType.BLOCKID:
+				{
+					const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK 
+						? `[[${filename}#^${contextType.match!}]]` 
+						: `[${contextType.match!}](${filename}#^${contextType.match!})`;
+					navigator.clipboard.writeText(blockIdLink);
+				}
+				if (this.settings.showNotice) {
+					new Notice(this.t('block-id-copied'));
+				}
+				return;
+			case ContextType.HEADING:
+				this.copyHeadingLink(contextType.match!, filename);
+				return;
+			default:
+				break;
 		}
-		
-		// 如果没有找到可复制的内容
-		new Notice(this.t('no-content'));
-	}
-	
-	/**
-	 * 提取行内代码
-	 */
-	private getInlineCode(str: string, cursor: number): string | null {
-		const start = str.lastIndexOf('`', cursor - 1);
-		const end = str.indexOf('`', cursor);
-		
-		if (start === -1 || end === -1) {
-			return null;
-		}
-		
-		return str.substring(start + 1, end);
-	}
-	
-	/**
-	 * 提取块ID
-	 */
-	private getBlockId(str: string): string | null {
-		// 提取当前光标所在行的像是 ^block-id-123 这样的 block id
-		const regex = /(?:^|\s+)\^([a-zA-Z0-9_-]+)(?:\s*|$)/;
-		const match = str.match(regex);
-		
-		if (match) {
-			return match[1];
-		}
-		
-		return null;
 	}
 	
 	/**
 	 * 复制标题链接
 	 */
-	private copyHeadingLink(headingLine: string, filename: string): void {
+	private copyHeadingLink(content: string, filename: string): void {
 		// 提取标题文本和级别
-		const selectedHeading = headingLine.replace(/#+\s+/, "#");
-		const linkAlias = selectedHeading.replace(/#+\s*/, "");
-		
+		let selectedHeading = content;
+		// 如果内容是[[内容]]，移除[[]]
+		if (selectedHeading.startsWith('[[') && selectedHeading.endsWith(']]')) {
+			selectedHeading = selectedHeading.slice(2, -2);
+		}
+		const linkAlias = selectedHeading;
+		let noteFlag = 0;
+
 		let headingReferenceLink = "";
 		
 		// 根据设置选择链接格式
 		if (this.settings.linkFormat === LinkFormat.WIKILINK) {
 			// Wiki链接格式
-			headingReferenceLink = `[[${filename}${selectedHeading}|${linkAlias}]]`;
+			headingReferenceLink = `[[${filename}#${selectedHeading}|${linkAlias}]]`;
 			
 			// 处理同名标题的特殊情况
 			if (this.settings.useHeadingAsDisplayText && filename === linkAlias) {
 				headingReferenceLink = `[[${filename}]]`;
+				noteFlag = 1;
 			}
 		} else {
 			// Markdown链接格式
-			headingReferenceLink = `[${linkAlias}](${filename}${selectedHeading})`;
+			headingReferenceLink = `[${linkAlias}](${filename}#${selectedHeading})`;
 		}
 		
 		// 复制到剪贴板
@@ -268,74 +345,12 @@ export default class EasyCopy extends Plugin {
 		
 		// 显示通知
 		if (this.settings.showNotice) {
-			if (headingLine.startsWith("# ")) {
+			if (noteFlag) {
 				new Notice(this.t('note-link-copied'));
 			} else {
 				new Notice(this.t('heading-copied'));
 			}
 		}
-	}
-
-	/**
-	 * 提取加粗文本
-	 */
-	private getBoldText(str: string, cursor: number): string | null {
-		// 查找光标前后的 ** 标记
-		const start = str.lastIndexOf('**', cursor - 1);
-		const end = str.indexOf('**', cursor);
-		
-		if (start === -1 || end === -1) {
-			return null;
-		}
-		
-		return str.substring(start + 2, end);
-	}
-	
-	/**
-	 * 提取高亮文本
-	 */
-	private getHighlightText(str: string, cursor: number): string | null {
-		// 查找光标前后的 == 标记
-		const start = str.lastIndexOf('==', cursor - 1);
-		const end = str.indexOf('==', cursor);
-		
-		if (start === -1 || end === -1) {
-			return null;
-		}
-		
-		return str.substring(start + 2, end);
-	}
-	
-	/**
-	 * 提取斜体文本
-	 */
-	private getItalicText(str: string, cursor: number): string | null {
-		// 尝试查找使用 * 的斜体
-		let start = str.lastIndexOf('*', cursor - 1);
-		if (start > 0 && str.charAt(start - 1) === '*') {
-			// 这可能是加粗文本的一部分，跳过
-			start = str.lastIndexOf('*', start - 2);
-		}
-		
-		let end = str.indexOf('*', cursor);
-		if (end > 0 && end + 1 < str.length && str.charAt(end + 1) === '*') {
-			// 这可能是加粗文本的一部分，跳过
-			end = str.indexOf('*', end + 2);
-		}
-		
-		if (start !== -1 && end !== -1) {
-			return str.substring(start + 1, end);
-		}
-		
-		// 尝试查找使用 _ 的斜体
-		start = str.lastIndexOf('_', cursor - 1);
-		end = str.indexOf('_', cursor);
-		
-		if (start !== -1 && end !== -1) {
-			return str.substring(start + 1, end);
-		}
-		
-		return null;
 	}
 
 	/**
@@ -369,121 +384,5 @@ export default class EasyCopy extends Plugin {
 		// 从 localStorage 中获取 Obsidian 的语言设置
 		const lang = window.localStorage.getItem("language") || 'en';
 		return lang;
-	}
-}
-
-class EasyCopySettingTab extends PluginSettingTab {
-	plugin: EasyCopy;
-
-	constructor(app: App, plugin: EasyCopy) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const {containerEl} = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName(this.plugin.t('add-to-menu'))
-			.setDesc(this.plugin.t('add-to-menu-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.addToMenu)
-				.onChange(async (value) => {
-				this.plugin.settings.addToMenu = value;
-				await this.plugin.saveSettings();
-			}));
-
-		new Setting(containerEl)
-			.setName(this.plugin.t('show-notice'))
-			.setDesc(this.plugin.t('show-notice-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showNotice)
-				.onChange(async (value) => {
-					this.plugin.settings.showNotice = value;
-					await this.plugin.saveSettings();
-				}));
-
-		containerEl.createEl('h2', {text: this.plugin.t('format')});
-
-		new Setting(containerEl)
-			.setName(this.plugin.t('use-heading-as-display'))
-			.setDesc(this.plugin.t('use-heading-as-display-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.useHeadingAsDisplayText)
-				.onChange(async (value) => {
-					this.plugin.settings.useHeadingAsDisplayText = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName(this.plugin.t('link-format'))
-			.setDesc(this.plugin.t('link-format-desc'))
-			.addDropdown(dropdown => dropdown
-				.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
-				.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
-				.setValue(this.plugin.settings.linkFormat)
-				.onChange(async (value) => {
-					this.plugin.settings.linkFormat = value as LinkFormat;
-					await this.plugin.saveSettings();
-				}));
-
-		containerEl.createEl('h2', {text: this.plugin.t('target')});
-
-		new Setting(containerEl)
-			.setName(this.plugin.t('customize-targets'))
-			.setDesc(this.plugin.t('customize-targets-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.customizeTargets)
-				.onChange(async (value) => {
-					this.plugin.settings.customizeTargets = value;
-					await this.plugin.saveSettings();
-					// 重新渲染设置界面以显示或隐藏目标选项
-					this.display();
-				}));
-
-		// 只有当自定义复制对象选项开启时才显示具体的复制对象选项
-		if (this.plugin.settings.customizeTargets) {
-			new Setting(containerEl)
-				.setName(this.plugin.t('enable-inline-code'))
-				.setDesc(this.plugin.t('enable-inline-code-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableInlineCode)
-					.onChange(async (value) => {
-						this.plugin.settings.enableInlineCode = value;
-						await this.plugin.saveSettings();
-					}));
-
-			new Setting(containerEl)
-				.setName(this.plugin.t('enable-bold'))
-				.setDesc(this.plugin.t('enable-bold-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableBold)
-					.onChange(async (value) => {
-						this.plugin.settings.enableBold = value;
-						await this.plugin.saveSettings();
-					}));
-
-			new Setting(containerEl)
-				.setName(this.plugin.t('enable-highlight'))
-				.setDesc(this.plugin.t('enable-highlight-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableHighlight)
-					.onChange(async (value) => {
-						this.plugin.settings.enableHighlight = value;
-						await this.plugin.saveSettings();
-					}));
-
-			new Setting(containerEl)
-				.setName(this.plugin.t('enable-italic'))
-				.setDesc(this.plugin.t('enable-italic-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableItalic)
-					.onChange(async (value) => {
-						this.plugin.settings.enableItalic = value;
-						await this.plugin.saveSettings();
-					}));
-		}
 	}
 }
