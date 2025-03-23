@@ -135,7 +135,7 @@ export default class EasyCopy extends Plugin {
 		const filename = file.basename;
 		
 		// 1. 检查是否是标题行
-		if (curLine.startsWith('#')) {
+		if (/^#+\s/.test(curLine)) {
 			this.copyHeadingLink(curLine, filename);
 			return;
 		}
