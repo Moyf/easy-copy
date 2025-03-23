@@ -26,3 +26,6 @@ Thumbs.db
 
 # Exclude zip
 *.zip
+
+# env
+.env
