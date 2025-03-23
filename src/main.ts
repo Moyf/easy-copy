@@ -54,10 +54,6 @@ export default class EasyCopy extends Plugin {
 		this.addCommand({
 			id: 'contextual-copy',
 			name: this.t('contextual-copy'),
-			hotkeys: [{
-				modifiers: ['Mod', 'Alt'],
-				key: 'c'
-			}],
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				// 实现智能复制功能
 				this.contextualCopy(editor, view);
