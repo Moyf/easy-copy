@@ -8,7 +8,8 @@ export enum Language {
 // 定义翻译键值类型
 export type TranslationKey = 
 	| 'no-file' | 'no-content' 
-	| 'inline-code-copied' | 'block-id-copied' | 'note-link-copied' | 'heading-copied' | 'strikethrough-copied' | 'inline-latex-copied' | 'link-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied'
+	| 'inline-code-copied' | 'block-id-copied' | 'note-link-copied' | 'heading-copied' | 'strikethrough-copied' 
+	| 'inline-latex-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied' | 'link-text-copied' | 'link-url-copied'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc' 
 	| 'link-format'| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
@@ -36,7 +37,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'italic-copied': 'Italic text copied!',
 		'inline-latex-copied': 'Inline LaTeX copied!',
 		'strikethrough-copied': 'Strikethrough text copied!',
-		'link-copied': 'Link copied!',
+		'link-text-copied': 'Link text copied!',
+		'link-url-copied': 'Link URL copied!',
 		
 		// 设置界面
 		'format': 'Format',
@@ -52,7 +54,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'markdown-link': 'Markdown link',
 		'wiki-link': 'Wiki link',
 		'customize-targets': 'Customize targets',
-		'customize-targets-desc': 'Enable to customize which elements can be copied',
+		'customize-targets-desc': 'Enable to customize which elements can be copied (disable to copy all elements)',
 		'enable-inline-code': 'Enable inline code',
 		'enable-inline-code-desc': 'Enable copying inline code like `code example`',
 		'enable-bold': 'Enable bold text',
@@ -65,8 +67,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-strikethrough-desc': 'Enable copying strikethrough text like ~~strikethrough example~~',
 		'enable-inline-latex': 'Enable inline LaTeX',
 		'enable-inline-latex-desc': 'Enable copying inline LaTeX like $latex example$',
-		'enable-link': 'Enable link',
-		'enable-link-desc': 'Enable copying link like [linktitle example](linkurl example)',
+		'enable-link': 'Enable link title/url',
+		'enable-link-desc': 'Enable copying link like [linktitle](linkurl) - the plugin will copy the title or the URL of the link based on the current cursor position.',
 		
 		// 命令名称
 		'contextual-copy': 'Contextual Copy'
@@ -84,7 +86,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'italic-copied': '斜体文本已复制！',
 		'inline-latex-copied': '行内LaTeX已复制！',
 		'strikethrough-copied': '删除线文本已复制！',
-		'link-copied': '链接已复制！',
+		'link-text-copied': '链接文本已复制！',
+		'link-url-copied': '链接地址已复制！',
 		
 		// 设置界面
 		'format': '格式',
@@ -100,7 +103,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'markdown-link': 'Markdown链接',
 		'wiki-link': 'Wiki链接',
 		'customize-targets': '自定义复制对象',
-		'customize-targets-desc': '启用后可以自定义哪些元素可以被复制',
+		'customize-targets-desc': '启用后可以自定义哪些元素可以被复制（不启用则默认可复制所有元素）',
 		'enable-inline-code': '启用行内代码',
 		'enable-inline-code-desc': '启用复制行内代码，如 `代码示例`',
 		'enable-bold': '启用加粗文本',
@@ -113,8 +116,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-strikethrough-desc': '启用复制删除线文本，如 ~~删除线示例~~',
 		'enable-inline-latex': '启用行内LaTeX',
 		'enable-inline-latex-desc': '启用复制行内LaTeX，如 $latex 示例$',
-		'enable-link': '启用链接',
-		'enable-link-desc': '启用复制链接，如 [链接标题 示例](链接地址 示例)',
+		'enable-link': '启用链接文本',
+		'enable-link-desc': '启用复制链接文本，如 [链接标题](链接地址) - 插件会根据当前光标所在的不同位置复制标题或者链接URL',
 		
 		// 命令名称
 		'contextual-copy': '智能复制'
@@ -132,7 +135,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'italic-copied': '斜體文本已複製！',
 		'inline-latex-copied': '行內LaTeX已複製！',
 		'strikethrough-copied': '刪除線文本已複製！',
-		'link-copied': '連結已複製！',
+		'link-text-copied': '連結文本已複製！',
+		'link-url-copied': '連結地址已複製！',
 		
 		// 設置界面
 		'format': '格式',
@@ -148,7 +152,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'markdown-link': 'Markdown連結',
 		'wiki-link': 'Wiki連結',
 		'customize-targets': '自定義複製對象',
-		'customize-targets-desc': '啟用後可以自定義哪些元素可以被複製',
+		'customize-targets-desc': '啟用後可以自定義哪些元素可以被複製（不啟用則默认可複製所有元素）',
 		'enable-inline-code': '啟用行內代碼',
 		'enable-inline-code-desc': '啟用複製行內代碼，如 `代碼示例`',
 		'enable-bold': '啟用加粗文本',
@@ -161,8 +165,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-strikethrough-desc': '啟用複製刪除線文本，如 ~~刪除線示例~~',
 		'enable-inline-latex': '啟用行內LaTeX',
 		'enable-inline-latex-desc': '啟用複製行內LaTeX，如 $latex 示例$',
-		'enable-link': '啟用連結',
-		'enable-link-desc': '啟用複製連結，如 [連結標題 示例](連結地址 示例)',
+		'enable-link': '啟用連結文本',
+		'enable-link-desc': '啟用複製連結，如 [連結標題](連結地址) - 插件會根據當前光標所在的不同位置複製標題或者連結URL',
 		
 		// 命令名称
 		'contextual-copy': '智能複製'

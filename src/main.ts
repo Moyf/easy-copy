@@ -36,15 +36,6 @@ export default class EasyCopy extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new EasyCopySettingTab(this.app, this));
 
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			// console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		// this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
 		// 注册右键菜单
 		this.registerEvent(
 			this.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
@@ -108,13 +99,13 @@ export default class EasyCopy extends Plugin {
 		
 		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID
 		const matchers = [
-			{ type: ContextType.BOLD, regex: /\*\*([^*]+)\*\*/g , enable: this.settings.enableBold},
+			{ type: ContextType.BOLD, regex: /\*\*([^*]+)\*\*/g , enable: !this.settings.customizeTargets || this.settings.enableBold},
 			// 使用前后断言 (?<!\*) 和 (?!\*)，确保 * 不被包裹在 ** 中。
-			{ type: ContextType.ITALIC, regex: /(?<!\*)\*([^*]+)\*(?!\*)/g , enable: this.settings.customizeTargets && this.settings.enableItalic},
-			{ type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g , enable: this.settings.customizeTargets && this.settings.enableHighlight},
-			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: this.settings.customizeTargets && this.settings.enableStrikethrough},
-			{ type: ContextType.INLINECODE, regex: /`([^`]+)`/g , enable: this.settings.customizeTargets && this.settings.enableInlineCode},
-			{ type: ContextType.INLINELATEX, regex: /\$([^$]*)\$/g , enable: this.settings.customizeTargets && this.settings.enableInlineLatex},
+			{ type: ContextType.ITALIC, regex: /(?<!\*)\*([^*]+)\*(?!\*)/g , enable: !this.settings.customizeTargets || this.settings.enableItalic},
+			{ type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g , enable: !this.settings.customizeTargets || this.settings.enableHighlight},
+			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: !this.settings.customizeTargets || this.settings.enableStrikethrough},
+			{ type: ContextType.INLINECODE, regex: /`([^`]+)`/g , enable: !this.settings.customizeTargets || this.settings.enableInlineCode},
+			{ type: ContextType.INLINELATEX, regex: /\$([^$]*)\$/g , enable: !this.settings.customizeTargets || this.settings.enableInlineLatex},
 			{ type: ContextType.BLOCKID, regex: /\^([a-zA-Z0-9_-]+)/g , enable: true}, // 块ID不需要判断enable
 		];
 	
@@ -132,7 +123,7 @@ export default class EasyCopy extends Plugin {
 		}
 
 		// 检测链接
-		if (this.settings.customizeTargets && this.settings.enableLink) {
+		if (!this.settings.customizeTargets || this.settings.enableLink) {
 			const linkInfo = this.isCursorInLink(beforeCursor, afterCursor);
 			if (linkInfo) {
 				return {
@@ -235,7 +226,8 @@ export default class EasyCopy extends Plugin {
     
 		// 获取当前行的上下文类型
 		const contextType = this.determineContextType(editor, view);
-		console.log('contextType:', contextType);
+		// console.log('contextType:', contextType);
+
 		if (contextType.type == ContextType.NULL) {
 			new Notice(this.t('no-content'));
 
@@ -281,11 +273,17 @@ export default class EasyCopy extends Plugin {
 				return;
 			
 			case ContextType.LINKTITLE:
-			case ContextType.LINEURL:
-				// 复制链接标题或链接地址
+				// 复制链接标题
 				navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
-					new Notice(this.t('link-copied'));
+					new Notice(this.t('link-text-copied'));
+				}
+				return;
+			case ContextType.LINEURL:
+				// 复制链接地址
+				navigator.clipboard.writeText(contextType.match!);
+				if (this.settings.showNotice) {
+					new Notice(this.t('link-url-copied'));
 				}
 				return;
 			case ContextType.BLOCKID:
