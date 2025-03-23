@@ -236,12 +236,13 @@ export default class EasyCopy extends Plugin {
 		
 		// 获取文件名（去除.md后缀）
 		const filename = file.basename;
-
+    
 		// 获取当前行的上下文类型
 		const contextType = this.determineContextType(editor, view);
 		console.log('contextType:', contextType);
 		if (contextType.type == ContextType.NULL) {
 			new Notice(this.t('no-content'));
+
 			return;
 		}
 
