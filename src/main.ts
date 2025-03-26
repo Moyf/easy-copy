@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, Menu } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, Menu, Platform } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat } from './type';
 import { EasyCopySettingTab } from './settingTab';
@@ -96,12 +96,20 @@ export default class EasyCopy extends Plugin {
 		// 根据光标位置解析内容类型
 		const beforeCursor = curLine.slice(0, curCh); // 光标前的内容
 		const afterCursor = curLine.slice(curCh); // 光标后的内容
+
+
+		// iOS 16.4 之前不支持后视（Lookbehinds），但支持前视（Lookaheads）
+		// 所以针对 iOS 平台使用只带前视的正则表达式，其他平台使用完整版本
+		const italicRegex = Platform.isIosApp ? 
+			/\*([^*]+)\*(?!\*)/g :  // iOS 版本：只使用前视，不使用后视
+			/(?<!\*)\*([^*]+)\*(?!\*)/g;  // 其他平台：使用前视和后视
 		
 		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID
 		const matchers = [
 			{ type: ContextType.BOLD, regex: /\*\*([^*]+)\*\*/g , enable: !this.settings.customizeTargets || this.settings.enableBold},
 			// 使用前后断言 (?<!\*) 和 (?!\*)，确保 * 不被包裹在 ** 中。
-			{ type: ContextType.ITALIC, regex: /(?<!\*)\*([^*]+)\*(?!\*)/g , enable: !this.settings.customizeTargets || this.settings.enableItalic},
+			// 但是匹配顺序反正在粗体之后，本来也不需要考虑吧？除非是「关闭了粗体检测」的情况……
+			{ type: ContextType.ITALIC, regex: italicRegex , enable: !this.settings.customizeTargets || this.settings.enableItalic},
 			{ type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g , enable: !this.settings.customizeTargets || this.settings.enableHighlight},
 			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: !this.settings.customizeTargets || this.settings.enableStrikethrough},
 			{ type: ContextType.INLINECODE, regex: /`([^`]+)`/g , enable: !this.settings.customizeTargets || this.settings.enableInlineCode},
