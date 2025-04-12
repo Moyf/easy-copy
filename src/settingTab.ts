@@ -36,7 +36,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		containerEl.createEl('h2', {text: this.plugin.t('format')});
+		new Setting(containerEl)
+			.setName(this.plugin.t('format'))
+			.setHeading();
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('use-heading-as-display'))
@@ -60,7 +62,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		containerEl.createEl('h2', {text: this.plugin.t('target')});
+		new Setting(containerEl)
+			.setName(this.plugin.t('target'))
+			.setHeading();
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('customize-targets'))

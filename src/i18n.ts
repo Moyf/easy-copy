@@ -71,7 +71,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-link-desc': 'Enable copying link like [linktitle](linkurl) - the plugin will copy the title or the URL of the link based on the current cursor position.',
 		
 		// 命令名称
-		'contextual-copy': 'Contextual Copy'
+		'contextual-copy': 'Contextual copy'
 	},
 	[Language.ZH]: {
 		// 通知信息
