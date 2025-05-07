@@ -1,7 +1,7 @@
 # Easy Copy - 让复制变得简单又智能！
 [English](./README.md) | 中文文档
 
-
+Easy Copy 插件可以根据你的光标位置智能复制内容（例如内联代码内的代码文本），也支持快速生成跳转到标题或者段落的笔记链接。
 
 ## ✨ 功能特色
 
@@ -100,10 +100,9 @@
 
 ## 🛠️ 安装方法
 
-目前插件还没上架官方商店，需要先用 [BRAT](https://github.com/TfTHacker/obsidian42-brat) 插件进行安装。
+目前插件已经上架插件商城，搜索 Easy Copy 即可安装。
 
-等上架之后我会更新这里！
-
+（另外也可以用 [BRAT](https://github.com/TfTHacker/obsidian42-brat) 插件进行安装）
 
 
 ## 🤝 贡献

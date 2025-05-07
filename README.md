@@ -2,6 +2,7 @@
 
 English | [中文文档](./README-zh.md)
 
+Easy Copy plugin can smartly copy content based on your cursor position (e.g. code text inside inline code), and also supports quickly generating links to headings or paragraphs in your notes.
 
 ## ✨ Features
 
@@ -100,10 +101,9 @@ When your cursor is in a position with no content to copy, it will automatically
 
 ## 🛠️ Installation
 
-Currently, the plugin is not yet available in the official store. You'll need to install it using the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin.
+The plugin is now available in the community plugins list, you can search for "Easy Copy" to install it.
 
-I'll update this section once it's available in the official store!
-
+(Alternatively, you can also use the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin to install it)
 
 
 ## 🤝 Contribution
