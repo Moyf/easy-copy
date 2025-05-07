@@ -29,7 +29,7 @@ Just like this:
 
 
 
-### Heading Links — Display Just the Heading Text!
+### Heading Links — Copy a more concise link to the heading
 As for heading links, that's another long-standing issue.
 Default heading links display as a long text string, but I wanted to **show only the heading text** — using it as the Display Text!
 So I added this feature to the plugin as well:
@@ -50,10 +50,17 @@ The difference looks like this:
 
 ![heading-compare](assets/heading-compare.png)
 
-### Block Links — They're Just Block Links!
+### Block Links — Auto generating block ID
 This works almost the same as heading links, so I implemented it too!
 
 ![copy-block-id](assets/copy-block-id.png)
+
+After version 1.2.0, this plugin also supports automatically generating a block ID for the current text (requires enabling the "Auto-add Block ID" option in settings):
+When your cursor is in a position with no content to copy, it will automatically generate a random block ID for the current paragraph and copy the link to the clipboard.
+
+![auto-block](assets/auto-generate-block-id.gif)
+
+>  It also supports manually inputting a custom block ID!
 
 
 
