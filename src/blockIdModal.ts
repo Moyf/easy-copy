@@ -26,10 +26,9 @@ export class BlockIdInputModal extends Modal {
 
         this.inputEl = contentEl.createEl('input', {
             type: 'text',
-            placeholder: 'Block ID...'
+            placeholder: 'Block ID...',
+            cls: 'blockid-modal-input'
         });
-        this.inputEl.style.width = '100%';
-        this.inputEl.style.marginTop = '1em';
         this.inputEl.focus();
 
         // 说明文本
@@ -37,15 +36,10 @@ export class BlockIdInputModal extends Modal {
             text: this.desc,
             cls: 'blockid-modal-desc'
         });
-        descEl.style.fontSize = 'var(--font-ui-smaller)';
-        descEl.style.color = 'var(--text-muted)';
-        descEl.style.marginTop = '0.5em';
-        descEl.style.marginBottom = '0.2em';
+        
 
+        // 样式已交由 style.css 控制
         this.errorEl = contentEl.createEl('div', { text: '', cls: 'blockid-modal-error' });
-        this.errorEl.style.color = 'var(--text-error)';
-        this.errorEl.style.fontSize = 'var(--font-ui-smaller)';
-        this.errorEl.style.marginTop = '0.25em';
 
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {

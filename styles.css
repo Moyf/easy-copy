@@ -6,4 +6,21 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
- 
+
+.blockid-modal-desc {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  margin-top: 0.5em;
+  margin-bottom: 0.2em;
+}
+
+.blockid-modal-error {
+  color: var(--text-error);
+  font-size: var(--font-ui-smaller);
+  margin-top: 0.25em;
+}
+
+.blockid-modal-input {
+  width: 100%;
+  margin-top: 1em;
+}
