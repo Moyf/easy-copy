@@ -74,8 +74,10 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.autoAddBlockId = value;
 					await this.plugin.saveSettings();
+					this.display();
 				}));
 
+		if (this.plugin.settings.autoAddBlockId) {
 		new Setting(containerEl)
 			.setName(this.plugin.t('manual-block-id'))
 			.setDesc(this.plugin.t('manual-block-id-desc'))
@@ -85,6 +87,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					this.plugin.settings.allowManualBlockId = value;
 					await this.plugin.saveSettings();
 				}));
+		}
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('target'))

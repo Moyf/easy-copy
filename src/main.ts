@@ -77,16 +77,23 @@ export default class EasyCopy extends Plugin {
 	}
 
 	/**
+	 * 检测是否是有效的一行连续文本
+	 */
+	private isContinuousText(line: string): boolean {
+		return line.trim() !== '' && !line.trim().startsWith('#');
+	}
+
+	/**
 	 * 检测光标所在行末尾或下一行开头的 block ID
 	 */
 	private detectBlockRange(editor: Editor, cursorLine: number): { start: number, end: number } {
 		const totalLines = editor.lineCount();
 		let start = cursorLine;
-		while (start > 0 && editor.getLine(start - 1).trim() !== '') {
+		while (start > 0 && this.isContinuousText(editor.getLine(start - 1))) {
 			start--;
 		}
 		let end = cursorLine;
-		while (end < totalLines - 1 && editor.getLine(end + 1).trim() !== '') {
+		while (end < totalLines - 1 && this.isContinuousText(editor.getLine(end + 1))) {
 			end++;
 		}
 		return { start, end };

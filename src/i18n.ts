@@ -29,14 +29,16 @@ export type TranslationKey =
 // 本地化翻译字典
 export const translations: Record<Language, Record<TranslationKey, string>> = {
 	[Language.EN]: {
-        'manual-block-id': 'Manual input Block ID',
-        'manual-block-id-desc': 'If enabled, you will be prompted to enter a Block ID manually when generating a Block ID.',
+		// 复制 Block ID
+        'auto-add-block-id': 'Auto add Block ID',
+        'auto-add-block-id-desc': 'When enabled, if there is no copyable content, a random block ID (^xxxx) will be automatically added to the end of the current line.' ,
+		'manual-block-id': 'Manual input Block ID',
+        'manual-block-id-desc': 'If enabled, you will be prompted to enter a Block ID manually.',
         'modal-block-id': 'Enter Block ID',
         'modal-block-id-desc': 'Allowed: letters, numbers, hyphens (-), underscores (_). Spaces will be converted to hyphens.',
         'error-block-id-empty': 'Block ID cannot be empty',
         'error-block-id-invalid': 'Only letters, numbers, hyphens and underscores are allowed',
-        'auto-add-block-id': 'Auto add Block ID',
-        'auto-add-block-id-desc': 'When enabled, if there is no copyable content, a random block ID (^xxxx) will be automatically added to the end of the current line.' ,
+        
 		// 通知信息
 		'no-file': 'Cannot get current file',
 		'no-content': 'No content to copy at current cursor position',
@@ -87,14 +89,15 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'contextual-copy': 'Contextual copy'
 	},
 	[Language.ZH]: {
-        'modal-block-id': '输入 Block ID',
+		// 复制 Block ID
+        'auto-add-block-id': '自动添加块ID',
+        'auto-add-block-id-desc': '启用后，如果没有可复制内容时会自动在当前文本末尾添加一个随机的块ID（^xxxx）',
+		'manual-block-id': '手动输入块ID',
+        'manual-block-id-desc': '启用后，可以在弹窗中手动输入块ID',
+        'modal-block-id': '输入块ID',
         'modal-block-id-desc': '仅允许字母、数字、短横线（-）、下划线（_），空格会自动转为短横线。',
-        'error-block-id-empty': 'Block ID 不能为空',
+        'error-block-id-empty': '块ID不能为空',
         'error-block-id-invalid': '只允许字母、数字、-、_' ,
-        'manual-block-id': '手动输入 Block ID',
-        'manual-block-id-desc': '开启后，生成 Block ID 时会弹出输入框让你手动填写。',
-        'auto-add-block-id': '自动添加 Block ID',
-        'auto-add-block-id-desc': '启用后，如果没有可复制内容时会自动在当前文本末尾添加一个随机块ID（^xxxx）',
 		// 通知信息
 		'no-file': '无法获取当前文件',
 		'no-content': '当前光标处没有可复制的内容',
@@ -145,14 +148,16 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'contextual-copy': '智能复制'
 	},
 	[Language.ZH_TW]: {
-        'modal-block-id': '輸入 Block ID',
-        'modal-block-id-desc': '僅允許字母、數字、連字符（-）、底線（_），空格會自動轉為連字符。',
-        'error-block-id-empty': 'Block ID 不能為空',
-        'error-block-id-invalid': '只允許字母、數字、-、_' ,
-        'manual-block-id': '手動輸入 Block ID',
-        'manual-block-id-desc': '啟用後，生成 Block ID 時會彈出輸入框讓你手動填寫。',
-        'auto-add-block-id': '自動添加 Block ID',
-        'auto-add-block-id-desc': '啟用後，如果沒有可複製內容時會自動在當前文本末尾添加一個隨機塊ID（^xxxx）',
+		// 复制 Block ID
+		'auto-add-block-id': '自動新增塊ID',
+		'auto-add-block-id-desc': '啟用後，若沒有可複製內容時，會自動在當前文本末尾新增一個隨機的塊ID（^xxxx）',
+		'manual-block-id': '手動輸入塊ID',
+		'manual-block-id-desc': '啟用後，可以在彈窗中手動輸入塊ID',
+		'modal-block-id': '輸入塊ID',
+		'modal-block-id-desc': '僅允許字母、數字、連字號（-）、底線（_），空格會自動轉為連字號。',
+		'error-block-id-empty': '塊ID 不能為空',
+		'error-block-id-invalid': '只允許字母、數字、-、_',
+        
 		// 通知信息
 		'no-file': '無法獲取當前文件',
 		'no-content': '當前光標處沒有可複製的內容',
