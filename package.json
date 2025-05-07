@@ -8,7 +8,8 @@
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"build:local": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && npm run copy-to-vault",
 		"copy-to-vault": "node scripts/copy-to-vault.mjs",
-		"version": "node scripts/version-bump-new.mjs && git add manifest.json versions.json"
+		"version": "node scripts/version-bump-new.mjs && git add manifest.json versions.json",
+		"release": "node scripts/release-tag.mjs"
 	},
 	"keywords": [],
 	"author": "",
