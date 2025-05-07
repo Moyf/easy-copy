@@ -76,6 +76,41 @@ export default class EasyCopy extends Plugin {
 	}
 
 	/**
+	 * 检测光标所在行末尾或下一行开头的 block ID
+	 */
+	private detectBlockRange(editor: Editor, cursorLine: number): { start: number, end: number } {
+		const totalLines = editor.lineCount();
+		let start = cursorLine;
+		while (start > 0 && editor.getLine(start - 1).trim() !== '') {
+			start--;
+		}
+		let end = cursorLine;
+		while (end < totalLines - 1 && editor.getLine(end + 1).trim() !== '') {
+			end++;
+		}
+		return { start, end };
+	}
+
+	private detectBlockId(editor: Editor, view: MarkdownView): ContextData | null {
+		const cursor = editor.getCursor();
+		const { start, end } = this.detectBlockRange(editor, cursor.line);
+		const lastLine = editor.getLine(end);
+		const match = lastLine.trimEnd().match(/\^([a-zA-Z0-9_-]+)$/);
+
+		// const blockRange = [start, end];
+
+		if (match) {
+			return {
+				type: ContextType.BLOCKID,
+				curLine: lastLine,
+				match: match[1],
+				range: [lastLine.lastIndexOf('^'), lastLine.length]
+			};
+		}
+		return null;
+	}
+
+	/**
 	 * 获取当前行的上下文类型
 	 * @param editor 
 	 * @param view 
@@ -114,7 +149,6 @@ export default class EasyCopy extends Plugin {
 			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: !this.settings.customizeTargets || this.settings.enableStrikethrough},
 			{ type: ContextType.INLINECODE, regex: /`([^`]+)`/g , enable: !this.settings.customizeTargets || this.settings.enableInlineCode},
 			{ type: ContextType.INLINELATEX, regex: /\$([^$]*)\$/g , enable: !this.settings.customizeTargets || this.settings.enableInlineLatex},
-			{ type: ContextType.BLOCKID, regex: /\^([a-zA-Z0-9_-]+)/g , enable: true}, // 块ID不需要判断enable
 		];
 	
 		for (const matcher of matchers) {
@@ -141,6 +175,12 @@ export default class EasyCopy extends Plugin {
 					range: linkInfo.range,
 				};
 			}
+		}
+
+		// 检测 block ID
+		const blockIdInfo = this.detectBlockId(editor, view);
+		if (blockIdInfo) {
+			return blockIdInfo;
 		}
 	
 		// 如果当前行是标题行，且光标不在其他 Markdown 语法范围内，则返回标题类型
@@ -237,32 +277,48 @@ export default class EasyCopy extends Plugin {
 		// console.log('contextType:', contextType);
 
 		if (contextType.type == ContextType.NULL) {
-        // 如果启用自动添加 Block ID
-        if (this.settings.autoAddBlockId) {
-            // 生成 4 位随机字母数字块ID
-            const randomId = Math.random().toString(36).substr(2, 6);
-            const blockId = `^${randomId}`;
-            // 获取当前行内容
-            const cursor = editor.getCursor();
-            const curLine = editor.getLine(cursor.line);
-            // 检查当前行末是否已经有块ID
-            if (!/\^[a-zA-Z0-9_-]+$/.test(curLine.trim())) {
-                // 在当前行末尾插入块ID
-                editor.replaceRange(curLine.endsWith(' ') ? blockId : ' ' + blockId, { line: cursor.line, ch: curLine.length });
-                // 复制块ID链接
-                const filename = file.basename;
-                const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
-                    ? `[[${filename}#${blockId}]]`
-                    : `[${blockId}](${filename}#${blockId})`;
-                navigator.clipboard.writeText(blockIdLink);
-                if (this.settings.showNotice) {
-                    new Notice(this.t('block-id-copied'));
-                }
-                return;
-            }
-        }
+			// 如果启用自动添加 Block ID
+			if (this.settings.autoAddBlockId) {
+				// 生成 6 位随机字母数字块ID
+				const randomId = Math.random().toString(36).substr(2, 6);
+				const blockId = `^${randomId}`;
+				// —— 新逻辑：定位 block（段落）末尾 ——
+				const cursor = editor.getCursor();
+				const { end } = this.detectBlockRange(editor, cursor.line);
+				const lastLine = editor.getLine(end);
+				// 检查 block 最后一行末是否已有块ID
+				if (!/\^[a-zA-Z0-9_-]+$/.test(lastLine.trim())) {
+					// 在 block 最后一行末尾插入块ID
+					editor.replaceRange(lastLine.endsWith(' ') ? blockId : ' ' + blockId, { line: end, ch: lastLine.length });
+					// 复制块ID链接
+					const filename = file.basename;
+					const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
+						? `[[${filename}#${blockId}]]`
+						: `[${blockId}](${filename}#${blockId})`;
+					navigator.clipboard.writeText(blockIdLink);
+					if (this.settings.showNotice) {
+						new Notice(this.t('block-id-copied'));
+					}
+					return;
+				}
+			}
+			
 			new Notice(this.t('no-content'));
 
+			return;
+		}
+
+		// 如果是 BlockID，优先处理（复制块链接）
+		if (contextType.type === ContextType.BLOCKID) {
+			const filename = file.basename;
+			const blockId = contextType.match!;
+			const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
+				? `[[${filename}#^${blockId}]]`
+				: `[^${blockId}](${filename}#^${blockId})`;
+			navigator.clipboard.writeText(blockIdLink);
+			if (this.settings.showNotice) {
+				new Notice(this.t('block-id-copied'));
+			}
 			return;
 		}
 
@@ -316,17 +372,6 @@ export default class EasyCopy extends Plugin {
 				navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('link-url-copied'));
-				}
-				return;
-			case ContextType.BLOCKID:
-				{
-					const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK 
-						? `[[${filename}#^${contextType.match!}]]` 
-						: `[${contextType.match!}](${filename}#^${contextType.match!})`;
-					navigator.clipboard.writeText(blockIdLink);
-				}
-				if (this.settings.showNotice) {
-					new Notice(this.t('block-id-copied'));
 				}
 				return;
 			case ContextType.HEADING:
