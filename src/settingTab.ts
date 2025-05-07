@@ -60,6 +60,18 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		containerEl.createEl('h2', {text: this.plugin.t('block-id')});
+
+		new Setting(containerEl)
+			.setName(this.plugin.t('auto-add-block-id'))
+			.setDesc(this.plugin.t('auto-add-block-id-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.autoAddBlockId)
+				.onChange(async (value) => {
+					this.plugin.settings.autoAddBlockId = value;
+					await this.plugin.saveSettings();
+				}));
+
 		containerEl.createEl('h2', {text: this.plugin.t('target')});
 
 		new Setting(containerEl)

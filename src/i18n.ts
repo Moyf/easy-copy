@@ -11,7 +11,7 @@ export type TranslationKey =
 	| 'inline-code-copied' | 'block-id-copied' | 'note-link-copied' | 'heading-copied' | 'strikethrough-copied' 
 	| 'inline-latex-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied' | 'link-text-copied' | 'link-url-copied'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
-	| 'use-heading-as-display' | 'use-heading-as-display-desc' 
+	| 'use-heading-as-display' | 'use-heading-as-display-desc'  | 'block-id'
 	| 'link-format'| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
 	| 'target' | 'customize-targets' | 'customize-targets-desc' 
 	| 'enable-bold' | 'enable-bold-desc' 
@@ -20,11 +20,14 @@ export type TranslationKey =
 	| 'enable-inline-code' | 'enable-inline-code-desc'
 	| 'enable-strikethrough' | 'enable-strikethrough-desc'
 	| 'enable-inline-latex' | 'enable-inline-latex-desc'
-	| 'enable-link' | 'enable-link-desc';
+	| 'enable-link' | 'enable-link-desc'
+    | 'auto-add-block-id' | 'auto-add-block-id-desc';
 
 // 本地化翻译字典
 export const translations: Record<Language, Record<TranslationKey, string>> = {
 	[Language.EN]: {
+        'auto-add-block-id': 'Auto add Block ID',
+        'auto-add-block-id-desc': 'When enabled, if there is no copyable content, a random block ID (^xxxx) will be automatically added to the end of the current line.' ,
 		// 通知信息
 		'no-file': 'Cannot get current file',
 		'no-content': 'No content to copy at current cursor position',
@@ -42,6 +45,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		
 		// 设置界面
 		'format': 'Format',
+		'block-id': 'Block ID',
 		'target': 'Target',
 		'add-to-menu': 'Add to menu',
 		'add-to-menu-desc': 'Add the command to the context menu',
@@ -74,6 +78,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'contextual-copy': 'Contextual Copy'
 	},
 	[Language.ZH]: {
+        'auto-add-block-id': '自动添加 Block ID',
+        'auto-add-block-id-desc': '启用后，如果没有可复制内容时会自动在当前文本末尾添加一个随机块ID（^xxxx）',
 		// 通知信息
 		'no-file': '无法获取当前文件',
 		'no-content': '当前光标处没有可复制的内容',
@@ -91,6 +97,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		
 		// 设置界面
 		'format': '格式',
+		'block-id': '块ID',
 		'target': '复制对象',
 		'add-to-menu': '添加到菜单',
 		'add-to-menu-desc': '将命令添加到右键菜单',
@@ -123,6 +130,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'contextual-copy': '智能复制'
 	},
 	[Language.ZH_TW]: {
+        'auto-add-block-id': '自動添加 Block ID',
+        'auto-add-block-id-desc': '啟用後，如果沒有可複製內容時會自動在當前文本末尾添加一個隨機塊ID（^xxxx）',
 		// 通知信息
 		'no-file': '無法獲取當前文件',
 		'no-content': '當前光標處沒有可複製的內容',
@@ -140,6 +149,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		
 		// 設置界面
 		'format': '格式',
+		'block-id': '塊ID',
 		'target': '複製對象',
 		'add-to-menu': '添加到菜單',
 		'add-to-menu-desc': '將命令添加到右鍵菜單',

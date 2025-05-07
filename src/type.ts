@@ -37,6 +37,7 @@ export interface EasyCopySettings {
     enableStrikethrough: boolean;
     enableInlineLatex: boolean;
     enableLink: boolean;
+    autoAddBlockId: boolean; // 是否自动添加 Block ID
 }
 
 export const DEFAULT_SETTINGS: EasyCopySettings = {
@@ -52,4 +53,5 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableStrikethrough: true,
     enableInlineLatex: true,
     enableLink: true,
+    autoAddBlockId: false, // 默认关闭
 }

@@ -237,6 +237,30 @@ export default class EasyCopy extends Plugin {
 		// console.log('contextType:', contextType);
 
 		if (contextType.type == ContextType.NULL) {
+        // 如果启用自动添加 Block ID
+        if (this.settings.autoAddBlockId) {
+            // 生成 4 位随机字母数字块ID
+            const randomId = Math.random().toString(36).substr(2, 6);
+            const blockId = `^${randomId}`;
+            // 获取当前行内容
+            const cursor = editor.getCursor();
+            const curLine = editor.getLine(cursor.line);
+            // 检查当前行末是否已经有块ID
+            if (!/\^[a-zA-Z0-9_-]+$/.test(curLine.trim())) {
+                // 在当前行末尾插入块ID
+                editor.replaceRange(curLine.endsWith(' ') ? blockId : ' ' + blockId, { line: cursor.line, ch: curLine.length });
+                // 复制块ID链接
+                const filename = file.basename;
+                const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
+                    ? `[[${filename}#${blockId}]]`
+                    : `[${blockId}](${filename}#${blockId})`;
+                navigator.clipboard.writeText(blockIdLink);
+                if (this.settings.showNotice) {
+                    new Notice(this.t('block-id-copied'));
+                }
+                return;
+            }
+        }
 			new Notice(this.t('no-content'));
 
 			return;
