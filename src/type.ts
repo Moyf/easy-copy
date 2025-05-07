@@ -38,6 +38,7 @@ export interface EasyCopySettings {
     enableInlineLatex: boolean;
     enableLink: boolean;
     autoAddBlockId: boolean; // 是否自动添加 Block ID
+    allowManualBlockId: boolean; // 是否允许手动输入 Block ID
 }
 
 export const DEFAULT_SETTINGS: EasyCopySettings = {
@@ -54,4 +55,5 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableInlineLatex: true,
     enableLink: true,
     autoAddBlockId: false, // 默认关闭
+    allowManualBlockId: false, // 默认关闭
 }

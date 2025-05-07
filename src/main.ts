@@ -2,6 +2,7 @@ import { Editor, MarkdownView, Notice, Plugin, Menu, Platform } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat } from './type';
 import { EasyCopySettingTab } from './settingTab';
+import { BlockIdInputModal } from './blockIdModal';
 
 export default class EasyCopy extends Plugin {
 	settings: EasyCopySettings;
@@ -261,7 +262,7 @@ export default class EasyCopy extends Plugin {
 	 * 智能复制功能：根据光标位置复制不同类型的内容
 	 * 支持复制行内代码、块ID链接和标题链接
 	 */
-	private contextualCopy(editor: Editor, view: MarkdownView): void {
+	private async contextualCopy(editor: Editor, view: MarkdownView): Promise<void> {
 		// 获取当前文件和光标信息
 		const file = view.file;
 		if (!file) {
@@ -279,9 +280,25 @@ export default class EasyCopy extends Plugin {
 		if (contextType.type == ContextType.NULL) {
 			// 如果启用自动添加 Block ID
 			if (this.settings.autoAddBlockId) {
-				// 生成 6 位随机字母数字块ID
-				const randomId = Math.random().toString(36).substr(2, 6);
-				const blockId = `^${randomId}`;
+				let blockId = '';
+				if (this.settings.allowManualBlockId) {
+					// 用 Modal 弹窗获取 Block ID
+					const modalBlockId = await new Promise<string | null>((resolve) => {
+					new BlockIdInputModal(this.app, 
+						this.t('modal-block-id'), this.t('modal-block-id-desc'), 
+						this.t.bind(this), 
+						(result: any) => {	
+							resolve(result ? '^' + result : null);
+						}
+					).open();
+				});
+				if (!modalBlockId) return;
+				blockId = modalBlockId;
+				} else {
+					// 随机生成
+					const randomId = Math.random().toString(36).substr(2, 6);
+					blockId = `^${randomId}`;
+				}
 				// —— 新逻辑：定位 block（段落）末尾 ——
 				const cursor = editor.getCursor();
 				const { end } = this.detectBlockRange(editor, cursor.line);
