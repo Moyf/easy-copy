@@ -62,7 +62,7 @@ export class BlockIdInputModal extends Modal {
             this.errorEl.textContent = this.t('error-block-id-empty');
             return;
         }
-        if (!/^[-_a-zA-Z0-9]+$/.test(value)) {
+        if (!/^[-_a-zA-Z0-9\s]+$/.test(value)) {
             this.errorEl.textContent = this.t('error-block-id-invalid');
             return;
         }
