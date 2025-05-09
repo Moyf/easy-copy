@@ -111,11 +111,9 @@ export default class EasyCopy extends Plugin {
 
 	private detectBlockId(editor: Editor, view: MarkdownView): ContextData | null {
 		const cursor = editor.getCursor();
-		const { start, end } = this.detectBlockRange(editor, cursor.line);
+		const { end } = this.detectBlockRange(editor, cursor.line);
 		const lastLine = editor.getLine(end);
 		const match = lastLine.trimEnd().match(/\^([a-zA-Z0-9_-]+)$/);
-
-		// const blockRange = [start, end];
 
 		if (match) {
 			return {
@@ -298,41 +296,43 @@ export default class EasyCopy extends Plugin {
 			// 如果启用自动添加 Block ID
 			if (this.settings.autoAddBlockId) {
 				let blockId = '';
-				if (this.settings.allowManualBlockId) {
+				const isManual = this.settings.allowManualBlockId;
+				
+				if (isManual) {
 					// 用 Modal 弹窗获取 Block ID
 					const modalBlockId = await new Promise<string | null>((resolve) => {
 					new BlockIdInputModal(this.app, 
 						this.t('modal-block-id'), this.t('modal-block-id-desc'), 
 						this.t.bind(this), 
 						(result: any) => {	
-							resolve(result ? '^' + result : null);
+							resolve(result ?? null);
 						}
 					).open();
-				});
-				if (!modalBlockId) return;
-				blockId = modalBlockId;
+					});
+					if (!modalBlockId) return;
+					blockId = modalBlockId;
 				} else {
 					// 随机生成
 					const randomId = Math.random().toString(36).substr(2, 6);
-					blockId = `^${randomId}`;
+					blockId = `${randomId}`;
 				}
+
 				// —— 新逻辑：定位 block（段落）末尾 ——
 				const cursor = editor.getCursor();
-				const { end } = this.detectBlockRange(editor, cursor.line);
+				const { start, end } = this.detectBlockRange(editor, cursor.line);
+				const firstLine = editor.getLine(start);
 				const lastLine = editor.getLine(end);
+
 				// 检查 block 最后一行末是否已有块ID
 				if (!/\^[a-zA-Z0-9_-]+$/.test(lastLine.trim())) {
 					// 在 block 最后一行末尾插入块ID
-					editor.replaceRange(lastLine.endsWith(' ') ? blockId : ' ' + blockId, { line: end, ch: lastLine.length });
+					editor.replaceRange(lastLine.endsWith(' ') ? '^' + blockId : ' ^' + blockId, { line: end, ch: lastLine.length });
+
+					// 如果不是手动输入的，使用简短的显示文本
+					const useBrief = !isManual;
+					
 					// 复制块ID链接
-					const filename = file.basename;
-					const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
-						? `[[${filename}#${blockId}]]`
-						: `[${blockId}](${filename}#${blockId})`;
-					navigator.clipboard.writeText(blockIdLink);
-					if (this.settings.showNotice) {
-						new Notice(this.t('block-id-copied'));
-					}
+					this.copyBlockLink(blockId, filename, useBrief, firstLine);
 					return;
 				}
 			}
@@ -342,21 +342,10 @@ export default class EasyCopy extends Plugin {
 			return;
 		}
 
-		// 如果是 BlockID，优先处理（复制块链接）
-		if (contextType.type === ContextType.BLOCKID) {
-			const filename = file.basename;
-			const blockId = contextType.match!;
-			const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
-				? `[[${filename}#^${blockId}]]`
-				: `[^${blockId}](${filename}#^${blockId})`;
-			navigator.clipboard.writeText(blockIdLink);
-			if (this.settings.showNotice) {
-				new Notice(this.t('block-id-copied'));
-			}
-			return;
-		}
-
 		switch (contextType.type) {
+			case ContextType.BLOCKID:
+				this.copyBlockLink(contextType.match!, filename, true, contextType.curLine);
+				return;
 			case ContextType.BOLD:
 				navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
@@ -414,6 +403,66 @@ export default class EasyCopy extends Plugin {
 			default:
 				break;
 		}
+	}
+
+	/*
+	* 复制块链接
+	*/
+	private copyBlockLink(content: string, filename: string, useBrief: boolean, firstLine: string=''): void {
+		const blockId = content;
+		let text = firstLine;
+
+		// 先去掉结尾的 ^ 及其后面的内容（如果有的话）
+		text = text.replace(/\^.*\s*$/, '');
+		text = text.trim().replace(/- \[.\]\s+/, '').replace('- ', '').replace(/=|\*|\[|\]|\(|\)/g, '');
+
+		let displayText = blockId;
+		if (useBrief && text) {
+
+			// 判断是否是纯英文，如果是纯英文（以及英文常用标点符号），提取前三个单词；否则，按下面的逻辑处理
+			// 根据 ASCII 来判断“英文”
+			const isEnglish = /^[a-zA-Z\s,.!?"()\[-\]_\^\-\~:;0-9]*$/.test(text);
+
+			if (isEnglish) {
+				let wordLimit = 3;
+				displayText = text.trim().split(' ').slice(0, wordLimit).join(' ');
+			} else {
+				let charLimit = 5;
+
+				let briefText = text;
+
+				if (briefText.length > charLimit) {
+					const seperatedText = text.trim().match(/(\S+?)[\~\,\.\-\=\[，。？！…：\n\s]/);
+					let tempText: string | null = null;
+					
+					if (seperatedText) {
+						tempText = seperatedText[1];
+					} else {
+						tempText = briefText;
+					}
+
+					if (tempText.length > charLimit) {
+						displayText = tempText.slice(0, charLimit) + '...';
+					} else if (tempText.length < 3) {
+						displayText = briefText.slice(0, charLimit);
+					} else {
+						displayText = tempText;
+					}
+				}
+			}
+		}
+
+		// displayText = "^"+displayText;
+
+		const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
+			? `[[${filename}#^${blockId}|${displayText}]]`
+			: `[^${displayText}](${filename}#^${blockId})`;		
+
+		navigator.clipboard.writeText(blockIdLink);
+		if (this.settings.showNotice) {
+			new Notice(this.t('block-id-copied') + `\n^${displayText}`);
+		}
+		return;
 	}
 	
 	/**
