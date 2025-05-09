@@ -80,13 +80,23 @@ export default class EasyCopy extends Plugin {
 	 * 检测是否是有效的一行连续文本
 	 */
 	private isContinuousText(line: string): boolean {
-		return line.trim() !== '' && !line.trim().startsWith('#');
+		// 去除首尾空格后，判断是否为空行、标题行或列表项
+		return line.trim() !== '' && !line.trim().startsWith('#') && !line.trim().startsWith('- ');
 	}
 
 	/**
 	 * 检测光标所在行末尾或下一行开头的 block ID
 	 */
 	private detectBlockRange(editor: Editor, cursorLine: number): { start: number, end: number } {
+		// 如果当前行是列表，那么范围就是当前行（不对，要继续延伸到后面的……只能说开头是定了）
+		if (editor.getLine(cursorLine).trim().startsWith('- ')) {
+			let end = cursorLine;
+			while (end < editor.lineCount() - 1 && this.isContinuousText(editor.getLine(end + 1))) {
+				end++;
+			}
+			return { start: cursorLine, end };
+		}
+
 		const totalLines = editor.lineCount();
 		let start = cursorLine;
 		while (start > 0 && this.isContinuousText(editor.getLine(start - 1))) {
