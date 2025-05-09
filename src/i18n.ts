@@ -30,11 +30,11 @@ export type TranslationKey =
 export const translations: Record<Language, Record<TranslationKey, string>> = {
 	[Language.EN]: {
 		// 复制 Block ID
-        'auto-add-block-id': 'Auto add Block ID',
+        'auto-add-block-id': 'Auto generate block ID',
         'auto-add-block-id-desc': 'When enabled, if there is no copyable content, a random block ID (^xxxx) will be automatically added to the end of the current line.' ,
-		'manual-block-id': 'Manual input Block ID',
-        'manual-block-id-desc': 'If enabled, you will be prompted to enter a Block ID manually.',
-        'modal-block-id': 'Enter Block ID',
+		'manual-block-id': 'Manually enter Block ID',
+        'manual-block-id-desc': 'If enabled, you will be prompted to enter a block ID manually.',
+        'modal-block-id': 'Enter block ID',
         'modal-block-id-desc': 'Allowed: letters, numbers, hyphens (-), underscores (_). Spaces will be converted to hyphens.',
         'error-block-id-empty': 'Block ID cannot be empty',
         'error-block-id-invalid': 'Only letters, numbers, hyphens and underscores are allowed',
@@ -90,8 +90,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 	},
 	[Language.ZH]: {
 		// 复制 Block ID
-        'auto-add-block-id': '自动添加块ID',
-        'auto-add-block-id-desc': '启用后，如果没有可复制内容时会自动在当前文本末尾添加一个随机的块ID（^xxxx）',
+        'auto-add-block-id': '自动生成块ID',
+        'auto-add-block-id-desc': '启用后，如果没有可复制内容时会自动在当前文本末尾添加一个随机生成的块ID（^xxxx）',
 		'manual-block-id': '手动输入块ID',
         'manual-block-id-desc': '启用后，可以在弹窗中手动输入块ID',
         'modal-block-id': '输入块ID',
