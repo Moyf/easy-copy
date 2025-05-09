@@ -2,6 +2,7 @@
 
 English | [中文文档](./README-zh.md)
 
+Easy Copy plugin can smartly copy content based on your cursor position (e.g. code text inside inline code), and also supports quickly generating links to headings or paragraphs in your notes.
 
 ## ✨ Features
 
@@ -29,7 +30,7 @@ Just like this:
 
 
 
-### Heading Links — Display Just the Heading Text!
+### Heading Links — Copy a more concise link to the heading
 As for heading links, that's another long-standing issue.
 Default heading links display as a long text string, but I wanted to **show only the heading text** — using it as the Display Text!
 So I added this feature to the plugin as well:
@@ -50,10 +51,17 @@ The difference looks like this:
 
 ![heading-compare](assets/heading-compare.png)
 
-### Block Links — They're Just Block Links!
+### Block Links — Auto generating block ID
 This works almost the same as heading links, so I implemented it too!
 
 ![copy-block-id](assets/copy-block-id.png)
+
+After version 1.2.0, this plugin also supports automatically generating a block ID for the current text (requires enabling the "Auto-add Block ID" option in settings):
+When your cursor is in a position with no content to copy, it will automatically generate a random block ID for the current paragraph and copy the link to the clipboard.
+
+![auto-block](assets/auto-generate-block-id.gif)
+
+>  It also supports manually inputting a custom block ID!
 
 
 
@@ -93,10 +101,9 @@ This works almost the same as heading links, so I implemented it too!
 
 ## 🛠️ Installation
 
-Currently, the plugin is not yet available in the official store. You'll need to install it using the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin.
+The plugin is now available in the community plugins list, you can search for "Easy Copy" to install it.
 
-I'll update this section once it's available in the official store!
-
+(Alternatively, you can also use the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin to install it)
 
 
 ## 🤝 Contribution
