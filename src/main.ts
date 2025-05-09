@@ -326,7 +326,15 @@ export default class EasyCopy extends Plugin {
 				// 检查 block 最后一行末是否已有块ID
 				if (!/\^[a-zA-Z0-9_-]+$/.test(lastLine.trim())) {
 					// 在 block 最后一行末尾插入块ID
-					editor.replaceRange(lastLine.endsWith(' ') ? '^' + blockId : ' ^' + blockId, { line: end, ch: lastLine.length });
+					let insertText = '^'+blockId;
+					
+					if (lastLine.startsWith('> ') || lastLine.startsWith('``')) {
+						insertText = '\n' + insertText;
+					} else if (!lastLine.endsWith(' ')) {
+						insertText = ' ' + insertText;
+					}
+					
+					editor.replaceRange(insertText, { line: end, ch: lastLine.length });
 
 					// 如果不是手动输入的，使用简短的显示文本
 					const useBrief = !isManual;
@@ -414,7 +422,7 @@ export default class EasyCopy extends Plugin {
 
 		// 先去掉结尾的 ^ 及其后面的内容（如果有的话）
 		text = text.replace(/\^.*\s*$/, '');
-		text = text.trim().replace(/- \[.\]\s+/, '').replace('- ', '').replace(/=|\*|\[|\]|\(|\)/g, '');
+		text = text.trim().replace(/- \[.\]\s+/, '').replace('- ', '').replace(/=|\*|\[|\]|\(|\)|`|>\s+/g, '');
 
 		let displayText = blockId;
 		if (useBrief && text) {

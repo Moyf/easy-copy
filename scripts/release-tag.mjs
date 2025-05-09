@@ -24,12 +24,27 @@ try {
 	// 创建版本标签
 	console.log(`🏷️ 创建标签: ${version}`);
 	execSync(`git tag ${version}`, { stdio: "inherit" });
+	
+	// 等待确认后执行
+	const confirm = await new Promise((resolve) => {
+		console.log(`
+			请确认是否继续？
+			输入 'y' 继续，输入 'n' 取消。
+		`);
+		const input = readLineSync.question('');
+		resolve(input === 'y');
+	});
+	if (!confirm) {
+		console.log('取消发布');
+		process.exit(0);
+	}
 
 	// 推送标签到远程
 	console.log("📤 推送标签到远程...");
 	execSync("git push --tags", { stdio: "inherit" });
 
 	console.log(`✅ 成功发布版本 ${version}!`);
+	console.log(`🔗 点击跳转发布页：https://github.com/Moyf/easy-copy/releases`)
 } catch (error) {
 	console.error(`❌ 发布失败: ${error.message}`);
 	process.exit(1);
