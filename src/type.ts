@@ -25,6 +25,8 @@ export interface ContextData {
 }
 
 export interface EasyCopySettings {
+    useFrontmatterAsDisplay: boolean; // 是否使用 frontmatter 属性作为显示文本
+    frontmatterKey: string; // frontmatter 属性名
     addToMenu: boolean;
     showNotice: boolean;
     useHeadingAsDisplayText: boolean;
@@ -42,6 +44,8 @@ export interface EasyCopySettings {
 }
 
 export const DEFAULT_SETTINGS: EasyCopySettings = {
+    useFrontmatterAsDisplay: false,
+    frontmatterKey: 'title',
     addToMenu: true,
     showNotice: true,
     useHeadingAsDisplayText: true,

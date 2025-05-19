@@ -12,7 +12,9 @@ export type TranslationKey =
 	| 'inline-latex-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied' | 'link-text-copied' | 'link-url-copied'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc'  | 'block-id'
+	| 'use-frontmatter-as-display' | 'use-frontmatter-as-display-desc' | 'frontmatter-key' | 'frontmatter-key-desc'
 	| 'link-format'| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
+	| 'copy-current-file-link' | 'file-link-copied'
 	| 'target' | 'customize-targets' | 'customize-targets-desc' 
 	| 'enable-bold' | 'enable-bold-desc' 
 	| 'enable-highlight'| 'enable-highlight-desc' 
@@ -56,6 +58,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		
 		// 设置界面
 		'format': 'Format',
+		'use-frontmatter-as-display': 'Use property as display text',
+		'use-frontmatter-as-display-desc': 'If enabled, use the value of the specified property as the link display text',
+		'frontmatter-key': 'Property name',
+		'frontmatter-key-desc': 'The key of the property to use as display text (default: title)',
 		'block-id': 'Block ID',
 		'target': 'Target',
 		'add-to-menu': 'Add to menu',
@@ -86,7 +92,9 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-link-desc': 'Enable copying link like [linktitle](linkurl) - the plugin will copy the title or the URL of the link based on the current cursor position.',
 		
 		// 命令名称
-		'contextual-copy': 'Contextual copy'
+		'contextual-copy': 'Contextual copy',
+		'copy-current-file-link': 'Copy current file link',
+		'file-link-copied': 'File link copied!',
 	},
 	[Language.ZH]: {
 		// 复制 Block ID
@@ -145,7 +153,13 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-link-desc': '启用复制链接文本，如 [链接标题](链接地址) - 插件会根据当前光标所在的不同位置复制标题或者链接URL',
 		
 		// 命令名称
-		'contextual-copy': '智能复制'
+		'contextual-copy': '智能复制',
+		'copy-current-file-link': '复制当前文件链接',
+		'file-link-copied': '当前文件链接已复制！',
+		'use-frontmatter-as-display': '使用 Frontmatter 属性作为显示文本',
+		'use-frontmatter-as-display-desc': '启用后，使用指定 Frontmatter 属性的值作为链接显示文本',
+		'frontmatter-key': 'Frontmatter 属性名',
+		'frontmatter-key-desc': '用于显示文本的 Frontmatter 属性名（默认：title）',
 	},
 	[Language.ZH_TW]: {
 		// 复制 Block ID
@@ -205,7 +219,13 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-link-desc': '啟用複製連結，如 [連結標題](連結地址) - 插件會根據當前光標所在的不同位置複製標題或者連結URL',
 		
 		// 命令名称
-		'contextual-copy': '智能複製'
+		'contextual-copy': '智能複製',
+		'copy-current-file-link': '複製當前文件連結',
+		'file-link-copied': '當前文件連結已複製！',
+		'use-frontmatter-as-display': '使用屬性作為顯示文本',
+		'use-frontmatter-as-display-desc': '啟用後，使用指定屬性的值作為連結顯示文本',
+		'frontmatter-key': 'Frontmatter 屬性名',
+		'frontmatter-key-desc': '用於顯示文本的屬性名（默認：title）',
 	}
 };
 

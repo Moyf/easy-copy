@@ -40,6 +40,34 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setName(this.plugin.t('format'))
 			.setHeading();
 
+		// 新增：是否使用 frontmatter 属性作为显示文本
+		new Setting(containerEl)
+			.setName(this.plugin.t('use-frontmatter-as-display'))
+			.setDesc(this.plugin.t('use-frontmatter-as-display-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.useFrontmatterAsDisplay)
+				.onChange(async (value) => {
+					this.plugin.settings.useFrontmatterAsDisplay = value;
+					await this.plugin.saveSettings();
+					this.display();
+				})
+			);
+
+		// 新增：自定义 frontmatter 属性名，仅在上方开启时显示
+		if (this.plugin.settings.useFrontmatterAsDisplay) {
+			new Setting(containerEl)
+				.setName(this.plugin.t('frontmatter-key'))
+				.setDesc(this.plugin.t('frontmatter-key-desc'))
+				.addText(text => text
+					.setPlaceholder('title')
+					.setValue(this.plugin.settings.frontmatterKey)
+					.onChange(async (value) => {
+						this.plugin.settings.frontmatterKey = value || 'title';
+						await this.plugin.saveSettings();
+					})
+				);
+		}
+
 		new Setting(containerEl)
 			.setName(this.plugin.t('use-heading-as-display'))
 			.setDesc(this.plugin.t('use-heading-as-display-desc'))

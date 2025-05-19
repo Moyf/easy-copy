@@ -34,6 +34,15 @@ export default class EasyCopy extends Plugin {
 			}
 		});
 
+		// 新增：复制当前文件链接命令
+		this.addCommand({
+			id: 'copy-current-file-link',
+			name: this.t('copy-current-file-link'),
+			callback: () => {
+				this.copyCurrentFileLink();
+			}
+		});
+
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new EasyCopySettingTab(this.app, this));
 
@@ -432,12 +441,12 @@ export default class EasyCopy extends Plugin {
 			const isEnglish = /^[a-zA-Z\s,.!?"()\[-\]_\^\-\~:;0-9]*$/.test(text);
 
 			if (isEnglish) {
-				let wordLimit = 3;
+				const wordLimit = 3;
 				displayText = text.trim().split(' ').slice(0, wordLimit).join(' ');
 			} else {
-				let charLimit = 5;
+				const charLimit = 5;
 
-				let briefText = text;
+				const briefText = text;
 
 				if (briefText.length > charLimit) {
 					const seperatedText = text.trim().match(/(\S+?)[\~\,\.\-\=\[，。？！…：\n\s]/);
@@ -513,6 +522,45 @@ export default class EasyCopy extends Plugin {
 			} else {
 				new Notice(this.t('heading-copied'));
 			}
+		}
+	}
+
+	/**
+	* 复制当前文件链接（支持 Wiki/Markdown 格式）
+	*/
+	private copyCurrentFileLink(): void {
+		// 新增：优先使用 frontmatter 属性作为显示文本
+		let displayText: string | undefined = undefined;
+		if (this.settings.useFrontmatterAsDisplay) {
+			const file = this.app.workspace.getActiveFile?.() ?? (this.app.workspace.getActiveViewOfType?.(MarkdownView)?.file ?? null);
+			if (file) {
+				const fileCache = this.app.metadataCache.getFileCache(file);
+				const frontmatter = fileCache?.frontmatter;
+				const key = this.settings.frontmatterKey || 'title';
+				if (frontmatter && typeof frontmatter[key] === 'string' && frontmatter[key].trim()) {
+					displayText = frontmatter[key].trim();
+				}
+			}
+		}
+		// 获取当前激活文件
+		const file = this.app.workspace.getActiveFile?.() ?? (this.app.workspace.getActiveViewOfType?.(MarkdownView)?.file ?? null);
+		if (!file) {
+			new Notice(this.t('no-file'));
+			return;
+		}
+		const filename = file.basename;
+		let link = '';
+		const display = displayText || filename;
+		if (this.settings.linkFormat === LinkFormat.WIKILINK) {
+			link = `[[${filename}|${display}]]`;
+		} else {
+			let path = file.path.replace(/\\/g, '/');
+			if (path.endsWith('.md')) path = path.slice(0, -3);
+			link = `[${display}](${path})`;
+		}
+		navigator.clipboard.writeText(link);
+		if (this.settings.showNotice) {
+			new Notice(this.t('file-link-copied'));
 		}
 	}
 
