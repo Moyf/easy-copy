@@ -25,6 +25,7 @@ export type TranslationKey =
 	| 'enable-wikilink' | 'enable-wikilink-desc'
 	| 'keep-wiki-brackets' | 'keep-wiki-brackets-desc'
 	| 'special-format'
+	| 'auto-embed-block-link' | 'auto-embed-block-link-desc'
     | 'auto-add-block-id' | 'auto-add-block-id-desc'
     | 'manual-block-id' | 'manual-block-id-desc'
     | 'modal-block-id' | 'modal-block-id-desc'
@@ -93,6 +94,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-wikilink-desc': 'Enable copying of [[Wiki]] links',
 		
 		'special-format': 'Special copy format options',
+		'auto-embed-block-link': 'Block link: Add ! for embed',
+		'auto-embed-block-link-desc': 'When copying block links, automatically add ! to embed the block',
 		'keep-wiki-brackets': 'Wikilink: Keep [[ ]] brackets',
 		'keep-wiki-brackets-desc': 'When copying wiki links, keep the surrounding [[ ]] brackets',
 		
@@ -158,6 +161,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-wikilink': '启用 Wiki 链接',
 		'enable-wikilink-desc': '启用复制 [[Wiki]] 链接',
 		'special-format': '特殊复制格式选项',
+		'auto-embed-block-link': '块链接：自动添加 ! 符号（嵌入块）',
+		'auto-embed-block-link-desc': '复制块链接时自动在前面添加 !，用于嵌入块',
 		'keep-wiki-brackets': 'Wiki 链接：保留 [[ ]] 括号',
 		'keep-wiki-brackets-desc': '复制 wiki 链接时保留两侧 [[ ]] 括号',
 		
@@ -224,6 +229,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-wikilink': '啟用 Wiki 連結',
 		'enable-wikilink-desc': '啟用複製 [[Wiki]] 連結',
 		'special-format': '特殊複製格式選項',
+		'auto-embed-block-link': '塊連結：自動添加 ! 符號（嵌入塊）',
+		'auto-embed-block-link-desc': '複製塊連結時自動在前面添加 !，用於嵌入塊',
 		'keep-wiki-brackets': 'Wiki連結：保留 [[ ]] 括號',
 		'keep-wiki-brackets-desc': '複製 wiki 連結時保留兩側 [[ ]] 括號',
 		

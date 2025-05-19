@@ -40,6 +40,7 @@ export interface EasyCopySettings {
     enableLink: boolean;
     enableWikiLink: boolean; // 是否启用 Wiki 链接复制
     keepWikiBrackets: boolean; // 复制 wiki-link 时保留 [[ ]]
+    autoEmbedBlockLink: boolean; // 复制块链接时自动添加 !（嵌入块）
     autoAddBlockId: boolean; // 是否自动添加 Block ID
     allowManualBlockId: boolean; // 是否允许手动输入 Block ID
 }
@@ -59,6 +60,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableLink: true,
     enableWikiLink: true,
     keepWikiBrackets: true,
+    autoEmbedBlockLink: false,
     autoAddBlockId: false, // 默认关闭
     allowManualBlockId: false, // 默认关闭
 }

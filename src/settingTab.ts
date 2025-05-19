@@ -194,6 +194,17 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		.setName(this.plugin.t('special-format'))
 		.setHeading();
 				
+		// 块链接特殊格式选项
+		new Setting(containerEl)
+			.setName(this.plugin.t('auto-embed-block-link'))
+			.setDesc(this.plugin.t('auto-embed-block-link-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.autoEmbedBlockLink ?? false)
+				.onChange(async (value) => {
+					this.plugin.settings.autoEmbedBlockLink = value;
+					await this.plugin.saveSettings();
+				}));
+
 		// 仅当启用 Wiki 链接复制时显示
 		if (this.plugin.settings.enableWikiLink) {
 			new Setting(containerEl)

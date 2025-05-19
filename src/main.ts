@@ -474,9 +474,13 @@ export default class EasyCopy extends Plugin {
 
 		// displayText = "^"+displayText;
 
-		const blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
+		let blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
 			? `[[${filename}#^${blockId}|${displayText}]]`
-			: `[^${displayText}](${filename}#^${blockId})`;		
+			: `[^${displayText}](${filename}#^${blockId})`;
+
+		if (this.settings.autoEmbedBlockLink) {
+			blockIdLink = `!${blockIdLink}`;
+		}
 
 		navigator.clipboard.writeText(blockIdLink);
 		if (this.settings.showNotice) {
