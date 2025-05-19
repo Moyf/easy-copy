@@ -15,6 +15,7 @@ export enum ContextType {
     INLINELATEX = 'inline-latex',
     LINKTITLE = 'link-title',
     LINEURL = 'line-url',
+    WIKILINK = 'wiki-link', // 光标在 [[双链]] 内
 }
 
 export interface ContextData {
@@ -37,6 +38,8 @@ export interface EasyCopySettings {
     enableStrikethrough: boolean;
     enableInlineLatex: boolean;
     enableLink: boolean;
+    enableWikiLink: boolean; // 是否启用 Wiki 链接复制
+    keepWikiBrackets: boolean; // 复制 wiki-link 时保留 [[ ]]
     autoAddBlockId: boolean; // 是否自动添加 Block ID
     allowManualBlockId: boolean; // 是否允许手动输入 Block ID
 }
@@ -54,6 +57,8 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableStrikethrough: true,
     enableInlineLatex: true,
     enableLink: true,
+    enableWikiLink: true,
+    keepWikiBrackets: true,
     autoAddBlockId: false, // 默认关闭
     allowManualBlockId: false, // 默认关闭
 }

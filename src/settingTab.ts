@@ -176,7 +176,35 @@ export class EasyCopySettingTab extends PluginSettingTab {
                         this.plugin.settings.enableLink = value;
                         await this.plugin.saveSettings();
                     }));
+
+            new Setting(containerEl)
+                .setName(this.plugin.t('enable-wikilink'))
+                .setDesc(this.plugin.t('enable-wikilink-desc'))
+                .addToggle(toggle => toggle
+                    .setValue(this.plugin.settings.enableWikiLink ?? true)
+                    .onChange(async (value) => {
+                        this.plugin.settings.enableWikiLink = value;
+                        await this.plugin.saveSettings();
+                        this.display(); // 切换后刷新界面以显示/隐藏下方选项
+                    }));
             
+		}
+		
+		new Setting(containerEl)
+		.setName(this.plugin.t('special-format'))
+		.setHeading();
+				
+		// 仅当启用 Wiki 链接复制时显示
+		if (this.plugin.settings.enableWikiLink) {
+			new Setting(containerEl)
+				.setName(this.plugin.t('keep-wiki-brackets'))
+				.setDesc(this.plugin.t('keep-wiki-brackets-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.keepWikiBrackets ?? true)
+					.onChange(async (value) => {
+						this.plugin.settings.keepWikiBrackets = value;
+						await this.plugin.saveSettings();
+					}));
 		}
 	}
 }

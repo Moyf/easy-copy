@@ -133,16 +133,16 @@ export default class EasyCopy extends Plugin {
 	 * @returns ContextData
 	 */
 	private determineContextType(editor: Editor, view: MarkdownView): ContextData {
-		// 获取当前文件和光标信息
-		const file = view.file;
-		if (!file) {
-			new Notice(this.t('no-file'));
-			return { type: ContextType.NULL, curLine: '', match: null, range: null };
-		}
-	
-		const cursor = editor.getCursor();
-		const curLine = editor.getLine(cursor.line);
-		const curCh = cursor.ch;
+	// 获取当前文件和光标信息
+	const file = view.file;
+	if (!file) {
+		new Notice(this.t('no-file'));
+		return { type: ContextType.NULL, curLine: '', match: null, range: null };
+	}
+
+	const cursor = editor.getCursor();
+	const curLine = editor.getLine(cursor.line);
+	const curCh = cursor.ch;
 	
 		// 根据光标位置解析内容类型
 		const beforeCursor = curLine.slice(0, curCh); // 光标前的内容
@@ -155,7 +155,7 @@ export default class EasyCopy extends Plugin {
 			/\*([^*]+)\*(?!\*)/g :  // iOS 版本：只使用前视，不使用后视
 			/(?<!\*)\*([^*]+)\*(?!\*)/g;  // 其他平台：使用前视和后视
 		
-		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID
+		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID > 双链
 		const matchers = [
 			{ type: ContextType.BOLD, regex: /\*\*([^*]+)\*\*/g , enable: !this.settings.customizeTargets || this.settings.enableBold},
 			// 使用前后断言 (?<!\*) 和 (?!\*)，确保 * 不被包裹在 ** 中。
@@ -165,6 +165,7 @@ export default class EasyCopy extends Plugin {
 			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: !this.settings.customizeTargets || this.settings.enableStrikethrough},
 			{ type: ContextType.INLINECODE, regex: /`([^`]+)`/g , enable: !this.settings.customizeTargets || this.settings.enableInlineCode},
 			{ type: ContextType.INLINELATEX, regex: /\$([^$]*)\$/g , enable: !this.settings.customizeTargets || this.settings.enableInlineLatex},
+			{ type: ContextType.WIKILINK, regex: /\[\[([^\]]+)\]\]/g, enable: !this.settings.customizeTargets || this.settings.enableWikiLink },
 		];
 	
 		for (const matcher of matchers) {
@@ -407,6 +408,17 @@ export default class EasyCopy extends Plugin {
 				return;
 			case ContextType.HEADING:
 				this.copyHeadingLink(contextType.match!, filename);
+				return;
+			case ContextType.WIKILINK:
+				// 复制 [[双链]]，可选保留括号
+				let wikiCopyText = contextType.match!;
+				if (this.settings.keepWikiBrackets) {
+					wikiCopyText = `[[${wikiCopyText}]]`;
+				}
+				navigator.clipboard.writeText(wikiCopyText);
+				if (this.settings.showNotice) {
+					new Notice(this.t('wiki-link-copied'));
+				}
 				return;
 			default:
 				break;

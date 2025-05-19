@@ -10,6 +10,7 @@ export type TranslationKey =
 	| 'no-file' | 'no-content' 
 	| 'inline-code-copied' | 'block-id-copied' | 'note-link-copied' | 'heading-copied' | 'strikethrough-copied' 
 	| 'inline-latex-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied' | 'link-text-copied' | 'link-url-copied'
+	| 'wiki-link-copied'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc'  | 'block-id'
 	| 'link-format'| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
@@ -21,6 +22,9 @@ export type TranslationKey =
 	| 'enable-strikethrough' | 'enable-strikethrough-desc'
 	| 'enable-inline-latex' | 'enable-inline-latex-desc'
 	| 'enable-link' | 'enable-link-desc'
+	| 'enable-wikilink' | 'enable-wikilink-desc'
+	| 'keep-wiki-brackets' | 'keep-wiki-brackets-desc'
+	| 'special-format'
     | 'auto-add-block-id' | 'auto-add-block-id-desc'
     | 'manual-block-id' | 'manual-block-id-desc'
     | 'modal-block-id' | 'modal-block-id-desc'
@@ -53,6 +57,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'strikethrough-copied': 'Strikethrough text copied!',
 		'link-text-copied': 'Link text copied!',
 		'link-url-copied': 'Link URL copied!',
+		'wiki-link-copied': 'Wiki link copied!',
 		
 		// 设置界面
 		'format': 'Format',
@@ -83,7 +88,13 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-inline-latex': 'Enable inline LaTeX',
 		'enable-inline-latex-desc': 'Enable copying inline LaTeX like $latex example$',
 		'enable-link': 'Enable link title/url',
-		'enable-link-desc': 'Enable copying link like [linktitle](linkurl) - the plugin will copy the title or the URL of the link based on the current cursor position.',
+		'enable-link-desc': 'Enable copying of markdown links',
+		'enable-wikilink': 'Enable Wiki Link',
+		'enable-wikilink-desc': 'Enable copying of [[Wiki]] links',
+		
+		'special-format': 'Special copy format options',
+		'keep-wiki-brackets': 'Wikilink: Keep [[ ]] brackets',
+		'keep-wiki-brackets-desc': 'When copying wiki links, keep the surrounding [[ ]] brackets',
 		
 		// 命令名称
 		'contextual-copy': 'Contextual copy'
@@ -112,6 +123,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'strikethrough-copied': '删除线文本已复制！',
 		'link-text-copied': '链接文本已复制！',
 		'link-url-copied': '链接地址已复制！',
+		'wiki-link-copied': 'Wiki链接已复制！',
 		
 		// 设置界面
 		'format': '格式',
@@ -142,7 +154,12 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-inline-latex': '启用行内LaTeX',
 		'enable-inline-latex-desc': '启用复制行内LaTeX，如 $latex 示例$',
 		'enable-link': '启用链接文本',
-		'enable-link-desc': '启用复制链接文本，如 [链接标题](链接地址) - 插件会根据当前光标所在的不同位置复制标题或者链接URL',
+		'enable-link-desc': '启用复制 Markdown 链接',
+		'enable-wikilink': '启用 Wiki 链接',
+		'enable-wikilink-desc': '启用复制 [[Wiki]] 链接',
+		'special-format': '特殊复制格式选项',
+		'keep-wiki-brackets': 'Wiki 链接：保留 [[ ]] 括号',
+		'keep-wiki-brackets-desc': '复制 wiki 链接时保留两侧 [[ ]] 括号',
 		
 		// 命令名称
 		'contextual-copy': '智能复制'
@@ -172,6 +189,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'strikethrough-copied': '刪除線文本已複製！',
 		'link-text-copied': '連結文本已複製！',
 		'link-url-copied': '連結地址已複製！',
+		'wiki-link-copied': 'Wiki連結已複製！',
 		
 		// 設置界面
 		'format': '格式',
@@ -202,7 +220,12 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-inline-latex': '啟用行內LaTeX',
 		'enable-inline-latex-desc': '啟用複製行內LaTeX，如 $latex 示例$',
 		'enable-link': '啟用連結文本',
-		'enable-link-desc': '啟用複製連結，如 [連結標題](連結地址) - 插件會根據當前光標所在的不同位置複製標題或者連結URL',
+		'enable-link-desc': '啟用複製 Markdown 連結',
+		'enable-wikilink': '啟用 Wiki 連結',
+		'enable-wikilink-desc': '啟用複製 [[Wiki]] 連結',
+		'special-format': '特殊複製格式選項',
+		'keep-wiki-brackets': 'Wiki連結：保留 [[ ]] 括號',
+		'keep-wiki-brackets-desc': '複製 wiki 連結時保留兩側 [[ ]] 括號',
 		
 		// 命令名称
 		'contextual-copy': '智能複製'
