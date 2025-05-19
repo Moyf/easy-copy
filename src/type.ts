@@ -16,6 +16,7 @@ export enum ContextType {
     LINKTITLE = 'link-title',
     LINEURL = 'line-url',
     WIKILINK = 'wiki-link', // 光标在 [[双链]] 内
+    CALLOUT = 'callout', // 光标在 callout 区块内
 }
 
 export interface ContextData {
@@ -41,6 +42,8 @@ export interface EasyCopySettings {
     enableWikiLink: boolean; // 是否启用 Wiki 链接复制
     keepWikiBrackets: boolean; // 复制 wiki-link 时保留 [[ ]]
     autoEmbedBlockLink: boolean; // 复制块链接时自动添加 !（嵌入块）
+    enableCalloutCopy: boolean; // 是否启用复制 Callout 内文本
+    calloutCopyPriority: boolean; // Callout 与块ID冲突时，优先复制 Callout
     autoAddBlockId: boolean; // 是否自动添加 Block ID
     allowManualBlockId: boolean; // 是否允许手动输入 Block ID
 }
@@ -61,6 +64,8 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableWikiLink: true,
     keepWikiBrackets: true,
     autoEmbedBlockLink: false,
+    enableCalloutCopy: true,
+    calloutCopyPriority: true,
     autoAddBlockId: false, // 默认关闭
     allowManualBlockId: false, // 默认关闭
 }

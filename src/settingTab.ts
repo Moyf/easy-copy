@@ -189,6 +189,30 @@ export class EasyCopySettingTab extends PluginSettingTab {
                     }));
             
 		}
+
+		new Setting(containerEl)
+			.setName(this.plugin.t('enable-callout-copy'))
+			.setDesc(this.plugin.t('enable-callout-copy-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.enableCalloutCopy ?? true)
+				.onChange(async (value) => {
+					this.plugin.settings.enableCalloutCopy = value;
+					await this.plugin.saveSettings();
+					this.display();
+				}));
+		// 优先复制 Callout 内容
+		if (this.plugin.settings.enableCalloutCopy) {
+			new Setting(containerEl)
+				.setName(this.plugin.t('callout-copy-priority'))
+				.setDesc(this.plugin.t('callout-copy-priority-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.calloutCopyPriority ?? true)
+					.onChange(async (value) => {
+						this.plugin.settings.calloutCopyPriority = value;
+						await this.plugin.saveSettings();
+					}));
+		}
+
 		
 		new Setting(containerEl)
 		.setName(this.plugin.t('special-format'))

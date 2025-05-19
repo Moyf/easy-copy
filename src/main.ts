@@ -133,16 +133,47 @@ export default class EasyCopy extends Plugin {
 	 * @returns ContextData
 	 */
 	private determineContextType(editor: Editor, view: MarkdownView): ContextData {
-	// 获取当前文件和光标信息
-	const file = view.file;
-	if (!file) {
-		new Notice(this.t('no-file'));
-		return { type: ContextType.NULL, curLine: '', match: null, range: null };
-	}
+		// Callout 检测函数
+		const detectCallout = (): ContextData | null => {
+			if (!this.settings.enableCalloutCopy) return null;
+			const cursor = editor.getCursor();
+			const totalLines = editor.lineCount();
+			let start = cursor.line, end = cursor.line;
 
-	const cursor = editor.getCursor();
-	const curLine = editor.getLine(cursor.line);
-	const curCh = cursor.ch;
+			// 当前行是否 callout
+			if (!editor.getLine(cursor.line).trim().startsWith('>')) return null;
+
+			// 向上收集 callout
+			while (start > 0 && editor.getLine(start - 1).trim().startsWith('>')) start--;
+			// 向下收集 callout
+			while (end + 1 < totalLines && editor.getLine(end + 1).trim().startsWith('>')) end++;
+
+			// 收集所有 callout 行
+			let calloutLines: string[] = [];
+			for (let i = start; i <= end; i++) {
+				calloutLines.push(editor.getLine(i));
+			}
+			// 去掉 > 和 callout 头部
+			const content = calloutLines.map(line => line.replace(/^>\s?/, '').replace(/^\[!.*?\]\s?/, '').trim()).join('\n');
+			
+			return {
+				type: ContextType.CALLOUT,
+				curLine: editor.getLine(cursor.line),
+				match: content,
+				range: [0, content.length]
+			};
+		};
+
+		// 获取当前文件和光标信息
+		const file = view.file;
+		if (!file) {
+			new Notice(this.t('no-file'));
+			return { type: ContextType.NULL, curLine: '', match: null, range: null };
+		}
+
+		const cursor = editor.getCursor();
+		const curLine = editor.getLine(cursor.line);
+		const curCh = cursor.ch;
 	
 		// 根据光标位置解析内容类型
 		const beforeCursor = curLine.slice(0, curCh); // 光标前的内容
@@ -198,6 +229,14 @@ export default class EasyCopy extends Plugin {
 		const blockIdInfo = this.detectBlockId(editor, view);
 		if (blockIdInfo) {
 			return blockIdInfo;
+		}
+
+		// 检测 Callout
+		if (this.settings.enableCalloutCopy && (!this.settings.autoAddBlockId || this.settings.calloutCopyPriority)) {
+			const calloutInfo = detectCallout();
+			if (calloutInfo) {
+				return calloutInfo;
+			}
 		}
 	
 		// 如果当前行是标题行，且光标不在其他 Markdown 语法范围内，则返回标题类型
@@ -293,6 +332,7 @@ export default class EasyCopy extends Plugin {
 		const contextType = this.determineContextType(editor, view);
 		// console.log('contextType:', contextType);
 
+		// Generate Block ID （自动生成 Block ID）
 		if (contextType.type == ContextType.NULL) {
 			// 如果启用自动添加 Block ID
 			if (this.settings.autoAddBlockId) {
@@ -420,14 +460,22 @@ export default class EasyCopy extends Plugin {
 					new Notice(this.t('wiki-link-copied'));
 				}
 				return;
+			case ContextType.CALLOUT:
+				// 复制 Callout 区块纯文本
+				const calloutText = contextType.match?.replace(/\n+/g, '\n').replace(/\s+$/g, '');
+				navigator.clipboard.writeText(calloutText ?? '');
+				if (this.settings.showNotice) {
+					new Notice(this.t('callout-copied'));
+				}
+				return;
 			default:
 				break;
 		}
 	}
-
-	/*
-	* 复制块链接
-	*/
+	
+	/**
+	 * 复制块链接
+	 */
 	private copyBlockLink(content: string, filename: string, useBrief: boolean, firstLine: string=''): void {
 		const blockId = content;
 		let text = firstLine;

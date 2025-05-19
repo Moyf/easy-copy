@@ -10,7 +10,7 @@ export type TranslationKey =
 	| 'no-file' | 'no-content' 
 	| 'inline-code-copied' | 'block-id-copied' | 'note-link-copied' | 'heading-copied' | 'strikethrough-copied' 
 	| 'inline-latex-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied' | 'link-text-copied' | 'link-url-copied'
-	| 'wiki-link-copied'
+	| 'wiki-link-copied' | 'callout-copied'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc'  | 'block-id'
 	| 'link-format'| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
@@ -26,6 +26,8 @@ export type TranslationKey =
 	| 'keep-wiki-brackets' | 'keep-wiki-brackets-desc'
 	| 'special-format'
 	| 'auto-embed-block-link' | 'auto-embed-block-link-desc'
+	| 'enable-callout-copy' | 'enable-callout-copy-desc'
+	| 'callout-copy-priority' | 'callout-copy-priority-desc'
     | 'auto-add-block-id' | 'auto-add-block-id-desc'
     | 'manual-block-id' | 'manual-block-id-desc'
     | 'modal-block-id' | 'modal-block-id-desc'
@@ -59,6 +61,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-text-copied': 'Link text copied!',
 		'link-url-copied': 'Link URL copied!',
 		'wiki-link-copied': 'Wiki link copied!',
+		'callout-copied': 'Callout copied!',
 		
 		// 设置界面
 		'format': 'Format',
@@ -96,6 +99,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'special-format': 'Special copy format options',
 		'auto-embed-block-link': 'Block link: Add ! for embed',
 		'auto-embed-block-link-desc': 'When copying block links, automatically add ! to embed the block',
+		'enable-callout-copy': 'Copy callout text',
+		'enable-callout-copy-desc': 'When the cursor is inside a callout (">" block), copy the callout content as plain text',
+		'callout-copy-priority': 'Prioritize callout copy',
+		'callout-copy-priority-desc': 'When the cursor is inside a callout, prioritize copying the callout content instead of generating a block ID link',
 		'keep-wiki-brackets': 'Wikilink: Keep [[ ]] brackets',
 		'keep-wiki-brackets-desc': 'When copying wiki links, keep the surrounding [[ ]] brackets',
 		
@@ -127,6 +134,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-text-copied': '链接文本已复制！',
 		'link-url-copied': '链接地址已复制！',
 		'wiki-link-copied': 'Wiki链接已复制！',
+		'callout-copied': '标注内容已复制！',
 		
 		// 设置界面
 		'format': '格式',
@@ -163,6 +171,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'special-format': '特殊复制格式选项',
 		'auto-embed-block-link': '块链接：自动添加 ! 符号（嵌入块）',
 		'auto-embed-block-link-desc': '复制块链接时自动在前面添加 !，用于嵌入块',
+		'enable-callout-copy': '复制标注内文本',
+		'enable-callout-copy-desc': '当光标在 ">" 标注块内时，复制该标注的纯文本内容',
+		'callout-copy-priority': '优先复制标注内内容',
+		'callout-copy-priority-desc': '当光标位于标注内时，优先复制标注内内容而不是生成该标注的块ID链接',
 		'keep-wiki-brackets': 'Wiki 链接：保留 [[ ]] 括号',
 		'keep-wiki-brackets-desc': '复制 wiki 链接时保留两侧 [[ ]] 括号',
 		
@@ -195,6 +207,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-text-copied': '連結文本已複製！',
 		'link-url-copied': '連結地址已複製！',
 		'wiki-link-copied': 'Wiki連結已複製！',
+		'callout-copied': '标注内容已複製！',
 		
 		// 設置界面
 		'format': '格式',
@@ -231,6 +244,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'special-format': '特殊複製格式選項',
 		'auto-embed-block-link': '塊連結：自動添加 ! 符號（嵌入塊）',
 		'auto-embed-block-link-desc': '複製塊連結時自動在前面添加 !，用於嵌入塊',
+		'enable-callout-copy': '複製標註內文本',
+		'enable-callout-copy-desc': '當游標在 ">" 標註塊內時，複製該標註的純文本內容',
+		'callout-copy-priority': '優先複製標註內容',
+		'callout-copy-priority-desc': '當游標位於標註內時，優先複製標註內容而不是生成該標註的塊ID連結',
 		'keep-wiki-brackets': 'Wiki連結：保留 [[ ]] 括號',
 		'keep-wiki-brackets-desc': '複製 wiki 連結時保留兩側 [[ ]] 括號',
 		
