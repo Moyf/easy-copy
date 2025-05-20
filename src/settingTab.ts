@@ -27,6 +27,16 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			}));
 
 		new Setting(containerEl)
+			.setName(this.plugin.t('add-extra-commands'))
+			.setDesc(this.plugin.t('add-extra-commands-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.addExtraCommands)
+				.onChange(async (value) => {
+				this.plugin.settings.addExtraCommands = value;
+				await this.plugin.saveSettings();
+			}));
+
+		new Setting(containerEl)
 			.setName(this.plugin.t('show-notice'))
 			.setDesc(this.plugin.t('show-notice-desc'))
 			.addToggle(toggle => toggle
@@ -67,6 +77,20 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					})
 				);
 		}
+
+		
+		// 新增：自动为 Block 链接添加显示文本
+		new Setting(containerEl)
+			.setName(this.plugin.t('auto-block-display-text'))
+			.setDesc(this.plugin.t('auto-block-display-text-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.autoBlockDisplayText)
+				.onChange(async (value) => {
+					this.plugin.settings.autoBlockDisplayText = value;
+					await this.plugin.saveSettings();
+					this.display();
+				})
+			);
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('use-heading-as-display'))

@@ -28,6 +28,7 @@ export interface EasyCopySettings {
     useFrontmatterAsDisplay: boolean; // 是否使用 frontmatter 属性作为显示文本
     frontmatterKey: string; // frontmatter 属性名
     addToMenu: boolean;
+    addExtraCommands: boolean;
     showNotice: boolean;
     useHeadingAsDisplayText: boolean;
     linkFormat: LinkFormat;
@@ -41,12 +42,14 @@ export interface EasyCopySettings {
     enableLink: boolean;
     autoAddBlockId: boolean; // 是否自动添加 Block ID
     allowManualBlockId: boolean; // 是否允许手动输入 Block ID
+    autoBlockDisplayText: boolean; // 自动为 Block 添加显示文本
 }
 
 export const DEFAULT_SETTINGS: EasyCopySettings = {
     useFrontmatterAsDisplay: false,
     frontmatterKey: 'title',
     addToMenu: true,
+    addExtraCommands: true,
     showNotice: true,
     useHeadingAsDisplayText: true,
     linkFormat: LinkFormat.WIKILINK,
@@ -60,4 +63,5 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableLink: true,
     autoAddBlockId: false, // 默认关闭
     allowManualBlockId: false, // 默认关闭
+    autoBlockDisplayText: true,
 }

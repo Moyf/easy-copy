@@ -11,6 +11,7 @@ export type TranslationKey =
 	| 'inline-code-copied' | 'block-id-copied' | 'note-link-copied' | 'heading-copied' | 'strikethrough-copied' 
 	| 'inline-latex-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied' | 'link-text-copied' | 'link-url-copied'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
+	| 'add-extra-commands' | 'add-extra-commands-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc'  | 'block-id'
 	| 'use-frontmatter-as-display' | 'use-frontmatter-as-display-desc' | 'frontmatter-key' | 'frontmatter-key-desc'
 	| 'link-format'| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
@@ -26,6 +27,8 @@ export type TranslationKey =
     | 'auto-add-block-id' | 'auto-add-block-id-desc'
     | 'manual-block-id' | 'manual-block-id-desc'
     | 'modal-block-id' | 'modal-block-id-desc'
+	| 'auto-block-display-text' | 'auto-block-display-text-desc' 
+	| 'generate-current-block-link-auto' | 'generate-current-block-link-manual'
     | 'error-block-id-empty' | 'error-block-id-invalid';
 
 // 本地化翻译字典
@@ -66,6 +69,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'target': 'Target',
 		'add-to-menu': 'Add to menu',
 		'add-to-menu-desc': 'Add the command to the context menu',
+		'add-extra-commands': 'Add extra commands',
+		'add-extra-commands-desc': 'Enable to add "Copy current note link" and "Generate & copy current block link" commands to the command palette',
 		'show-notice': 'Show notice',
 		'show-notice-desc': 'Show notification when content is copied',
 		'use-heading-as-display': 'Use heading as display text',
@@ -90,10 +95,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-inline-latex-desc': 'Enable copying inline LaTeX like $latex example$',
 		'enable-link': 'Enable link title/url',
 		'enable-link-desc': 'Enable copying link like [linktitle](linkurl) - the plugin will copy the title or the URL of the link based on the current cursor position.',
+		'auto-block-display-text': 'Auto display text for block links',
+		'auto-block-display-text-desc': 'Automatically generate display text for block ID links (if disabled, block links will not show display text)',
 		
 		// 命令名称
 		'contextual-copy': 'Contextual copy',
 		'copy-current-file-link': 'Copy current file link',
+		'generate-current-block-link-auto': 'Generate & copy current block link (auto)',
+		'generate-current-block-link-manual': 'Generate & copy current block link (manual)',
 		'file-link-copied': 'File link copied!',
 	},
 	[Language.ZH]: {
@@ -127,6 +136,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'target': '复制对象',
 		'add-to-menu': '添加到菜单',
 		'add-to-menu-desc': '将命令添加到右键菜单',
+		'add-extra-commands': '添加拓展命令',
+		'add-extra-commands-desc': '启用后，将在命令面板中添加“复制当前笔记的链接”和“生成并复制当前块的链接”命令',
 		'show-notice': '显示通知',
 		'show-notice-desc': '复制内容时显示通知提示',
 		'use-heading-as-display': '使用标题作为显示文本',
@@ -155,16 +166,24 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		// 命令名称
 		'contextual-copy': '智能复制',
 		'copy-current-file-link': '复制当前文件链接',
+		'generate-current-block-link-auto': '生成并复制当前块链接（自动）',
+		'generate-current-block-link-manual': '生成并复制当前块链接（手动）',
 		'file-link-copied': '当前文件链接已复制！',
 		'use-frontmatter-as-display': '使用 Frontmatter 属性作为显示文本',
 		'use-frontmatter-as-display-desc': '启用后，使用指定 Frontmatter 属性的值作为链接显示文本',
 		'frontmatter-key': 'Frontmatter 属性名',
 		'frontmatter-key-desc': '用于显示文本的 Frontmatter 属性名（默认：title）',
+		'auto-block-display-text': '块链接自动显示文本',
+		'auto-block-display-text-desc': '自动为块ID链接生成显示文本（关闭后，块链接不显示文本）',
 	},
 	[Language.ZH_TW]: {
 		// 复制 Block ID
 		'auto-add-block-id': '自動新增塊ID',
 		'auto-add-block-id-desc': '啟用後，若沒有可複製內容時，會自動在當前文本末尾新增一個隨機的塊ID（^xxxx）',
+		'add-extra-commands': '添加擴展命令',
+		'add-extra-commands-desc': '啟用後，會在命令面板中新增「複製當前筆記鏈接」和「生成並複製當前塊鏈接」命令',
+		'auto-block-display-text': '塊連結自動顯示文本',
+		'auto-block-display-text-desc': '自動為塊ID連結生成顯示文本（關閉後，塊連結不顯示文本）',
 		'manual-block-id': '手動輸入塊ID',
 		'manual-block-id-desc': '啟用後，可以在彈窗中手動輸入塊ID',
 		'modal-block-id': '輸入塊ID',
@@ -221,6 +240,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		// 命令名称
 		'contextual-copy': '智能複製',
 		'copy-current-file-link': '複製當前文件連結',
+		'generate-current-block-link-auto': '生成並複製當前塊連結（自動）',
+		'generate-current-block-link-manual': '生成並複製當前塊連結（手動）',
 		'file-link-copied': '當前文件連結已複製！',
 		'use-frontmatter-as-display': '使用屬性作為顯示文本',
 		'use-frontmatter-as-display-desc': '啟用後，使用指定屬性的值作為連結顯示文本',
