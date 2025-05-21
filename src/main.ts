@@ -385,7 +385,7 @@ export default class EasyCopy extends Plugin {
 
 				await this.insertBlockIdAndCopyLink(editor, filename, isManual);
 
-				
+				return;
 			}
 			
 			new Notice(this.t('no-content'));
@@ -456,6 +456,9 @@ export default class EasyCopy extends Plugin {
 				let wikiCopyText = contextType.match!;
 				if (this.settings.keepWikiBrackets) {
 					wikiCopyText = `[[${wikiCopyText}]]`;
+				} else {
+					// 如果有 |别名，去掉|后面的内容
+					wikiCopyText = wikiCopyText.split('|')[0];
 				}
 				navigator.clipboard.writeText(wikiCopyText);
 				if (this.settings.showNotice) {
@@ -538,9 +541,15 @@ export default class EasyCopy extends Plugin {
 			: `[](${filename}#^${blockId})`;
 		}
 
+		// 自动生成嵌入块
+		if (this.settings.autoEmbedBlockLink) {
+			blockIdLink = "!" + blockIdLink;
+		}
+
 		navigator.clipboard.writeText(blockIdLink);
+
 		if (this.settings.showNotice) {
-			new Notice(this.t('block-id-copied') + `\n^${displayText}`);
+			new Notice(this.t('block-id-copied') + `\n^${displayText}...`);
 		}
 		return;
 	}
@@ -667,7 +676,7 @@ export default class EasyCopy extends Plugin {
 
 			if (lastLine.startsWith('> ') || lastLine.startsWith('``')) {
 				insertText = '\n' + insertText;
-			} else if (!lastLine.endsWith(' ')) {
+			} else if ( lastLine.trim().length > 0 && !lastLine.endsWith(' ')) {
 				insertText = ' ' + insertText;
 			}
 

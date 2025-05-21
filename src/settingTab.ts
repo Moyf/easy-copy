@@ -50,6 +50,28 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setName(this.plugin.t('format'))
 			.setHeading();
 
+		new Setting(containerEl)
+		.setName(this.plugin.t('link-format'))
+		.setDesc(this.plugin.t('link-format-desc'))
+		.addDropdown(dropdown => dropdown
+			.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
+			.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
+			.setValue(this.plugin.settings.linkFormat)
+			.onChange(async (value) => {
+				this.plugin.settings.linkFormat = value as LinkFormat;
+				await this.plugin.saveSettings();
+			}));
+
+		new Setting(containerEl)
+			.setName(this.plugin.t('use-heading-as-display'))
+			.setDesc(this.plugin.t('use-heading-as-display-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.useHeadingAsDisplayText)
+				.onChange(async (value) => {
+					this.plugin.settings.useHeadingAsDisplayText = value;
+					await this.plugin.saveSettings();
+				}));
+
 		// 新增：是否使用 frontmatter 属性作为显示文本
 		new Setting(containerEl)
 			.setName(this.plugin.t('use-frontmatter-as-display'))
@@ -78,41 +100,6 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				);
 		}
 
-		
-		// 新增：自动为 Block 链接添加显示文本
-		new Setting(containerEl)
-			.setName(this.plugin.t('auto-block-display-text'))
-			.setDesc(this.plugin.t('auto-block-display-text-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.autoBlockDisplayText)
-				.onChange(async (value) => {
-					this.plugin.settings.autoBlockDisplayText = value;
-					await this.plugin.saveSettings();
-					this.display();
-				})
-			);
-
-		new Setting(containerEl)
-			.setName(this.plugin.t('use-heading-as-display'))
-			.setDesc(this.plugin.t('use-heading-as-display-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.useHeadingAsDisplayText)
-				.onChange(async (value) => {
-					this.plugin.settings.useHeadingAsDisplayText = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName(this.plugin.t('link-format'))
-			.setDesc(this.plugin.t('link-format-desc'))
-			.addDropdown(dropdown => dropdown
-				.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
-				.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
-				.setValue(this.plugin.settings.linkFormat)
-				.onChange(async (value) => {
-					this.plugin.settings.linkFormat = value as LinkFormat;
-					await this.plugin.saveSettings();
-				}));
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('block-id'))
@@ -140,6 +127,19 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		}
+		
+		// 新增：自动为 Block 链接添加显示文本
+		new Setting(containerEl)
+			.setName(this.plugin.t('auto-block-display-text'))
+			.setDesc(this.plugin.t('auto-block-display-text-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.autoBlockDisplayText)
+				.onChange(async (value) => {
+					this.plugin.settings.autoBlockDisplayText = value;
+					await this.plugin.saveSettings();
+					this.display();
+				})
+			);
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('target'))
