@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, Menu, Platform } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat } from './type';
 import { EasyCopySettingTab } from './settingTab';
@@ -33,6 +33,51 @@ export default class EasyCopy extends Plugin {
 				this.contextualCopy(editor, view);
 			}
 		});
+
+		if (this.settings.addExtraCommands){
+			// 新增：复制当前文件链接命令
+			this.addCommand({
+				id: 'copy-current-file-link',
+				name: this.t('copy-current-file-link'),
+				callback: () => {
+					this.copyCurrentFileLink();
+				}
+			});
+
+			// 新增：复制当前文件链接命令
+			this.addCommand({
+				id: 'generate-current-block-link-auto',
+				name: this.t('generate-current-block-link-auto'),
+				editorCallback: (editor: Editor, fileInfo: MarkdownFileInfo) => {
+					const file = fileInfo.file;
+					if (!file){
+						new Notice(this.t('no-file'));
+						return;
+					}
+					const filename = file.basename;
+					// 自动生成名称
+					this.insertBlockIdAndCopyLink(editor, filename, false);
+				}
+			});
+			
+			// 新增：复制当前文件链接命令
+			this.addCommand({
+				id: 'generate-current-block-link-manual',
+				name: this.t('generate-current-block-link-manual'),
+				editorCallback: (editor: Editor, fileInfo: MarkdownFileInfo) => {
+					const file = fileInfo.file;
+					if (!file){
+						new Notice(this.t('no-file'));
+						return;
+					}
+					const filename = file.basename;
+					// 手动输入名称
+					this.insertBlockIdAndCopyLink(editor, filename, true);
+				}
+			});
+			
+		}
+		
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new EasyCopySettingTab(this.app, this));
@@ -336,54 +381,11 @@ export default class EasyCopy extends Plugin {
 		if (contextType.type == ContextType.NULL) {
 			// 如果启用自动添加 Block ID
 			if (this.settings.autoAddBlockId) {
-				let blockId = '';
 				const isManual = this.settings.allowManualBlockId;
+
+				await this.insertBlockIdAndCopyLink(editor, filename, isManual);
+
 				
-				if (isManual) {
-					// 用 Modal 弹窗获取 Block ID
-					const modalBlockId = await new Promise<string | null>((resolve) => {
-					new BlockIdInputModal(this.app, 
-						this.t('modal-block-id'), this.t('modal-block-id-desc'), 
-						this.t.bind(this), 
-						(result: any) => {	
-							resolve(result ?? null);
-						}
-					).open();
-					});
-					if (!modalBlockId) return;
-					blockId = modalBlockId;
-				} else {
-					// 随机生成
-					const randomId = Math.random().toString(36).substr(2, 6);
-					blockId = `${randomId}`;
-				}
-
-				// —— 新逻辑：定位 block（段落）末尾 ——
-				const cursor = editor.getCursor();
-				const { start, end } = this.detectBlockRange(editor, cursor.line);
-				const firstLine = editor.getLine(start);
-				const lastLine = editor.getLine(end);
-
-				// 检查 block 最后一行末是否已有块ID
-				if (!/\^[a-zA-Z0-9_-]+$/.test(lastLine.trim())) {
-					// 在 block 最后一行末尾插入块ID
-					let insertText = '^'+blockId;
-					
-					if (lastLine.startsWith('> ') || lastLine.startsWith('``')) {
-						insertText = '\n' + insertText;
-					} else if (!lastLine.endsWith(' ')) {
-						insertText = ' ' + insertText;
-					}
-					
-					editor.replaceRange(insertText, { line: end, ch: lastLine.length });
-
-					// 如果不是手动输入的，使用简短的显示文本
-					const useBrief = !isManual;
-					
-					// 复制块ID链接
-					this.copyBlockLink(blockId, filename, useBrief, firstLine);
-					return;
-				}
 			}
 			
 			new Notice(this.t('no-content'));
@@ -478,7 +480,10 @@ export default class EasyCopy extends Plugin {
 	 */
 	private copyBlockLink(content: string, filename: string, useBrief: boolean, firstLine: string=''): void {
 		const blockId = content;
+
 		let text = firstLine;
+		
+		const autoDisplayText = this.settings.autoBlockDisplayText;
 
 		// 先去掉结尾的 ^ 及其后面的内容（如果有的话）
 		text = text.replace(/\^.*\s*$/, '');
@@ -492,12 +497,12 @@ export default class EasyCopy extends Plugin {
 			const isEnglish = /^[a-zA-Z\s,.!?"()\[-\]_\^\-\~:;0-9]*$/.test(text);
 
 			if (isEnglish) {
-				let wordLimit = 3;
+				const wordLimit = 3;
 				displayText = text.trim().split(' ').slice(0, wordLimit).join(' ');
 			} else {
-				let charLimit = 5;
+				const charLimit = 5;
 
-				let briefText = text;
+				const briefText = text;
 
 				if (briefText.length > charLimit) {
 					const seperatedText = text.trim().match(/(\S+?)[\~\,\.\-\=\[，。？！…：\n\s]/);
@@ -516,18 +521,21 @@ export default class EasyCopy extends Plugin {
 					} else {
 						displayText = tempText;
 					}
+				} else {
+					displayText = briefText;
 				}
 			}
 		}
 
 		// displayText = "^"+displayText;
-
 		let blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
-			? `[[${filename}#^${blockId}|${displayText}]]`
-			: `[^${displayText}](${filename}#^${blockId})`;
+		? `[[${filename}#^${blockId}|${displayText}]]`
+		: `[^${displayText}](${filename}#^${blockId})`;	
 
-		if (this.settings.autoEmbedBlockLink) {
-			blockIdLink = `!${blockIdLink}`;
+		if (!autoDisplayText) {
+			blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
+			? `[[${filename}#^${blockId}]]`
+			: `[](${filename}#^${blockId})`;
 		}
 
 		navigator.clipboard.writeText(blockIdLink);
@@ -577,6 +585,99 @@ export default class EasyCopy extends Plugin {
 			} else {
 				new Notice(this.t('heading-copied'));
 			}
+		}
+	}
+
+	/**
+	* 复制当前文件链接（支持 Wiki/Markdown 格式）
+	*/
+	private copyCurrentFileLink(): void {
+		// 新增：优先使用 frontmatter 属性作为显示文本
+		let displayText: string | undefined = undefined;
+		if (this.settings.useFrontmatterAsDisplay) {
+			const file = this.app.workspace.getActiveFile?.() ?? (this.app.workspace.getActiveViewOfType?.(MarkdownView)?.file ?? null);
+			if (file) {
+				const fileCache = this.app.metadataCache.getFileCache(file);
+				const frontmatter = fileCache?.frontmatter;
+				const key = this.settings.frontmatterKey || 'title';
+				if (frontmatter && typeof frontmatter[key] === 'string' && frontmatter[key].trim()) {
+					displayText = frontmatter[key].trim();
+				}
+			}
+		}
+		// 获取当前激活文件
+		const file = this.app.workspace.getActiveFile?.() ?? (this.app.workspace.getActiveViewOfType?.(MarkdownView)?.file ?? null);
+		if (!file) {
+			new Notice(this.t('no-file'));
+			return;
+		}
+		const filename = file.basename;
+		let link = '';
+		const display = displayText || filename;
+		if (this.settings.linkFormat === LinkFormat.WIKILINK) {
+			link = `[[${filename}|${display}]]`;
+		} else {
+			let path = file.path.replace(/\\/g, '/');
+			if (path.endsWith('.md')) path = path.slice(0, -3);
+			link = `[${display}](${path})`;
+		}
+		navigator.clipboard.writeText(link);
+		if (this.settings.showNotice) {
+			new Notice(this.t('file-link-copied'));
+		}
+	}
+
+	/**
+	 * 插入 Block ID 并复制块链接
+	 * @param editor 编辑器实例
+	 * @param filename 当前文件名
+	 */
+	private async insertBlockIdAndCopyLink(editor: Editor, filename: string, isManual=false): Promise<void> {
+		let blockId = '';
+
+		if (isManual) {
+			// 用 Modal 弹窗获取 Block ID
+			const modalBlockId = await new Promise<string | null>((resolve) => {
+				new BlockIdInputModal(this.app,
+					this.t('modal-block-id'), this.t('modal-block-id-desc'),
+					this.t.bind(this),
+					(result: any) => {
+						resolve(result ?? null);
+					}
+				).open();
+			});
+			if (!modalBlockId) return;
+			blockId = modalBlockId;
+		} else {
+			// 随机生成
+			const randomId = Math.random().toString(36).substr(2, 6);
+			blockId = `${randomId}`;
+		}
+
+		// —— 新逻辑：定位 block（段落）末尾 ——
+		const cursor = editor.getCursor();
+		const { start, end } = this.detectBlockRange(editor, cursor.line);
+		const firstLine = editor.getLine(start);
+		const lastLine = editor.getLine(end);
+
+		// 检查 block 最后一行末是否已有块ID
+		if (!/\^[a-zA-Z0-9_-]+$/.test(lastLine.trim())) {
+			// 在 block 最后一行末尾插入块ID
+			let insertText = '^' + blockId;
+
+			if (lastLine.startsWith('> ') || lastLine.startsWith('``')) {
+				insertText = '\n' + insertText;
+			} else if (!lastLine.endsWith(' ')) {
+				insertText = ' ' + insertText;
+			}
+
+			editor.replaceRange(insertText, { line: end, ch: lastLine.length });
+
+			// 如果不是手动输入的，使用简短的显示文本
+			const useBrief = !isManual;
+
+			// （生成之后）复制块ID链接
+			this.copyBlockLink(blockId, filename, useBrief, firstLine);
 		}
 	}
 

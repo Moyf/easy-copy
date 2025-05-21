@@ -27,6 +27,16 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			}));
 
 		new Setting(containerEl)
+			.setName(this.plugin.t('add-extra-commands'))
+			.setDesc(this.plugin.t('add-extra-commands-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.addExtraCommands)
+				.onChange(async (value) => {
+				this.plugin.settings.addExtraCommands = value;
+				await this.plugin.saveSettings();
+			}));
+
+		new Setting(containerEl)
 			.setName(this.plugin.t('show-notice'))
 			.setDesc(this.plugin.t('show-notice-desc'))
 			.addToggle(toggle => toggle
@@ -39,6 +49,48 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName(this.plugin.t('format'))
 			.setHeading();
+
+		// 新增：是否使用 frontmatter 属性作为显示文本
+		new Setting(containerEl)
+			.setName(this.plugin.t('use-frontmatter-as-display'))
+			.setDesc(this.plugin.t('use-frontmatter-as-display-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.useFrontmatterAsDisplay)
+				.onChange(async (value) => {
+					this.plugin.settings.useFrontmatterAsDisplay = value;
+					await this.plugin.saveSettings();
+					this.display();
+				})
+			);
+
+		// 新增：自定义 frontmatter 属性名，仅在上方开启时显示
+		if (this.plugin.settings.useFrontmatterAsDisplay) {
+			new Setting(containerEl)
+				.setName(this.plugin.t('frontmatter-key'))
+				.setDesc(this.plugin.t('frontmatter-key-desc'))
+				.addText(text => text
+					.setPlaceholder('title')
+					.setValue(this.plugin.settings.frontmatterKey)
+					.onChange(async (value) => {
+						this.plugin.settings.frontmatterKey = value || 'title';
+						await this.plugin.saveSettings();
+					})
+				);
+		}
+
+		
+		// 新增：自动为 Block 链接添加显示文本
+		new Setting(containerEl)
+			.setName(this.plugin.t('auto-block-display-text'))
+			.setDesc(this.plugin.t('auto-block-display-text-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.autoBlockDisplayText)
+				.onChange(async (value) => {
+					this.plugin.settings.autoBlockDisplayText = value;
+					await this.plugin.saveSettings();
+					this.display();
+				})
+			);
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('use-heading-as-display'))
