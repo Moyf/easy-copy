@@ -28,6 +28,7 @@ export default class EasyCopy extends Plugin {
 		this.addCommand({
 			id: 'contextual-copy',
 			name: this.t('contextual-copy'),
+			icon: 'copy-plus',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				// 实现智能复制功能
 				this.contextualCopy(editor, view);
@@ -39,15 +40,17 @@ export default class EasyCopy extends Plugin {
 			this.addCommand({
 				id: 'copy-current-file-link',
 				name: this.t('copy-current-file-link'),
+				icon: 'clipboard-copy',
 				callback: () => {
 					this.copyCurrentFileLink();
 				}
 			});
 
-			// 新增：复制当前文件链接命令
+			// 新增：生成当前 Block 的链接
 			this.addCommand({
 				id: 'generate-current-block-link-auto',
 				name: this.t('generate-current-block-link-auto'),
+				icon: 'clipboard-pen',
 				editorCallback: (editor: Editor, fileInfo: MarkdownFileInfo) => {
 					const file = fileInfo.file;
 					if (!file){
@@ -60,10 +63,11 @@ export default class EasyCopy extends Plugin {
 				}
 			});
 			
-			// 新增：复制当前文件链接命令
+			// 新增：生成当前 Block 的链接
 			this.addCommand({
 				id: 'generate-current-block-link-manual',
 				name: this.t('generate-current-block-link-manual'),
+				icon: 'clipboard-pen-line',
 				editorCallback: (editor: Editor, fileInfo: MarkdownFileInfo) => {
 					const file = fileInfo.file;
 					if (!file){
