@@ -2,6 +2,8 @@
 
 English | [中文文档](./README-zh.md)
 
+![Obsidian Download](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=Downloads&query=%24%5B%22easy-copy%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)  ![Total Downloads](https://img.shields.io/github/downloads/Moyf/easy-copy/total?style=flat&label=Total%20Downloads) ![GitHub Issues](https://img.shields.io/github/issues/Moyf/easy-copy?style=flat&label=Issues) ![GitHub Last Commit](https://img.shields.io/github/last-commit/Moyf/easy-copy?style=flat&label=Last%20Commit)
+
 Easy Copy can smartly copy content based on your cursor position (e.g. code text inside `inline code`, without formatting symbols).  
 Besides, it also supports quickly generating and copying links to **headings** or **paragraphs(blocks)** in your notes.
 

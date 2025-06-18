@@ -1,6 +1,8 @@
 # Easy Copy - 让复制变得简单又智能！
 [English](./README.md) | 中文文档
 
+![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=下载量&query=%24%5B%22yearly-glance%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json) ![Total Downloads](https://img.shields.io/github/downloads/Moyf/easy-copy/total?style=flat&label=总下载量) ![GitHub Issues](https://img.shields.io/github/issues/Moyf/easy-copy?style=flat&label=议题) ![GitHub Last Commit](https://img.shields.io/github/last-commit/Moyf/easy-copy?style=flat&label=最近提交)
+
 Easy Copy 可以根据你的光标位置智能复制文本（例如 `内联代码` 内的文本），
 同时，它也支持快速生成并复制跳转到 **标题** 或者 **段落（块）** 的笔记内部链接。
 
