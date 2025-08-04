@@ -158,10 +158,26 @@ export default class EasyCopy extends Plugin {
 		return { start, end };
 	}
 
+	/*
+	 * 从给定的块里查找 Block ID（最多延伸至下一个空行+下第二行）
+	*/
 	private detectBlockId(editor: Editor, view: MarkdownView): ContextData | null {
 		const cursor = editor.getCursor();
 		const { end } = this.detectBlockRange(editor, cursor.line);
-		const lastLine = editor.getLine(end);
+		let lastLine = editor.getLine(end);
+
+		// 检查下两行是否为单独的块ID行
+		if (end <= editor.lineCount() - 2) {
+			const lineAfterBlock = editor.getLine(end + 1);
+			if (lineAfterBlock.trim() === '') {
+				const possibleBlockIdLine = editor.getLine(end + 2);
+				// 判断该行是否为合法的 block ID 行：前面可有空格，必须以 ^ 开头，后面只能是 block id，不允许有其他字符或空格
+				if (/^\s*\^[a-zA-Z0-9_-]+$/.test(possibleBlockIdLine)) {
+					lastLine = possibleBlockIdLine;
+				}
+			}
+		}
+
 		const match = lastLine.trimEnd().match(/\^([a-zA-Z0-9_-]+)$/);
 
 		if (match) {
