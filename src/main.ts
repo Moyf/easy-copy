@@ -536,8 +536,8 @@ export default class EasyCopy extends Plugin {
 
 		// displayText = "^"+displayText;
 		let blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
-		? `[[${filename}#^${blockId}|${displayText}]]`
-		: `[^${displayText}](${filename}#^${blockId})`;	
+			? `[[${filename}#^${blockId}|${displayText}]]`
+			: `[${displayText}](${filename}#^${blockId})`;	 	// markdown 格式不能加，不然会变成内联脚注语法 [^xxx]
 
 		if (!autoDisplayText) {
 			blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
