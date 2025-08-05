@@ -1,7 +1,7 @@
 {
 	"id": "easy-copy",
 	"name": "Easy Copy",
-	"version": "1.3.1",
+	"version": "1.3.2",
 	"minAppVersion": "0.15.0",
 	"description": "Easily copy the text within inline code, bold text (and many other formats), or quickly generate an elegant link to a heading.",
 	"author": "Moy",
