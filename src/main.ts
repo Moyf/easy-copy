@@ -594,24 +594,30 @@ export default class EasyCopy extends Plugin {
 		if (selectedHeading.startsWith('[[') && selectedHeading.endsWith(']]')) {
 			selectedHeading = selectedHeading.slice(2, -2);
 		}
-		const linkAlias = selectedHeading;
-		let noteFlag = 0;
-
+		
+		// 根据设置决定显示文本
+		let displayText = selectedHeading;
+		if (!this.settings.useHeadingAsDisplayText) {
+			// 如果不使用标题作为显示文本，则使用"文件名#标题名"格式
+			displayText = `${filename}#${selectedHeading}`;
+		}
+		
 		let headingReferenceLink = "";
+		let noteFlag = 0;
 		
 		// 根据设置选择链接格式
 		if (this.settings.linkFormat === LinkFormat.WIKILINK) {
 			// Wiki链接格式
-			headingReferenceLink = `[[${filename}#${selectedHeading}|${linkAlias}]]`;
-			
-			// 处理同名标题的特殊情况
-			if (this.settings.useHeadingAsDisplayText && filename === linkAlias) {
+			if (this.settings.useHeadingAsDisplayText && filename === selectedHeading) {
+				// 特殊情况：当文件名与标题相同时，直接链接到文件
 				headingReferenceLink = `[[${filename}]]`;
 				noteFlag = 1;
+			} else {
+				headingReferenceLink = `[[${filename}#${selectedHeading}|${displayText}]]`;
 			}
 		} else {
 			// Markdown链接格式
-			headingReferenceLink = `[${linkAlias}](${filename}#${selectedHeading})`;
+			headingReferenceLink = `[${displayText}](${filename}#${selectedHeading})`;
 		}
 		
 		// 复制到剪贴板
