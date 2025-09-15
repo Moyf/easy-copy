@@ -588,6 +588,22 @@ export default class EasyCopy extends Plugin {
 	 * 复制标题链接
 	 */
 	private copyHeadingLink(content: string, filename: string): void {
+
+		let filenameOrTitle = filename;
+		let title = '';
+		if (this.settings.useFrontmatterAsDisplay) {
+			const file = this.app.workspace.getActiveFile?.() ?? (this.app.workspace.getActiveViewOfType?.(MarkdownView)?.file ?? null);
+			if (file) {
+				const fileCache = this.app.metadataCache.getFileCache(file);
+				const frontmatter = fileCache?.frontmatter;
+				const key = this.settings.frontmatterKey || 'title';
+				if (frontmatter && typeof frontmatter[key] === 'string' && frontmatter[key].trim()) {
+					title = frontmatter[key].trim();
+					filenameOrTitle = title;
+				}
+			}
+		}
+
 		// 提取标题文本和级别
 		let selectedHeading = content;
 		// 如果内容是[[内容]]，移除[[]]
@@ -600,7 +616,7 @@ export default class EasyCopy extends Plugin {
 		if (!this.settings.useHeadingAsDisplayText) {
 			// 如果不使用标题作为显示文本，则使用"文件名{连接符}标题名"格式
 			const separator = this.settings.headingLinkSeparator || '#';
-			displayText = `${filename}${separator}${selectedHeading}`;
+			displayText = `${filenameOrTitle}${separator}${selectedHeading}`;
 		}
 		
 		let headingReferenceLink = "";
@@ -614,7 +630,12 @@ export default class EasyCopy extends Plugin {
 				headingReferenceLink = `[[${filename}]]`;
 				noteFlag = 1;
 			} else {
-				headingReferenceLink = `[[${filename}#${selectedHeading}|${displayText}]]`;
+				if (displayText === `${filename}#${selectedHeading}`) {
+					// 特殊情况：当显示文本与 "文件名#标题" 相同时，省略显示文本
+					headingReferenceLink = `[[${filename}#${selectedHeading}]]`;
+				} else {
+					headingReferenceLink = `[[${filename}#${selectedHeading}|${displayText}]]`;
+				}
 			}
 		} else {
 			// Markdown链接格式
