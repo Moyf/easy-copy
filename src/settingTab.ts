@@ -70,7 +70,23 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.useHeadingAsDisplayText = value;
 					await this.plugin.saveSettings();
+					this.display(); // 重新渲染设置界面以显示或隐藏连接符设置
 				}));
+
+		// 新增：标题链接连接符设置，仅在禁用"使用标题作为显示文本"时显示
+		if (!this.plugin.settings.useHeadingAsDisplayText) {
+			new Setting(containerEl)
+				.setName(this.plugin.t('heading-link-separator'))
+				.setDesc(this.plugin.t('heading-link-separator-desc'))
+				.addText(text => text
+					.setPlaceholder('#')
+					.setValue(this.plugin.settings.headingLinkSeparator)
+					.onChange(async (value) => {
+						this.plugin.settings.headingLinkSeparator = value || '#';
+						await this.plugin.saveSettings();
+					})
+				);
+		}
 
 		// 新增：是否使用 frontmatter 属性作为显示文本
 		new Setting(containerEl)

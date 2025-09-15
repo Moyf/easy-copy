@@ -33,6 +33,7 @@ export interface EasyCopySettings {
     addExtraCommands: boolean;
     showNotice: boolean;
     useHeadingAsDisplayText: boolean;
+    headingLinkSeparator: string; // 文件名和标题间的连接符
     linkFormat: LinkFormat;
     customizeTargets: boolean;
     enableInlineCode: boolean;
@@ -59,6 +60,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     addExtraCommands: true,
     showNotice: true,
     useHeadingAsDisplayText: true,
+    headingLinkSeparator: '#',
     linkFormat: LinkFormat.WIKILINK,
     customizeTargets: false,
     enableInlineCode: true,

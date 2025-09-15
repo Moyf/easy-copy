@@ -13,7 +13,7 @@ export type TranslationKey =
 	| 'wiki-link-copied' | 'callout-copied'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'add-extra-commands' | 'add-extra-commands-desc'
-	| 'use-heading-as-display' | 'use-heading-as-display-desc'  | 'block-id'
+	| 'use-heading-as-display' | 'use-heading-as-display-desc' | 'heading-link-separator' | 'heading-link-separator-desc' | 'block-id'
 	| 'use-frontmatter-as-display' | 'use-frontmatter-as-display-desc' | 'frontmatter-key' | 'frontmatter-key-desc'
 	| 'link-format'| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
 	| 'copy-current-file-link' | 'file-link-copied'
@@ -84,6 +84,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'show-notice-desc': 'Show notification when content is copied',
 		'use-heading-as-display': 'Heading Link: Use heading as display text',
 		'use-heading-as-display-desc': 'Use the heading text as display text in copied heading links',
+		'heading-link-separator': 'Heading Link: Separator between filename and heading',
+		'heading-link-separator-desc': 'Customize the separator symbol between filename and heading (only shown when "Use heading as display text" is disabled)',
 		'link-format': 'Link format',
 		'link-format-desc': 'The format used when copying various types of links',
 		'markdown-link': 'Markdown link',
@@ -165,6 +167,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'show-notice-desc': '复制内容时显示通知提示',
 		'use-heading-as-display': '标题链接：使用标题作为显示文本',
 		'use-heading-as-display-desc': '在复制的标题链接中，使用标题文本作为显示文本',
+		'heading-link-separator': '标题链接：文件名与标题间的连接符',
+		'heading-link-separator-desc': '自定义文件名与标题之间的连接符号（仅在禁用"使用标题作为显示文本"时显示）',
 		'link-format': '链接格式',
 		'link-format-desc': '复制各种链接时使用的格式',
 		'markdown-link': 'Markdown链接',
@@ -252,6 +256,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'show-notice-desc': '複製內容時顯示通知提示',
 		'use-heading-as-display': '標題連結：使用標題作為顯示文本',
 		'use-heading-as-display-desc': '在複製的標題連結中，使用標題文本作為顯示文本',
+		'heading-link-separator': '標題連結：檔案名與標題間的連接符',
+		'heading-link-separator-desc': '自定義檔案名與標題之間的連接符號（僅在禁用「使用標題作為顯示文本」時顯示）',
 		'link-format': '連結格式',
 		'link-format-desc': '複製各種連結時使用的格式',
 		'markdown-link': 'Markdown連結',
