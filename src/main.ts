@@ -598,8 +598,9 @@ export default class EasyCopy extends Plugin {
 		// 根据设置决定显示文本
 		let displayText = selectedHeading;
 		if (!this.settings.useHeadingAsDisplayText) {
-			// 如果不使用标题作为显示文本，则使用"文件名#标题名"格式
-			displayText = `${filename}#${selectedHeading}`;
+			// 如果不使用标题作为显示文本，则使用"文件名{连接符}标题名"格式
+			const separator = this.settings.headingLinkSeparator || '#';
+			displayText = `${filename}${separator}${selectedHeading}`;
 		}
 		
 		let headingReferenceLink = "";
@@ -608,7 +609,7 @@ export default class EasyCopy extends Plugin {
 		// 根据设置选择链接格式
 		if (this.settings.linkFormat === LinkFormat.WIKILINK) {
 			// Wiki链接格式
-			if (this.settings.useHeadingAsDisplayText && filename === selectedHeading) {
+			if (filename === selectedHeading) {
 				// 特殊情况：当文件名与标题相同时，直接链接到文件
 				headingReferenceLink = `[[${filename}]]`;
 				noteFlag = 1;
