@@ -530,10 +530,10 @@ export default class EasyCopy extends Plugin {
 			const isEnglish = /^[a-zA-Z\s,.!?"()\[-\]_\^\-\~:;0-9]*$/.test(text);
 
 			if (isEnglish) {
-				const wordLimit = 3;
+				const wordLimit = this.settings.blockDisplayWordLimit || 3;
 				displayText = text.trim().split(' ').slice(0, wordLimit).join(' ');
 			} else {
-				const charLimit = 5;
+				const charLimit = this.settings.blockDisplayCharLimit || 5;
 
 				const briefText = text;
 
