@@ -248,14 +248,15 @@ export default class EasyCopy extends Plugin {
 		// iOS 16.4 之前不支持后视（Lookbehinds），但支持前视（Lookaheads）
 		// 所以针对 iOS 平台使用只带前视的正则表达式，其他平台使用完整版本
 		const italicRegex = Platform.isIosApp ? 
-			/\*([^*]+)\*(?!\*)/g :  // iOS 版本：只使用前视，不使用后视
-			/(?<!\*)\*([^*]+)\*(?!\*)/g;  // 其他平台：使用前视和后视
+			/(?:\*([^*]+)\*(?!\*)|_([^_]+)_(?!_))/g :  // iOS 版本：支持 * 和 _ 格式，只使用前视
+			/(?:(?<!\*)\*([^*]+)\*(?!\*)|(?<!_)_([^_]+)_(?!_))/g;  // 其他平台：支持 * 和 _ 格式，使用前视和后视
+		
+		const boldRegex = /(?:\*\*([^*]+)\*\*|__([^_]+)__)/g;  // 粗体：支持 ** 和 __ 格式
 		
 		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID > 双链
 		const matchers = [
-			{ type: ContextType.BOLD, regex: /\*\*([^*]+)\*\*/g , enable: !this.settings.customizeTargets || this.settings.enableBold},
-			// 使用前后断言 (?<!\*) 和 (?!\*)，确保 * 不被包裹在 ** 中。
-			// 但是匹配顺序反正在粗体之后，本来也不需要考虑吧？除非是「关闭了粗体检测」的情况……
+			{ type: ContextType.BOLD, regex: boldRegex , enable: !this.settings.customizeTargets || this.settings.enableBold},
+			// 使用前后断言确保不被包裹在更长的语法中，同时支持 * 和 _ 两种格式
 			{ type: ContextType.ITALIC, regex: italicRegex , enable: !this.settings.customizeTargets || this.settings.enableItalic},
 			{ type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g , enable: !this.settings.customizeTargets || this.settings.enableHighlight},
 			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: !this.settings.customizeTargets || this.settings.enableStrikethrough},
@@ -336,8 +337,17 @@ export default class EasyCopy extends Plugin {
 	
 			// 判断光标是否在匹配范围内
 			if (beforeCursor.length >= matchStart && beforeCursor.length <= matchEnd) {
+				// 找到第一个非空且非整体匹配的捕获组作为内容
+				let content = '';
+				for (let i = 1; i < match.length; i++) {
+					if (match[i] !== undefined) {
+						content = match[i];
+						break;
+					}
+				}
+				
 				return {
-					content: match[1], // 返回内容，不包括语法
+					content: content, // 返回内容，不包括语法
 					range: [matchStart, matchEnd],
 				};
 			}
