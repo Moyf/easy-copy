@@ -51,6 +51,8 @@ export interface EasyCopySettings {
     autoAddBlockId: boolean; // 是否自动添加 Block ID
     allowManualBlockId: boolean; // 是否允许手动输入 Block ID
     autoBlockDisplayText: boolean; // 自动为 Block 添加显示文本
+    blockDisplayWordLimit: number; // Block 显示文本英文单词限制（按空格分隔）
+    blockDisplayCharLimit: number; // Block 显示文本字符限制（非英文语言）
 }
 
 export const DEFAULT_SETTINGS: EasyCopySettings = {
@@ -78,4 +80,6 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     autoAddBlockId: false, // 默认关闭
     allowManualBlockId: false, // 默认关闭
     autoBlockDisplayText: true,
+    blockDisplayWordLimit: 3, // 英文单词限制：3个单词
+    blockDisplayCharLimit: 5, // 字符限制：5个字符
 }

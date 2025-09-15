@@ -153,9 +153,38 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.autoBlockDisplayText = value;
 					await this.plugin.saveSettings();
-					this.display();
+					this.display(); // 重新渲染以显示或隐藏相关设置
 				})
 			);
+
+		// 新增：块显示文本限制设置，仅在启用 autoBlockDisplayText 时显示
+		if (this.plugin.settings.autoBlockDisplayText) {
+			new Setting(containerEl)
+				.setName(this.plugin.t('block-display-word-limit'))
+				.setDesc(this.plugin.t('block-display-word-limit-desc'))
+				.addText(text => text
+					.setPlaceholder('3')
+					.setValue(String(this.plugin.settings.blockDisplayWordLimit))
+					.onChange(async (value) => {
+						const numValue = parseInt(value) || 3;
+						this.plugin.settings.blockDisplayWordLimit = Math.max(1, numValue);
+						await this.plugin.saveSettings();
+					})
+				);
+
+			new Setting(containerEl)
+				.setName(this.plugin.t('block-display-char-limit'))
+				.setDesc(this.plugin.t('block-display-char-limit-desc'))
+				.addText(text => text
+					.setPlaceholder('5')
+					.setValue(String(this.plugin.settings.blockDisplayCharLimit))
+					.onChange(async (value) => {
+						const numValue = parseInt(value) || 5;
+						this.plugin.settings.blockDisplayCharLimit = Math.max(1, numValue);
+						await this.plugin.saveSettings();
+					})
+				);
+		}
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('target'))
