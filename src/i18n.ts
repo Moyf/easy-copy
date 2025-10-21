@@ -10,10 +10,11 @@ export type TranslationKey =
 	| 'no-file' | 'no-content' 
 	| 'inline-code-copied' | 'block-id-copied' | 'note-link-copied' | 'heading-copied' | 'strikethrough-copied' 
 	| 'inline-latex-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied' | 'link-text-copied' | 'link-url-copied'
-	| 'wiki-link-copied' | 'callout-copied'
+	| 'wiki-link-copied' | 'callout-copied' | 'note-link-simplified'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'add-extra-commands' | 'add-extra-commands-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc' | 'heading-link-separator' | 'heading-link-separator-desc' | 'block-id'
+	| 'simplified-heading-to-note-link' | 'simplified-heading-to-note-link-desc'
 	| 'use-frontmatter-as-display' | 'use-frontmatter-as-display-desc' | 'frontmatter-key' | 'frontmatter-key-desc'
 	| 'link-format'| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
 	| 'copy-current-file-link' | 'file-link-copied'
@@ -69,6 +70,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-url-copied': 'Link URL copied!',
 		'wiki-link-copied': 'Wiki link copied!',
 		'callout-copied': 'Callout copied!',
+		'note-link-simplified': 'Link simplified (filename matches heading)',
 		
 		// 设置界面
 		'format': 'Format',
@@ -84,8 +86,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'add-extra-commands-desc': 'Enable to add "Copy current note link" and "Generate & copy current block link" commands to the command palette',
 		'show-notice': 'Show notice',
 		'show-notice-desc': 'Show notification when content is copied',
-		'use-heading-as-display': 'Heading Link: Use heading as display text',
+		'use-heading-as-display': 'Heading Link: Only use heading as display text',
 		'use-heading-as-display-desc': 'Use the heading text as display text in copied heading links',
+		'simplified-heading-to-note-link': 'Simplify link when filename matches heading',
+		'simplified-heading-to-note-link-desc': 'When the filename matches the heading text (ignoring spaces), create a note link instead of a heading link',
 		'heading-link-separator': 'Heading Link: Separator between filename and heading',
 		'heading-link-separator-desc': 'Customize the separator symbol between filename and heading (only shown when "Use heading as display text" is disabled)',
 		'link-format': 'Link format',
@@ -160,6 +164,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-url-copied': '链接地址已复制！',
 		'wiki-link-copied': 'Wiki链接已复制！',
 		'callout-copied': '标注内容已复制！',
+		'note-link-simplified': '链接已简化（文件名与标题相匹配）',
 		
 		// 设置界面
 		'format': '格式',
@@ -171,8 +176,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'add-extra-commands-desc': '启用后，将在命令面板中添加“复制当前笔记的链接”和“生成并复制当前块的链接”命令',
 		'show-notice': '显示通知',
 		'show-notice-desc': '复制内容时显示通知提示',
-		'use-heading-as-display': '标题链接：使用标题作为显示文本',
+		'use-heading-as-display': '标题链接：仅使用标题作为显示文本',
 		'use-heading-as-display-desc': '在复制的标题链接中，使用标题文本作为显示文本',
+		'simplified-heading-to-note-link': '文件名匹配标题时简化链接',
+		'simplified-heading-to-note-link-desc': '当文件名与标题文本匹配时（相同或包含），直接创建笔记链接而不是标题链接',
 		'heading-link-separator': '标题链接：文件名与标题间的连接符',
 		'heading-link-separator-desc': '自定义文件名与标题之间的连接符号（仅在禁用"使用标题作为显示文本"时显示）',
 		'link-format': '链接格式',
@@ -259,6 +266,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-url-copied': '連結地址已複製！',
 		'wiki-link-copied': 'Wiki連結已複製！',
 		'callout-copied': '标注内容已複製！',
+		'note-link-simplified': '連結已簡化（檔案名與標題相匹配）',
 		
 		// 設置界面
 		'format': '格式',
@@ -268,8 +276,10 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'add-to-menu-desc': '將命令添加到右鍵菜單',
 		'show-notice': '顯示通知',
 		'show-notice-desc': '複製內容時顯示通知提示',
-		'use-heading-as-display': '標題連結：使用標題作為顯示文本',
+		'use-heading-as-display': '標題連結：僅使用標題作為顯示文本',
 		'use-heading-as-display-desc': '在複製的標題連結中，使用標題文本作為顯示文本',
+		'simplified-heading-to-note-link': '檔案名匹配標題時簡化連結',
+		'simplified-heading-to-note-link-desc': '當檔案名與標題文本匹配時（相同或包含），直接建立筆記連結而不是標題連結',
 		'heading-link-separator': '標題連結：檔案名與標題間的連接符',
 		'heading-link-separator-desc': '自定義檔案名與標題之間的連接符號（僅在禁用「使用標題作為顯示文本」時顯示）',
 		'link-format': '連結格式',
