@@ -621,6 +621,20 @@ export default class EasyCopy extends Plugin {
 		
 		let headingReferenceLink = "";
 		let noteFlag = 0;
+
+		let linkContent = `${filename}#${selectedHeading}`;
+
+		function compareIgnoreCase(a: string, b: string): boolean {
+			return a.toLowerCase() === b.toLowerCase() || a.toLowerCase().includes(b.toLowerCase());
+		}
+
+		// 特殊情况：如果文件名包含标题，则不添加指向标题的 # 部分
+		// 我自己的情况——会把 SomeThing 给拆成 Some Thing 来做标题，所以也考虑空格替换的部分
+		if (filename === selectedHeading || compareIgnoreCase(filename, selectedHeading) || compareIgnoreCase(filename, selectedHeading.replace(/\s+/g, ''))) {
+			linkContent = filename;
+			new Notice(this.t('note-link-simplified'));
+			noteFlag = 1;
+		}
 		
 		// 根据设置选择链接格式
 		if (this.settings.linkFormat === LinkFormat.WIKILINK) {
@@ -630,11 +644,11 @@ export default class EasyCopy extends Plugin {
 				headingReferenceLink = `[[${filename}]]`;
 				noteFlag = 1;
 			} else {
-				if (displayText === `${filename}#${selectedHeading}`) {
+				if (displayText === linkContent) {
 					// 特殊情况：当显示文本与 "文件名#标题" 相同时，省略显示文本
-					headingReferenceLink = `[[${filename}#${selectedHeading}]]`;
+					headingReferenceLink = `[[${linkContent}]]`;
 				} else {
-					headingReferenceLink = `[[${filename}#${selectedHeading}|${displayText}]]`;
+					headingReferenceLink = `[[${linkContent}|${displayText}]]`;
 				}
 			}
 		} else {

@@ -34,6 +34,7 @@ export interface EasyCopySettings {
     showNotice: boolean;
     useHeadingAsDisplayText: boolean;
     headingLinkSeparator: string; // 文件名和标题间的连接符
+    simplifiedHeadingToNoteLink: boolean; // 是否简化标题到笔记链接
     linkFormat: LinkFormat;
     customizeTargets: boolean;
     enableInlineCode: boolean;
@@ -63,6 +64,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     showNotice: true,
     useHeadingAsDisplayText: true,
     headingLinkSeparator: '#',
+    simplifiedHeadingToNoteLink: true,
     linkFormat: LinkFormat.WIKILINK,
     customizeTargets: false,
     enableInlineCode: true,

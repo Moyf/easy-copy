@@ -88,6 +88,19 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				);
 		}
 
+		// 后续新增：文件名包含标题时，简化为复制文件链接（通常用于复制一级标题时）
+		new Setting(containerEl)
+			.setName(this.plugin.t('simplified-heading-to-note-link'))
+			.setDesc(this.plugin.t('simplified-heading-to-note-link-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.simplifiedHeadingToNoteLink)
+				.onChange(async (value) => {
+					this.plugin.settings.simplifiedHeadingToNoteLink = value;
+					await this.plugin.saveSettings();
+					this.display(); // 重新渲染设置界面以显示或隐藏连接符设置
+				}));
+
+
 		// 新增：是否使用 frontmatter 属性作为显示文本
 		new Setting(containerEl)
 			.setName(this.plugin.t('use-frontmatter-as-display'))
