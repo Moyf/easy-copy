@@ -3,6 +3,12 @@ export enum LinkFormat {
 	WIKILINK = 'wiki-link'
 }
 
+export enum BlockIdInsertPosition {
+	END_OF_BLOCK = 'end-of-block',      // 当前块的末尾
+	NEXT_LINE = 'next-line',            // 当前块的下方一行
+	// NEXT_LINE_WITH_GAP = 'next-line-with-gap'  // 当前块的下方两行（中间隔一个空行）
+}
+
 export enum ContextType {
     NULL = 'null',
     HEADING = 'heading',
@@ -51,6 +57,7 @@ export interface EasyCopySettings {
     calloutCopyPriority: boolean; // Callout 与块ID冲突时，优先复制 Callout
     autoAddBlockId: boolean; // 是否自动添加 Block ID
     allowManualBlockId: boolean; // 是否允许手动输入 Block ID
+    blockIdInsertPosition: BlockIdInsertPosition; // 块ID的插入位置
     autoBlockDisplayText: boolean; // 自动为 Block 添加显示文本
     blockDisplayWordLimit: number; // Block 显示文本英文单词限制（按空格分隔）
     blockDisplayCharLimit: number; // Block 显示文本字符限制（非英文语言）
@@ -81,6 +88,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     calloutCopyPriority: true,
     autoAddBlockId: false, // 默认关闭
     allowManualBlockId: false, // 默认关闭
+    blockIdInsertPosition: BlockIdInsertPosition.END_OF_BLOCK, // 默认在块末尾插入
     autoBlockDisplayText: true,
     blockDisplayWordLimit: 3, // 英文单词限制：3个单词
     blockDisplayCharLimit: 5, // 字符限制：5个字符

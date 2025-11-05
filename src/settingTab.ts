@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import EasyCopy from "./main";
-import { LinkFormat } from "./type";
+import { LinkFormat, BlockIdInsertPosition } from "./type";
 
 
 export class EasyCopySettingTab extends PluginSettingTab {
@@ -144,6 +144,21 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 					this.display();
 				}));
+
+		if (this.plugin.settings.autoAddBlockId) {
+			// 新增：块ID插入位置设置
+			new Setting(containerEl)
+				.setName(this.plugin.t('block-id-insert-position'))
+				.setDesc(this.plugin.t('block-id-insert-position-desc'))
+				.addDropdown(dropdown => dropdown
+					.addOption(BlockIdInsertPosition.END_OF_BLOCK, this.plugin.t('block-id-end-of-block'))
+					.addOption(BlockIdInsertPosition.NEXT_LINE, this.plugin.t('block-id-next-line'))
+					.setValue(this.plugin.settings.blockIdInsertPosition)
+					.onChange(async (value) => {
+						this.plugin.settings.blockIdInsertPosition = value as BlockIdInsertPosition;
+						await this.plugin.saveSettings();
+					}));
+		}
 
 		if (this.plugin.settings.autoAddBlockId) {
 		new Setting(containerEl)

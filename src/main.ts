@@ -1,6 +1,6 @@
 import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
-import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat } from './type';
+import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 
@@ -134,7 +134,7 @@ export default class EasyCopy extends Plugin {
 	}
 
 	/**
-	 * 检测光标所在行末尾或下一行开头的 block ID
+	 * 检测光标所在行末尾或下 1~2 行开头的 block ID
 	 */
 	private detectBlockRange(editor: Editor, cursorLine: number): { start: number, end: number } {
 		// 如果当前行是列表，那么范围就是当前行（不对，要继续延伸到后面的……只能说开头是定了）
@@ -147,14 +147,17 @@ export default class EasyCopy extends Plugin {
 		}
 
 		const totalLines = editor.lineCount();
+
 		let start = cursorLine;
 		while (start > 0 && this.isContinuousText(editor.getLine(start - 1))) {
 			start--;
 		}
+
 		let end = cursorLine;
 		while (end < totalLines - 1 && this.isContinuousText(editor.getLine(end + 1))) {
 			end++;
 		}
+
 		return { start, end };
 	}
 
@@ -261,7 +264,7 @@ export default class EasyCopy extends Plugin {
 			{ type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g , enable: !this.settings.customizeTargets || this.settings.enableHighlight},
 			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: !this.settings.customizeTargets || this.settings.enableStrikethrough},
 			{ type: ContextType.INLINECODE, regex: /`([^`]+)`/g , enable: !this.settings.customizeTargets || this.settings.enableInlineCode},
-			{ type: ContextType.INLINELATEX, regex: /\$([^$]*)\$/g , enable: !this.settings.customizeTargets || this.settings.enableInlineLatex},
+			{ type: ContextType.INLINELATEX, regex: /\$([^$]+)\$/g , enable: !this.settings.customizeTargets || this.settings.enableInlineLatex},
 			{ type: ContextType.WIKILINK, regex: /\[\[([^\]]+)\]\]/g, enable: !this.settings.customizeTargets || this.settings.enableWikiLink },
 		];
 	
@@ -745,11 +748,30 @@ export default class EasyCopy extends Plugin {
 		if (!/\^[a-zA-Z0-9_-]+$/.test(lastLine.trim())) {
 			// 在 block 最后一行末尾插入块ID
 			let insertText = '^' + blockId;
+			
+			// 代码块、引用块、数学块等
+			const isSpecialBlock = lastLine.startsWith('> ') || lastLine.startsWith('```') || lastLine.startsWith('$$');
+			const needsSeparator = lastLine.trim().length > 0 && !lastLine.endsWith(' ');  // 末尾需要空格分隔符
 
-			if (lastLine.startsWith('> ') || lastLine.startsWith('``')) {
-				insertText = '\n' + insertText;
-			} else if ( lastLine.trim().length > 0 && !lastLine.endsWith(' ')) {
-				insertText = ' ' + insertText;
+			// 添加 block id 到末尾——读取设置中的位置
+			const insertPosition = this.settings.blockIdInsertPosition;
+
+			if (isSpecialBlock) {
+				insertText = "\n" + insertText;
+			} else {
+				switch (insertPosition) {
+					case BlockIdInsertPosition.END_OF_BLOCK:
+						if (needsSeparator) {
+							insertText = ' ' + insertText;
+						}
+						break;
+					case BlockIdInsertPosition.NEXT_LINE:
+						insertText = "\n" + insertText;
+						break;
+					default:
+						insertText = "\n" + insertText;
+						break;
+				}
 			}
 
 			editor.replaceRange(insertText, { line: end, ch: lastLine.length });
