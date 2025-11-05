@@ -217,7 +217,7 @@ export default class EasyCopy extends Plugin {
 			while (end + 1 < totalLines && editor.getLine(end + 1).trim().startsWith('>')) end++;
 
 			// 收集所有 callout 行
-			let calloutLines: string[] = [];
+			const calloutLines: string[] = [];
 			for (let i = start; i <= end; i++) {
 				calloutLines.push(editor.getLine(i));
 			}
@@ -484,8 +484,9 @@ export default class EasyCopy extends Plugin {
 			case ContextType.HEADING:
 				this.copyHeadingLink(contextType.match!, filename);
 				return;
-			case ContextType.WIKILINK:
+			case ContextType.WIKILINK: {
 				// 复制 [[双链]]，可选保留括号
+				if (!contextType.match) return;
 				let wikiCopyText = contextType.match!;
 				if (this.settings.keepWikiBrackets) {
 					wikiCopyText = `[[${wikiCopyText}]]`;
@@ -498,7 +499,8 @@ export default class EasyCopy extends Plugin {
 					new Notice(this.t('wiki-link-copied'));
 				}
 				return;
-			case ContextType.CALLOUT:
+			}
+			case ContextType.CALLOUT: {
 				// 复制 Callout 区块纯文本
 				const calloutText = contextType.match?.replace(/\n+/g, '\n').replace(/\s+$/g, '');
 				navigator.clipboard.writeText(calloutText ?? '');
@@ -506,6 +508,7 @@ export default class EasyCopy extends Plugin {
 					new Notice(this.t('callout-copied'));
 				}
 				return;
+			}
 			default:
 				break;
 		}
@@ -514,7 +517,7 @@ export default class EasyCopy extends Plugin {
 	/**
 	 * 复制块链接
 	 */
-	private copyBlockLink(content: string, filename: string, useBrief: boolean, firstLine: string=''): void {
+	private copyBlockLink(content: string, filename: string, useBrief: boolean, firstLine=''): void {
 		const blockId = content;
 
 		let text = firstLine;
@@ -529,8 +532,8 @@ export default class EasyCopy extends Plugin {
 		if (useBrief && text) {
 
 			// 判断是否是纯英文，如果是纯英文（以及英文常用标点符号），提取前三个单词；否则，按下面的逻辑处理
-			// 根据 ASCII 来判断“英文”
-			const isEnglish = /^[a-zA-Z\s,.!?"()\[-\]_\^\-\~:;0-9]*$/.test(text);
+			// 根据 ASCII 来判断"英文"
+			const isEnglish = /^[a-zA-Z\s,.!?"()[\]_^-~:;0-9]*$/.test(text);
 
 			if (isEnglish) {
 				const wordLimit = this.settings.blockDisplayWordLimit || 3;
@@ -541,7 +544,7 @@ export default class EasyCopy extends Plugin {
 				const briefText = text;
 
 				if (briefText.length > charLimit) {
-					const seperatedText = text.trim().match(/(\S+?)[\~\,\.\-\=\[，。？！…：\n\s]/);
+					const seperatedText = text.trim().match(/(\S+?)[~,.\-=[，。？！…：\n\s]/);
 					let tempText: string | null = null;
 					
 					if (seperatedText) {
@@ -725,7 +728,7 @@ export default class EasyCopy extends Plugin {
 				new BlockIdInputModal(this.app,
 					this.t('modal-block-id'), this.t('modal-block-id-desc'),
 					this.t.bind(this),
-					(result: any) => {
+					(result: string | null) => {
 						resolve(result ?? null);
 					}
 				).open();
