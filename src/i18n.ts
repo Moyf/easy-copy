@@ -34,6 +34,8 @@ export type TranslationKey =
 	| 'callout-copy-priority' | 'callout-copy-priority-desc'
     | 'auto-add-block-id' | 'auto-add-block-id-desc'
     | 'manual-block-id' | 'manual-block-id-desc'
+    | 'block-id-insert-position' | 'block-id-insert-position-desc'
+    | 'block-id-end-of-block' | 'block-id-next-line' | 'block-id-next-line-with-gap'
     | 'modal-block-id' | 'modal-block-id-desc'
 	| 'auto-block-display-text' | 'auto-block-display-text-desc' 
 	| 'block-display-word-limit' | 'block-display-word-limit-desc'
@@ -49,6 +51,11 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
         'auto-add-block-id-desc': 'When enabled, if there is no copyable content, a random block ID (^xxxx) will be automatically added to the end of the current line.' ,
 		'manual-block-id': 'Manually enter Block ID',
         'manual-block-id-desc': 'If enabled, you will be prompted to enter a block ID manually.',
+        'block-id-insert-position': 'Block ID insert position',
+        'block-id-insert-position-desc': 'Choose where to insert the block ID - For special blocks like code blocks and quote blocks, at least one line break will be inserted.',
+        'block-id-end-of-block': 'End of current block',
+        'block-id-next-line': 'Next line below current block',
+        'block-id-next-line-with-gap': 'Two lines below current block (with empty line)',
         'modal-block-id': 'Enter block ID',
         'modal-block-id-desc': 'Allowed: letters, numbers, hyphens (-), underscores (_). Spaces will be converted to hyphens.',
         'error-block-id-empty': 'Block ID cannot be empty',
@@ -144,6 +151,11 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
         'auto-add-block-id-desc': '启用后，如果没有可复制内容时会自动在当前文本末尾添加一个随机生成的块ID（^xxxx）',
 		'manual-block-id': '手动输入块ID',
         'manual-block-id-desc': '启用后，可以在弹窗中手动输入块ID',
+        'block-id-insert-position': '块ID插入位置',
+        'block-id-insert-position-desc': '选择生成块ID时的插入位置。对于代码块和引用块等特殊段落，至少会插入一个换行。',
+        'block-id-end-of-block': '当前块的末尾',
+        'block-id-next-line': '当前块的下方一行',
+        'block-id-next-line-with-gap': '当前块的下方两行（中间隔一个空行）',
         'modal-block-id': '输入块ID',
         'modal-block-id-desc': '仅允许字母、数字、短横线（-）、下划线（_），空格会自动转为短横线。',
         'error-block-id-empty': '块ID不能为空',
@@ -245,6 +257,11 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'block-display-char-limit-desc': '非空格分隔語言（如中文 "這是一句話"）在塊顯示文本中顯示的最大字符數——當第一行包含非ASCII字符時，會採用此設置。',
 		'manual-block-id': '手動輸入塊ID',
 		'manual-block-id-desc': '啟用後，可以在彈窗中手動輸入塊ID',
+        'block-id-insert-position': '塊ID插入位置',
+        'block-id-insert-position-desc': '選擇生成塊ID時的插入位置。對於代碼塊和引用塊等特殊段落，至少會插入一個換行。',
+        'block-id-end-of-block': '當前塊的末尾',
+        'block-id-next-line': '當前塊的下方一行',
+        'block-id-next-line-with-gap': '當前塊的下方兩行（中間隔一個空行）',
 		'modal-block-id': '輸入塊ID',
 		'modal-block-id-desc': '僅允許字母、數字、連字號（-）、底線（_），空格會自動轉為連字號。',
 		'error-block-id-empty': '塊ID 不能為空',
