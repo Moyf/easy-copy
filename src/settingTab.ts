@@ -1,10 +1,18 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { 
+	App, 
+	PluginSettingTab, 
+	Setting,
+	// @ts-expect-error - SettingGroup is not yet in the public API types
+	SettingGroup,
+ } from "obsidian";
 import EasyCopy from "./main";
 import { LinkFormat, BlockIdInsertPosition } from "./type";
 
 
 export class EasyCopySettingTab extends PluginSettingTab {
 	plugin: EasyCopy;
+
+	icon: string = 'copy-plus';
 
 	constructor(app: App, plugin: EasyCopy) {
 		super(app, plugin);
