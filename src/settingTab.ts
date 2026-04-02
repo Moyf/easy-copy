@@ -2,11 +2,61 @@ import {
 	App, 
 	PluginSettingTab, 
 	Setting,
-	// @ts-expect-error - SettingGroup is not yet in the public API types
-	SettingGroup,
+	requireApiVersion,
  } from "obsidian";
+import * as ObsidianModule from "obsidian";
 import EasyCopy from "./main";
 import { LinkFormat, BlockIdInsertPosition } from "./type";
+
+interface SettingsContainer {
+	addSetting(cb: (setting: Setting) => void): void;
+}
+
+function createSettingsGroup(containerEl: HTMLElement, heading?: string): SettingsContainer {
+	// Check if SettingGroup is available (API 1.11.0+)
+	// requireApiVersion is the official Obsidian API method for version checking
+	if (requireApiVersion('1.11.0')) {
+		// Use SettingGroup - it's guaranteed to exist if requireApiVersion returns true
+		// Access SettingGroup via type assertion since it may not be in type definitions
+		// for older TypeScript versions, but exists at runtime in Obsidian 1.11.0+
+		// Using unknown instead of any to satisfy eslint while maintaining type safety
+		const SettingGroupClass = (ObsidianModule as unknown as { SettingGroup?: new (containerEl: HTMLElement) => {
+			setHeading(heading: string): {
+				addSetting(cb: (setting: Setting) => void): void;
+			};
+			addSetting(cb: (setting: Setting) => void): void;
+		} }).SettingGroup;
+		
+		if (SettingGroupClass) {
+			const group = heading 
+				? new SettingGroupClass(containerEl).setHeading(heading)
+				: new SettingGroupClass(containerEl);
+			return {
+				addSetting(cb: (setting: Setting) => void) {
+					group.addSetting(cb);
+				}
+			};
+		}
+	}
+	
+	// Fallback path (either API < 1.11.0 or SettingGroup not found)
+	{
+		// Fallback: Create a heading manually for older API versions
+		// Note: While best practice prefers Setting.setHeading(), the fallback path
+		// is for versions that may not support it, so manual heading is appropriate here
+		if (heading) {
+			const headingEl = containerEl.createDiv('setting-group-heading');
+			headingEl.createEl('h3', { text: heading });
+		}
+		
+		return {
+			addSetting(cb: (setting: Setting) => void) {
+				const setting = new Setting(containerEl);
+				cb(setting);
+			}
+		};
+	}
+}
 
 
 export class EasyCopySettingTab extends PluginSettingTab {
@@ -24,7 +74,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		new Setting(containerEl)
+		const generalGroup = createSettingsGroup(containerEl);
+
+		generalGroup.addSetting(setting => setting
 			.setName(this.plugin.t('add-to-menu'))
 			.setDesc(this.plugin.t('add-to-menu-desc'))
 			.addToggle(toggle => toggle
@@ -32,9 +84,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 				this.plugin.settings.addToMenu = value;
 				await this.plugin.saveSettings();
-			}));
+			})));
 
-		new Setting(containerEl)
+		generalGroup.addSetting(setting => setting
 			.setName(this.plugin.t('add-extra-commands'))
 			.setDesc(this.plugin.t('add-extra-commands-desc'))
 			.addToggle(toggle => toggle
@@ -42,9 +94,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 				this.plugin.settings.addExtraCommands = value;
 				await this.plugin.saveSettings();
-			}));
+			})));
 
-		new Setting(containerEl)
+		generalGroup.addSetting(setting => setting
 			.setName(this.plugin.t('show-notice'))
 			.setDesc(this.plugin.t('show-notice-desc'))
 			.addToggle(toggle => toggle
@@ -52,25 +104,23 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.showNotice = value;
 					await this.plugin.saveSettings();
-				}));
+				})));
 
-		new Setting(containerEl)
-			.setName(this.plugin.t('format'))
-			.setHeading();
+		const formatGroup = createSettingsGroup(containerEl, this.plugin.t('format'));
 
-		new Setting(containerEl)
-		.setName(this.plugin.t('link-format'))
-		.setDesc(this.plugin.t('link-format-desc'))
-		.addDropdown(dropdown => dropdown
-			.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
-			.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
-			.setValue(this.plugin.settings.linkFormat)
-			.onChange(async (value) => {
-				this.plugin.settings.linkFormat = value as LinkFormat;
-				await this.plugin.saveSettings();
-			}));
+		formatGroup.addSetting(setting => setting
+			.setName(this.plugin.t('link-format'))
+			.setDesc(this.plugin.t('link-format-desc'))
+			.addDropdown(dropdown => dropdown
+				.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
+				.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
+				.setValue(this.plugin.settings.linkFormat)
+				.onChange(async (value) => {
+					this.plugin.settings.linkFormat = value as LinkFormat;
+					await this.plugin.saveSettings();
+				})));
 
-		new Setting(containerEl)
+		formatGroup.addSetting(setting => setting
 			.setName(this.plugin.t('use-heading-as-display'))
 			.setDesc(this.plugin.t('use-heading-as-display-desc'))
 			.addToggle(toggle => toggle
@@ -78,12 +128,12 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.useHeadingAsDisplayText = value;
 					await this.plugin.saveSettings();
-					this.display(); // 重新渲染设置界面以显示或隐藏连接符设置
-				}));
+					this.display();
+				})));
 
 		// 新增：标题链接连接符设置，仅在禁用"使用标题作为显示文本"时显示
 		if (!this.plugin.settings.useHeadingAsDisplayText) {
-			new Setting(containerEl)
+			formatGroup.addSetting(setting => setting
 				.setName(this.plugin.t('heading-link-separator'))
 				.setDesc(this.plugin.t('heading-link-separator-desc'))
 				.addText(text => text
@@ -93,11 +143,11 @@ export class EasyCopySettingTab extends PluginSettingTab {
 						this.plugin.settings.headingLinkSeparator = value || '#';
 						await this.plugin.saveSettings();
 					})
-				);
+				));
 		}
 
 		// 后续新增：文件名包含标题时，简化为复制文件链接（通常用于复制一级标题时）
-		new Setting(containerEl)
+		formatGroup.addSetting(setting => setting
 			.setName(this.plugin.t('simplified-heading-to-note-link'))
 			.setDesc(this.plugin.t('simplified-heading-to-note-link-desc'))
 			.addToggle(toggle => toggle
@@ -105,12 +155,12 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.simplifiedHeadingToNoteLink = value;
 					await this.plugin.saveSettings();
-					this.display(); // 重新渲染设置界面以显示或隐藏连接符设置
-				}));
+					this.display();
+				})));
 
 
 		// 新增：是否使用 frontmatter 属性作为显示文本
-		new Setting(containerEl)
+		formatGroup.addSetting(setting => setting
 			.setName(this.plugin.t('use-frontmatter-as-display'))
 			.setDesc(this.plugin.t('use-frontmatter-as-display-desc'))
 			.addToggle(toggle => toggle
@@ -120,11 +170,11 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 					this.display();
 				})
-			);
+			));
 
 		// 新增：自定义 frontmatter 属性名，仅在上方开启时显示
 		if (this.plugin.settings.useFrontmatterAsDisplay) {
-			new Setting(containerEl)
+			formatGroup.addSetting(setting => setting
 				.setName(this.plugin.t('frontmatter-key'))
 				.setDesc(this.plugin.t('frontmatter-key-desc'))
 				.addText(text => text
@@ -134,15 +184,13 @@ export class EasyCopySettingTab extends PluginSettingTab {
 						this.plugin.settings.frontmatterKey = value || 'title';
 						await this.plugin.saveSettings();
 					})
-				);
+				));
 		}
 
 
-		new Setting(containerEl)
-			.setName(this.plugin.t('block-id'))
-			.setHeading();
+		const blockIdGroup = createSettingsGroup(containerEl, this.plugin.t('block-id'));
 
-		new Setting(containerEl)
+		blockIdGroup.addSetting(setting => setting
 			.setName(this.plugin.t('auto-add-block-id'))
 			.setDesc(this.plugin.t('auto-add-block-id-desc'))
 			.addToggle(toggle => toggle
@@ -151,11 +199,11 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					this.plugin.settings.autoAddBlockId = value;
 					await this.plugin.saveSettings();
 					this.display();
-				}));
+				})));
 
 		if (this.plugin.settings.autoAddBlockId) {
 			// 新增：块ID插入位置设置
-			new Setting(containerEl)
+			blockIdGroup.addSetting(setting => setting
 				.setName(this.plugin.t('block-id-insert-position'))
 				.setDesc(this.plugin.t('block-id-insert-position-desc'))
 				.addDropdown(dropdown => dropdown
@@ -165,23 +213,23 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.blockIdInsertPosition = value as BlockIdInsertPosition;
 						await this.plugin.saveSettings();
-					}));
+					})));
 		}
 
 		if (this.plugin.settings.autoAddBlockId) {
-		new Setting(containerEl)
-			.setName(this.plugin.t('manual-block-id'))
-			.setDesc(this.plugin.t('manual-block-id-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.allowManualBlockId)
-				.onChange(async (value) => {
-					this.plugin.settings.allowManualBlockId = value;
-					await this.plugin.saveSettings();
-				}));
+			blockIdGroup.addSetting(setting => setting
+				.setName(this.plugin.t('manual-block-id'))
+				.setDesc(this.plugin.t('manual-block-id-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.allowManualBlockId)
+					.onChange(async (value) => {
+						this.plugin.settings.allowManualBlockId = value;
+						await this.plugin.saveSettings();
+					})));
 		}
 		
 		// 新增：自动为 Block 链接添加显示文本
-		new Setting(containerEl)
+		blockIdGroup.addSetting(setting => setting
 			.setName(this.plugin.t('auto-block-display-text'))
 			.setDesc(this.plugin.t('auto-block-display-text-desc'))
 			.addToggle(toggle => toggle
@@ -189,13 +237,13 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.autoBlockDisplayText = value;
 					await this.plugin.saveSettings();
-					this.display(); // 重新渲染以显示或隐藏相关设置
+					this.display();
 				})
-			);
+			));
 
 		// 新增：块显示文本限制设置，仅在启用 autoBlockDisplayText 时显示
 		if (this.plugin.settings.autoBlockDisplayText) {
-			new Setting(containerEl)
+			blockIdGroup.addSetting(setting => setting
 				.setName(this.plugin.t('block-display-word-limit'))
 				.setDesc(this.plugin.t('block-display-word-limit-desc'))
 				.addText(text => text
@@ -206,9 +254,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 						this.plugin.settings.blockDisplayWordLimit = Math.max(1, numValue);
 						await this.plugin.saveSettings();
 					})
-				);
+				));
 
-			new Setting(containerEl)
+			blockIdGroup.addSetting(setting => setting
 				.setName(this.plugin.t('block-display-char-limit'))
 				.setDesc(this.plugin.t('block-display-char-limit-desc'))
 				.addText(text => text
@@ -219,14 +267,12 @@ export class EasyCopySettingTab extends PluginSettingTab {
 						this.plugin.settings.blockDisplayCharLimit = Math.max(1, numValue);
 						await this.plugin.saveSettings();
 					})
-				);
+				));
 		}
 
-		new Setting(containerEl)
-			.setName(this.plugin.t('target'))
-			.setHeading();
+		const targetGroup = createSettingsGroup(containerEl, this.plugin.t('target'));
 
-		new Setting(containerEl)
+		targetGroup.addSetting(setting => setting
 			.setName(this.plugin.t('customize-targets'))
 			.setDesc(this.plugin.t('customize-targets-desc'))
 			.addToggle(toggle => toggle
@@ -234,13 +280,12 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.customizeTargets = value;
 					await this.plugin.saveSettings();
-					// 重新渲染设置界面以显示或隐藏目标选项
 					this.display();
-				}));
+				})));
 
 		// 只有当自定义复制对象选项开启时才显示具体的复制对象选项
 		if (this.plugin.settings.customizeTargets) {
-			new Setting(containerEl)
+			targetGroup.addSetting(setting => setting
 				.setName(this.plugin.t('enable-inline-code'))
 				.setDesc(this.plugin.t('enable-inline-code-desc'))
 				.addToggle(toggle => toggle
@@ -248,9 +293,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.enableInlineCode = value;
 						await this.plugin.saveSettings();
-					}));
+					})));
 
-			new Setting(containerEl)
+			targetGroup.addSetting(setting => setting
 				.setName(this.plugin.t('enable-bold'))
 				.setDesc(this.plugin.t('enable-bold-desc'))
 				.addToggle(toggle => toggle
@@ -258,9 +303,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.enableBold = value;
 						await this.plugin.saveSettings();
-					}));
+					})));
 
-			new Setting(containerEl)
+			targetGroup.addSetting(setting => setting
 				.setName(this.plugin.t('enable-highlight'))
 				.setDesc(this.plugin.t('enable-highlight-desc'))
 				.addToggle(toggle => toggle
@@ -268,9 +313,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.enableHighlight = value;
 						await this.plugin.saveSettings();
-					}));
+					})));
 
-			new Setting(containerEl)
+			targetGroup.addSetting(setting => setting
 				.setName(this.plugin.t('enable-italic'))
 				.setDesc(this.plugin.t('enable-italic-desc'))
 				.addToggle(toggle => toggle
@@ -278,9 +323,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.enableItalic = value;
 						await this.plugin.saveSettings();
-					}));
+					})));
             
-            new Setting(containerEl)
+            targetGroup.addSetting(setting => setting
                 .setName(this.plugin.t('enable-strikethrough'))
                 .setDesc(this.plugin.t('enable-strikethrough-desc'))
                 .addToggle(toggle => toggle
@@ -288,9 +333,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.enableStrikethrough = value;
                         await this.plugin.saveSettings();
-                    }));
+                    })));
             
-            new Setting(containerEl)
+            targetGroup.addSetting(setting => setting
                 .setName(this.plugin.t('enable-inline-latex'))
                 .setDesc(this.plugin.t('enable-inline-latex-desc'))
                 .addToggle(toggle => toggle
@@ -298,9 +343,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.enableInlineLatex = value;
                         await this.plugin.saveSettings();
-                    }));
+                    })));
             
-            new Setting(containerEl)
+            targetGroup.addSetting(setting => setting
                 .setName(this.plugin.t('enable-link'))
                 .setDesc(this.plugin.t('enable-link-desc'))
                 .addToggle(toggle => toggle
@@ -308,9 +353,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.enableLink = value;
                         await this.plugin.saveSettings();
-                    }));
+                    })));
 
-            new Setting(containerEl)
+            targetGroup.addSetting(setting => setting
                 .setName(this.plugin.t('enable-wikilink'))
                 .setDesc(this.plugin.t('enable-wikilink-desc'))
                 .addToggle(toggle => toggle
@@ -318,12 +363,12 @@ export class EasyCopySettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.enableWikiLink = value;
                         await this.plugin.saveSettings();
-                        this.display(); // 切换后刷新界面以显示/隐藏下方选项
-                    }));
+						this.display(); // 切换后刷新界面以显示/隐藏下方选项
+                    })));
             
 		}
 
-		new Setting(containerEl)
+		targetGroup.addSetting(setting => setting
 			.setName(this.plugin.t('enable-callout-copy'))
 			.setDesc(this.plugin.t('enable-callout-copy-desc'))
 			.addToggle(toggle => toggle
@@ -332,10 +377,10 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					this.plugin.settings.enableCalloutCopy = value;
 					await this.plugin.saveSettings();
 					this.display();
-				}));
+				})));
 		// 优先复制 Callout 内容
 		if (this.plugin.settings.enableCalloutCopy) {
-			new Setting(containerEl)
+			targetGroup.addSetting(setting => setting
 				.setName(this.plugin.t('callout-copy-priority'))
 				.setDesc(this.plugin.t('callout-copy-priority-desc'))
 				.addToggle(toggle => toggle
@@ -343,16 +388,14 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.calloutCopyPriority = value;
 						await this.plugin.saveSettings();
-					}));
+					})));
 		}
 
 		
-		new Setting(containerEl)
-		.setName(this.plugin.t('special-format'))
-		.setHeading();
+		const specialFormatGroup = createSettingsGroup(containerEl, this.plugin.t('special-format'));
 				
 		// 块链接特殊格式选项
-		new Setting(containerEl)
+		specialFormatGroup.addSetting(setting => setting
 			.setName(this.plugin.t('auto-embed-block-link'))
 			.setDesc(this.plugin.t('auto-embed-block-link-desc'))
 			.addToggle(toggle => toggle
@@ -360,11 +403,11 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.autoEmbedBlockLink = value;
 					await this.plugin.saveSettings();
-				}));
+				})));
 
 		// 仅当启用 Wiki 链接复制时显示
 		if (this.plugin.settings.enableWikiLink) {
-			new Setting(containerEl)
+			specialFormatGroup.addSetting(setting => setting
 				.setName(this.plugin.t('keep-wiki-brackets'))
 				.setDesc(this.plugin.t('keep-wiki-brackets-desc'))
 				.addToggle(toggle => toggle
@@ -372,7 +415,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						this.plugin.settings.keepWikiBrackets = value;
 						await this.plugin.saveSettings();
-					}));
+					})));
 		}
 	}
 }
