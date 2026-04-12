@@ -569,12 +569,12 @@ export default class EasyCopy extends Plugin {
 		// displayText = "^"+displayText;
 		let blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
 			? `[[${filename}#^${blockId}|${displayText}]]`
-			: `[${displayText}](${filename}#^${blockId})`;	 	// markdown 格式不能加，不然会变成内联脚注语法 [^xxx]
+			: `[${displayText}](${this.encodeMarkdownLinkUrl(filename)}#^${blockId})`;	 	// markdown 格式不能加，不然会变成内联脚注语法 [^xxx]
 
 		if (!autoDisplayText) {
 			blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
 			? `[[${filename}#^${blockId}]]`
-			: `[](${filename}#^${blockId})`;
+			: `[](${this.encodeMarkdownLinkUrl(filename)}#^${blockId})`;
 		}
 
 		// 自动生成嵌入块
@@ -659,7 +659,8 @@ export default class EasyCopy extends Plugin {
 			}
 		} else {
 			// Markdown链接格式
-			headingReferenceLink = `[${displayText}](${filename}#${selectedHeading})`;
+			headingReferenceLink = `[${displayText}](${this.encodeMarkdownLinkUrl(`${filename}#${selectedHeading}`)})`;
+
 		}
 		
 		// 复制到剪贴板
@@ -706,7 +707,7 @@ export default class EasyCopy extends Plugin {
 		} else {
 			let path = file.path.replace(/\\/g, '/');
 			if (path.endsWith('.md')) path = path.slice(0, -3);
-			link = `[${display}](${path})`;
+			link = `[${display}](${this.encodeMarkdownLinkUrl(path)})`;
 		}
 		navigator.clipboard.writeText(link);
 		if (this.settings.showNotice) {
@@ -818,5 +819,9 @@ export default class EasyCopy extends Plugin {
 		// 从 localStorage 中获取 Obsidian 的语言设置
 		const lang = window.localStorage.getItem("language") || 'en';
 		return lang;
+	}
+
+	private encodeMarkdownLinkUrl(url: string): string {
+		return url.replace(/ /g, '%20');
 	}
 }
