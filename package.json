@@ -12,7 +12,9 @@
 		"release": "node scripts/release-tag.mjs",
 		"bump": "node scripts/bump.mjs",
 		"lint": "eslint src/ --ext .ts",
-		"lint:fix": "eslint src/ --ext .ts --fix"
+		"lint:fix": "eslint src/ --ext .ts --fix",
+		"test": "vitest run",
+		"test:watch": "vitest"
 	},
 	"keywords": [],
 	"author": "",
@@ -28,7 +30,8 @@
 		"eslint-plugin-obsidianmd": "^0.1.9",
 		"obsidian": "latest",
 		"tslib": "2.4.0",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"vitest": "^4.1.4"
 	},
 	"dependencies": {
 		"dotenv": "^16.6.1"

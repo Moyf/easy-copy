@@ -1,8 +1,9 @@
 import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
-import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
+import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
+import { buildHeadingLink, buildBlockLink, buildFileLink } from './linkBuilder';
 
 export default class EasyCopy extends Plugin {
 	settings: EasyCopySettings;
@@ -518,85 +519,31 @@ export default class EasyCopy extends Plugin {
 	 * 复制块链接
 	 */
 	private copyBlockLink(content: string, filename: string, useBrief: boolean, firstLine=''): void {
-		const blockId = content;
-
-		let text = firstLine;
-		
-		const autoDisplayText = this.settings.autoBlockDisplayText;
-
-		// 先去掉结尾的 ^ 及其后面的内容（如果有的话）
-		text = text.replace(/\^.*\s*$/, '');
-		text = text.trim().replace(/- \[.\]\s+/, '').replace('- ', '').replace(/=|\*|\[|\]|\(|\)|`|>\s+/g, '');
-
-		let displayText = blockId;
-		if (useBrief && text) {
-
-			// 判断是否是纯英文，如果是纯英文（以及英文常用标点符号），提取前三个单词；否则，按下面的逻辑处理
-			// 根据 ASCII 来判断"英文"
-			const isEnglish = /^[a-zA-Z\s,.!?"()[\]_^-~:;0-9]*$/.test(text);
-
-			if (isEnglish) {
-				const wordLimit = this.settings.blockDisplayWordLimit || 3;
-				displayText = text.trim().split(' ').slice(0, wordLimit).join(' ');
-			} else {
-				const charLimit = this.settings.blockDisplayCharLimit || 5;
-
-				const briefText = text;
-
-				if (briefText.length > charLimit) {
-					const seperatedText = text.trim().match(/(\S+?)[~,.\-=[，。？！…：\n\s]/);
-					let tempText: string | null = null;
-					
-					if (seperatedText) {
-						tempText = seperatedText[1];
-					} else {
-						tempText = briefText;
-					}
-
-					if (tempText.length > charLimit) {
-						displayText = tempText.slice(0, charLimit) + '...';
-					} else if (tempText.length < 3) {
-						displayText = briefText.slice(0, charLimit);
-					} else {
-						displayText = tempText;
-					}
-				} else {
-					displayText = briefText;
-				}
-			}
-		}
-
-		// displayText = "^"+displayText;
-		let blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
-			? `[[${filename}#^${blockId}|${displayText}]]`
-			: `[${displayText}](${this.encodeMarkdownLinkUrl(filename)}#^${blockId})`;	 	// markdown 格式不能加，不然会变成内联脚注语法 [^xxx]
-
-		if (!autoDisplayText) {
-			blockIdLink = this.settings.linkFormat === LinkFormat.WIKILINK
-			? `[[${filename}#^${blockId}]]`
-			: `[](${this.encodeMarkdownLinkUrl(filename)}#^${blockId})`;
-		}
-
-		// 自动生成嵌入块
-		if (this.settings.autoEmbedBlockLink) {
-			blockIdLink = "!" + blockIdLink;
-		}
+		const blockIdLink = buildBlockLink({
+			blockId: content,
+			filename,
+			useBrief,
+			firstLine,
+			linkFormat: this.settings.linkFormat,
+			autoBlockDisplayText: this.settings.autoBlockDisplayText,
+			autoEmbedBlockLink: this.settings.autoEmbedBlockLink,
+			blockDisplayWordLimit: this.settings.blockDisplayWordLimit,
+			blockDisplayCharLimit: this.settings.blockDisplayCharLimit,
+		});
 
 		navigator.clipboard.writeText(blockIdLink);
 
 		if (this.settings.showNotice) {
-			new Notice(this.t('block-id-copied') + `\n^${displayText}...`);
+			new Notice(this.t('block-id-copied'));
 		}
-		return;
 	}
 	
 	/**
 	 * 复制标题链接
 	 */
 	private copyHeadingLink(content: string, filename: string): void {
-
-		let filenameOrTitle = filename;
-		let title = '';
+		// 优先使用 frontmatter 属性作为显示文本
+		let frontmatterTitle: string | undefined;
 		if (this.settings.useFrontmatterAsDisplay) {
 			const file = this.app.workspace.getActiveFile?.() ?? (this.app.workspace.getActiveViewOfType?.(MarkdownView)?.file ?? null);
 			if (file) {
@@ -604,75 +551,27 @@ export default class EasyCopy extends Plugin {
 				const frontmatter = fileCache?.frontmatter;
 				const key = this.settings.frontmatterKey || 'title';
 				if (frontmatter && typeof frontmatter[key] === 'string' && frontmatter[key].trim()) {
-					title = frontmatter[key].trim();
-					filenameOrTitle = title;
+					frontmatterTitle = frontmatter[key].trim();
 				}
 			}
 		}
 
-		// 提取标题文本和级别
-		let selectedHeading = content;
-		// 如果内容是[[内容]]，移除[[]]
-		if (selectedHeading.startsWith('[[') && selectedHeading.endsWith(']]')) {
-			selectedHeading = selectedHeading.slice(2, -2);
-		}
-		
-		// 根据设置决定显示文本
-		let displayText = selectedHeading;
-		if (!this.settings.useHeadingAsDisplayText) {
-			// 如果不使用标题作为显示文本，则使用"文件名{连接符}标题名"格式
-			const separator = this.settings.headingLinkSeparator || '#';
-			displayText = `${filenameOrTitle}${separator}${selectedHeading}`;
-		}
-		
-		let headingReferenceLink = "";
-		let noteFlag = 0;
+		const { link, isNoteLink } = buildHeadingLink({
+			heading: content,
+			filename,
+			frontmatterTitle,
+			linkFormat: this.settings.linkFormat,
+			useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
+			headingLinkSeparator: this.settings.headingLinkSeparator,
+		});
 
-		let linkContent = `${filename}#${selectedHeading}`;
+		navigator.clipboard.writeText(link);
 
-		function compareIgnoreCase(a: string, b: string): boolean {
-			return a.toLowerCase() === b.toLowerCase() || a.toLowerCase().includes(b.toLowerCase());
-		}
-
-		// 特殊情况：如果文件名包含标题，则不添加指向标题的 # 部分
-		// 我自己的情况——会把 SomeThing 给拆成 Some Thing 来做标题，所以也考虑空格替换的部分
-		if (filename === selectedHeading || compareIgnoreCase(filename, selectedHeading) || compareIgnoreCase(filename, selectedHeading.replace(/\s+/g, ''))) {
-			linkContent = filename;
+		if (isNoteLink) {
 			new Notice(this.t('note-link-simplified'));
-			noteFlag = 1;
 		}
-		
-		// 根据设置选择链接格式
-		if (this.settings.linkFormat === LinkFormat.WIKILINK) {
-			// Wiki链接格式
-			if (filename === selectedHeading) {
-				// 特殊情况：当文件名与标题相同时，直接链接到文件
-				headingReferenceLink = `[[${filename}]]`;
-				noteFlag = 1;
-			} else {
-				if (displayText === linkContent) {
-					// 特殊情况：当显示文本与 "文件名#标题" 相同时，省略显示文本
-					headingReferenceLink = `[[${linkContent}]]`;
-				} else {
-					headingReferenceLink = `[[${linkContent}|${displayText}]]`;
-				}
-			}
-		} else {
-			// Markdown链接格式
-			headingReferenceLink = `[${displayText}](${this.encodeMarkdownLinkUrl(`${filename}#${selectedHeading}`)})`;
-
-		}
-		
-		// 复制到剪贴板
-		navigator.clipboard.writeText(headingReferenceLink);
-		
-		// 显示通知
 		if (this.settings.showNotice) {
-			if (noteFlag) {
-				new Notice(this.t('note-link-copied'));
-			} else {
-				new Notice(this.t('heading-copied'));
-			}
+			new Notice(this.t(isNoteLink ? 'note-link-copied' : 'heading-copied'));
 		}
 	}
 
@@ -680,8 +579,8 @@ export default class EasyCopy extends Plugin {
 	* 复制当前文件链接（支持 Wiki/Markdown 格式）
 	*/
 	private copyCurrentFileLink(): void {
-		// 新增：优先使用 frontmatter 属性作为显示文本
-		let displayText: string | undefined = undefined;
+		// 优先使用 frontmatter 属性作为显示文本
+		let displayText: string | undefined;
 		if (this.settings.useFrontmatterAsDisplay) {
 			const file = this.app.workspace.getActiveFile?.() ?? (this.app.workspace.getActiveViewOfType?.(MarkdownView)?.file ?? null);
 			if (file) {
@@ -693,22 +592,20 @@ export default class EasyCopy extends Plugin {
 				}
 			}
 		}
-		// 获取当前激活文件
+
 		const file = this.app.workspace.getActiveFile?.() ?? (this.app.workspace.getActiveViewOfType?.(MarkdownView)?.file ?? null);
 		if (!file) {
 			new Notice(this.t('no-file'));
 			return;
 		}
-		const filename = file.basename;
-		let link = '';
-		const display = displayText || filename;
-		if (this.settings.linkFormat === LinkFormat.WIKILINK) {
-			link = `[[${filename}|${display}]]`;
-		} else {
-			let path = file.path.replace(/\\/g, '/');
-			if (path.endsWith('.md')) path = path.slice(0, -3);
-			link = `[${display}](${this.encodeMarkdownLinkUrl(path)})`;
-		}
+
+		const link = buildFileLink({
+			filename: file.basename,
+			filePath: file.path,
+			displayText,
+			linkFormat: this.settings.linkFormat,
+		});
+
 		navigator.clipboard.writeText(link);
 		if (this.settings.showNotice) {
 			new Notice(this.t('file-link-copied'));
@@ -819,9 +716,5 @@ export default class EasyCopy extends Plugin {
 		// 从 localStorage 中获取 Obsidian 的语言设置
 		const lang = window.localStorage.getItem("language") || 'en';
 		return lang;
-	}
-
-	private encodeMarkdownLinkUrl(url: string): string {
-		return url.replace(/ /g, '%20');
 	}
 }
