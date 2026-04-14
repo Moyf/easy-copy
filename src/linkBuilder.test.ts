@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildHeadingLink, buildBlockLink, buildFileLink, extractBlockDisplayText, encodeMarkdownLinkUrl } from './linkBuilder';
+import { buildHeadingLink, buildBlockLink, buildFileLink, extractBlockDisplayText, encodeMarkdownLinkUrl, sanitizeHeadingForLink } from './linkBuilder';
 import { LinkFormat } from './type';
 
 // ---------------------------------------------------------------------------
@@ -21,6 +21,50 @@ describe('encodeMarkdownLinkUrl', () => {
 
 	it('does not encode other special characters', () => {
 		expect(encodeMarkdownLinkUrl('Note#Head^id')).toBe('Note#Head^id');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// sanitizeHeadingForLink
+// ---------------------------------------------------------------------------
+
+describe('sanitizeHeadingForLink', () => {
+	it('strips # | ^ : with surrounding whitespace', () => {
+		expect(sanitizeHeadingForLink('Test | If # This ^ Heading : Works'))
+			.toBe('Test If This Heading Works');
+	});
+
+	it('strips special chars without surrounding whitespace', () => {
+		expect(sanitizeHeadingForLink('Test|If#This^Heading:Works, Too'))
+			.toBe('Test If This Heading Works, Too');
+	});
+
+	it('strips only the special chars that are present', () => {
+		expect(sanitizeHeadingForLink('Test | If This ^ Heading Works (No Hash or Colon)'))
+			.toBe('Test If This Heading Works (No Hash or Colon)');
+	});
+
+	it('strips %% (comment marker)', () => {
+		expect(sanitizeHeadingForLink('Before %% comment %% After'))
+			.toBe('Before comment After');
+	});
+
+	it('strips [[ and ]]', () => {
+		expect(sanitizeHeadingForLink('See [[Other Note]] here'))
+			.toBe('See Other Note here');
+	});
+
+	it('returns heading unchanged when no special chars', () => {
+		expect(sanitizeHeadingForLink('Normal Heading Text'))
+			.toBe('Normal Heading Text');
+	});
+
+	it('handles empty string', () => {
+		expect(sanitizeHeadingForLink('')).toBe('');
+	});
+
+	it('handles heading that is only special chars', () => {
+		expect(sanitizeHeadingForLink('# | ^')).toBe('');
 	});
 });
 
@@ -190,29 +234,62 @@ describe('buildHeadingLink', () => {
 		});
 	});
 
-	// -- compareIgnoreCase `includes` behavior --------------------------------
-	// BUG: compareIgnoreCase uses filename.includes(heading), which causes
-	// false-positive note-link simplification when the filename merely contains
-	// the heading as a substring. Should be fixed in a future PR (invert these
-	// tests when fixing).
+	// -- Special character sanitization in link targets ----------------------
 
-	describe('filename-heading substring matching (known bug)', () => {
-		it('false-positive: simplifies when filename contains heading as substring', () => {
-			// BUG: "JavaScript".includes("Java") → true, incorrectly simplifies.
-			// Expected correct behavior: should NOT simplify (not an exact or
-			// derived-name match).
+	describe('special character sanitization', () => {
+		it('wiki format: strips special chars from link target, preserves display text', () => {
+			const result = buildHeadingLink({
+				...defaults,
+				heading: 'Test | If # This ^ Heading : Works',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote#Test If This Heading Works|Test | If # This ^ Heading : Works]]');
+		});
+
+		it('markdown format: strips special chars from URL target', () => {
+			const result = buildHeadingLink({
+				...defaults,
+				linkFormat: LinkFormat.MDLINK,
+				heading: 'Test | If # This ^ Heading : Works',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[Test | If # This ^ Heading : Works](MyNote#Test%20If%20This%20Heading%20Works)');
+		});
+
+		it('wiki format: strips chars without surrounding whitespace', () => {
+			const result = buildHeadingLink({
+				...defaults,
+				heading: 'Test|If#This^Heading:Works, Too',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote#Test If This Heading Works, Too|Test|If#This^Heading:Works, Too]]');
+		});
+
+		it('markdown format: display text preserves original heading', () => {
+			const result = buildHeadingLink({
+				...defaults,
+				linkFormat: LinkFormat.MDLINK,
+				heading: 'Test|If#This^Heading:Works, Too',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[Test|If#This^Heading:Works, Too](MyNote#Test%20If%20This%20Heading%20Works,%20Too)');
+		});
+	});
+
+	// -- compareIgnoreCase: strict equality (no substring matching) -----------
+
+	describe('filename-heading matching (strict equality)', () => {
+		it('does not simplify when filename contains heading as substring', () => {
 			const result = buildHeadingLink({
 				...defaults,
 				heading: 'Java',
 				filename: 'JavaScript',
 			});
-			expect(result.link).toBe('[[JavaScript|Java]]');
-			expect(result.isNoteLink).toBe(true);
+			expect(result.link).toBe('[[JavaScript#Java|Java]]');
+			expect(result.isNoteLink).toBe(false);
 		});
 
-		it('does NOT simplify when heading contains filename as substring', () => {
-			// The includes check is directional: filename.includes(heading)
-			// "Note".includes("Notebook") → false
+		it('does not simplify when heading contains filename as substring', () => {
 			const result = buildHeadingLink({
 				...defaults,
 				heading: 'Notebook',
@@ -222,17 +299,14 @@ describe('buildHeadingLink', () => {
 			expect(result.isNoteLink).toBe(false);
 		});
 
-		it('false-positive: simplifies on space-removed substring match', () => {
-			// BUG: "SomeThingElse".includes("SomeThing") → true, incorrectly
-			// simplifies. The intended behavior (SomeThing/Some Thing) works,
-			// but non-exact substring matches like this are false positives.
+		it('does not simplify on space-removed substring match', () => {
 			const result = buildHeadingLink({
 				...defaults,
 				heading: 'Some Thing',
 				filename: 'SomeThingElse',
 			});
-			expect(result.link).toBe('[[SomeThingElse|Some Thing]]');
-			expect(result.isNoteLink).toBe(true);
+			expect(result.link).toBe('[[SomeThingElse#Some Thing|Some Thing]]');
+			expect(result.isNoteLink).toBe(false);
 		});
 	});
 
@@ -265,18 +339,17 @@ describe('buildHeadingLink', () => {
 			expect(result.isNoteLink).toBe(true);
 		});
 
-		it('empty heading triggers false note-link simplification (known bug)', () => {
-			// BUG: ''.includes('') is always true in JS, so compareIgnoreCase
-			// falsely matches any filename. Should produce a heading link with
-			// an empty fragment instead. Fix alongside compareIgnoreCase in a
-			// future PR.
+		it('empty heading produces a heading link with empty fragment (known bug)', () => {
+			// Empty heading is an edge case from Obsidian's UI. The link target
+			// is technically malformed (MyNote#) but this matches current behavior.
+			// Should be addressed in a future PR.
 			const result = buildHeadingLink({
 				...defaults,
 				heading: '',
 				filename: 'MyNote',
 			});
-			expect(result.link).toBe('[[MyNote|]]');
-			expect(result.isNoteLink).toBe(true);
+			expect(result.link).toBe('[[MyNote#|]]');
+			expect(result.isNoteLink).toBe(false);
 		});
 
 		it('markdown format URL-encodes spaces in link URL', () => {
