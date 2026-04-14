@@ -1,13 +1,22 @@
-import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
-import { buildHeadingLink, buildBlockLink, buildFileLink } from './linkBuilder';
+import { buildHeadingLink, buildBlockLink, buildFileLink, sanitizeHeadingForLink, extractBlockDisplayText } from './linkBuilder';
+
+interface CopyMetadata {
+	clipboardText: string;
+	sourceFilePath: string;
+	subpath: string;
+	alias: string;
+	isEmbed: boolean;
+}
 
 export default class EasyCopy extends Plugin {
 	settings: EasyCopySettings;
 	i18n: I18n;
+	private lastCopyMeta: CopyMetadata | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -103,6 +112,26 @@ export default class EasyCopy extends Plugin {
 				}
 			})
 		);
+
+		// Clear paste metadata on manual copy (Ctrl+C, right-click copy, etc.)
+		// so we don't falsely intercept paste of non-Easy-Copy content.
+		// navigator.clipboard.writeText() does not fire DOM copy events,
+		// so Easy Copy's own writes are unaffected.
+		// Note: plugins that also use navigator.clipboard.writeText() bypass
+		// this listener. A conflict would require identical clipboard text,
+		// which is extremely unlikely. If needed, a custom ClipboardItem MIME
+		// type could serve as a more robust authentication mechanism.
+		this.registerDomEvent(document, 'copy', () => {
+			this.lastCopyMeta = null;
+		});
+
+		// Paste-time path resolution: when "Follow Obsidian settings" is active,
+		// intercept paste to regenerate the link with correct path format
+		// (shortest/relative/absolute) based on the destination file.
+		// Uses DOM capture phase to intercept before Obsidian processes the paste.
+		this.registerDomEvent(document, 'paste', (evt: ClipboardEvent) => {
+			this.handlePaste(evt);
+		}, true);
 	}
 
 	onunload() {
@@ -115,6 +144,48 @@ export default class EasyCopy extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	/**
+	 * Intercept paste when the clipboard contains an Easy Copy link.
+	 * Uses Obsidian's generateMarkdownLink() to resolve the correct path
+	 * format (shortest/relative/absolute) for the destination file.
+	 */
+	private handlePaste(evt: ClipboardEvent): void {
+		if (!this.lastCopyMeta) return;
+		if (this.settings.linkFormat !== LinkFormat.OBSIDIAN) return;
+
+		const clipboardText = evt.clipboardData?.getData('text/plain');
+		if (clipboardText !== this.lastCopyMeta.clipboardText) {
+			this.lastCopyMeta = null;
+			return;
+		}
+
+		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!view?.file) return;
+
+		const sourceFile = this.app.vault.getAbstractFileByPath(this.lastCopyMeta.sourceFilePath);
+		if (!(sourceFile instanceof TFile)) return;
+
+		try {
+			let link = this.app.fileManager.generateMarkdownLink(
+				sourceFile,
+				view.file.path,
+				this.lastCopyMeta.subpath || undefined,
+				this.lastCopyMeta.alias || undefined,
+			);
+
+			if (this.lastCopyMeta.isEmbed) {
+				link = '!' + link;
+			}
+
+			if (link !== clipboardText) {
+				evt.preventDefault();
+				view.editor.replaceSelection(link);
+			}
+		} catch {
+			// generateMarkdownLink failed — let normal paste proceed
+		}
 	}
 
 	/**
@@ -533,11 +604,30 @@ export default class EasyCopy extends Plugin {
 
 		navigator.clipboard.writeText(blockIdLink);
 
+		// Store metadata for paste-time path resolution
+		const blockFile = this.app.workspace.getActiveFile();
+		if (blockFile) {
+			let alias = content;
+			if (useBrief && firstLine) {
+				alias = extractBlockDisplayText(firstLine, content, this.settings.blockDisplayWordLimit, this.settings.blockDisplayCharLimit);
+			}
+			if (!this.settings.autoBlockDisplayText) {
+				alias = '';
+			}
+			this.lastCopyMeta = {
+				clipboardText: blockIdLink,
+				sourceFilePath: blockFile.path,
+				subpath: `#^${content}`,
+				alias,
+				isEmbed: this.settings.autoEmbedBlockLink,
+			};
+		}
+
 		if (this.settings.showNotice) {
 			new Notice(this.t('block-id-copied'));
 		}
 	}
-	
+
 	/**
 	 * 复制标题链接
 	 */
@@ -567,6 +657,31 @@ export default class EasyCopy extends Plugin {
 		});
 
 		navigator.clipboard.writeText(link);
+
+		// Store metadata for paste-time path resolution
+		const headingFile = this.app.workspace.getActiveFile();
+		if (headingFile) {
+			let heading = content;
+			if (heading.startsWith('[[') && heading.endsWith(']]')) {
+				heading = heading.slice(2, -2);
+			}
+			let alias = heading;
+			if (!this.settings.useHeadingAsDisplayText) {
+				const separator = this.settings.headingLinkSeparator || '#';
+				const filenameOrTitle = frontmatterTitle || filename;
+				alias = `${filenameOrTitle}${separator}${heading}`;
+			}
+			if (isNoteLink && filename === heading) {
+				alias = '';
+			}
+			this.lastCopyMeta = {
+				clipboardText: link,
+				sourceFilePath: headingFile.path,
+				subpath: isNoteLink ? '' : `#${sanitizeHeadingForLink(heading)}`,
+				alias,
+				isEmbed: false,
+			};
+		}
 
 		if (isNoteLink) {
 			new Notice(this.t('note-link-simplified'));
@@ -608,6 +723,16 @@ export default class EasyCopy extends Plugin {
 		});
 
 		navigator.clipboard.writeText(link);
+
+		// Store metadata for paste-time path resolution
+		this.lastCopyMeta = {
+			clipboardText: link,
+			sourceFilePath: file.path,
+			subpath: '',
+			alias: displayText || '',
+			isEmbed: false,
+		};
+
 		if (this.settings.showNotice) {
 			new Notice(this.t('file-link-copied'));
 		}
