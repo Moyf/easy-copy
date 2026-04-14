@@ -6,6 +6,25 @@ export function encodeMarkdownLinkUrl(url: string): string {
 	return url.replace(/ /g, '%20');
 }
 
+// --- Heading Sanitization ---
+
+/**
+ * Sanitize heading text for use in link targets.
+ *
+ * Obsidian's [[ autocomplete surprisingly strips # | ^ : %% [[ ]] from
+ * heading link targets rather than URL-encoding them, replacing each
+ * occurrence (and any surrounding whitespace) with a single space.
+ * URL-encoding these characters does not work reliably in Obsidian.
+ *
+ * See: https://help.obsidian.md/Linking+notes+and+files/Internal+links
+ */
+export function sanitizeHeadingForLink(heading: string): string {
+	return heading
+		.replace(/\s*(?:%%|\[\[|]]|[#|^:])\s*/g, ' ')
+		.replace(/ {2,}/g, ' ')
+		.trim();
+}
+
 // --- Heading Link ---
 
 export interface BuildHeadingLinkOptions {
@@ -41,18 +60,20 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 		displayText = `${filenameOrTitle}${separator}${selectedHeading}`;
 	}
 
-	let linkContent = `${filename}#${selectedHeading}`;
+	const sanitizedHeading = sanitizeHeadingForLink(selectedHeading);
+	let linkContent = `${filename}#${sanitizedHeading}`;
 	let isNoteLink = false;
 
 	const compareIgnoreCase = (a: string, b: string): boolean =>
-		a.toLowerCase() === b.toLowerCase() || a.toLowerCase().includes(b.toLowerCase());
+		a.toLowerCase() === b.toLowerCase();
 
 	// 特殊情况：如果文件名包含标题，则不添加指向标题的 # 部分
 	// 我自己的情况——会把 SomeThing 给拆成 Some Thing 来做标题，所以也考虑空格替换的部分
 	if (
-		filename === selectedHeading ||
+		selectedHeading &&
+		(filename === selectedHeading ||
 		compareIgnoreCase(filename, selectedHeading) ||
-		compareIgnoreCase(filename, selectedHeading.replace(/\s+/g, ''))
+		compareIgnoreCase(filename, selectedHeading.replace(/\s+/g, '')))
 	) {
 		linkContent = filename;
 		isNoteLink = true;
@@ -77,7 +98,7 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 		}
 	} else {
 		// Markdown链接格式
-		link = `[${displayText}](${encodeMarkdownLinkUrl(`${filename}#${selectedHeading}`)})`;
+		link = `[${displayText}](${encodeMarkdownLinkUrl(`${filename}#${sanitizedHeading}`)})`;
 	}
 
 	return { link, isNoteLink };
