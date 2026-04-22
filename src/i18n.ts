@@ -15,6 +15,7 @@ export type TranslationKey =
 	| 'add-extra-commands' | 'add-extra-commands-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc' | 'heading-link-separator' | 'heading-link-separator-desc' | 'block-id'
 	| 'simplified-heading-to-note-link' | 'simplified-heading-to-note-link-desc'
+	| 'strict-heading-match' | 'strict-heading-match-desc'
 	| 'use-frontmatter-as-display' | 'use-frontmatter-as-display-desc' | 'frontmatter-key' | 'frontmatter-key-desc'
 	| 'link-format'| 'link-format-desc' | 'link-format-obsidian' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
 	| 'copy-current-file-link' | 'file-link-copied'
@@ -97,6 +98,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'use-heading-as-display-desc': 'Use the heading text as display text in copied heading links',
 		'simplified-heading-to-note-link': 'Simplify link when filename matches heading',
 		'simplified-heading-to-note-link-desc': 'When the filename matches the heading text (ignoring spaces), create a note link instead of a heading link',
+		'strict-heading-match': 'Strict heading match',
+		'strict-heading-match-desc': 'When enabled, filename must exactly match the heading (case-insensitive). When disabled, the link is also simplified if the filename contains the heading as a substring (e.g. "260422_note" matches heading "note").',
 		'heading-link-separator': 'Heading Link: Separator between filename and heading',
 		'heading-link-separator-desc': 'Customize the separator symbol between filename and heading (only shown when "Use heading as display text" is disabled)',
 		'link-format': 'Link format',
@@ -193,6 +196,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'use-heading-as-display-desc': '在复制的标题链接中，使用标题文本作为显示文本',
 		'simplified-heading-to-note-link': '文件名匹配标题时简化链接',
 		'simplified-heading-to-note-link-desc': '当文件名与标题文本匹配时（相同或包含），直接创建笔记链接而不是标题链接',
+		'strict-heading-match': '严格匹配',
+		'strict-heading-match-desc': '启用后，文件名必须与标题完全相同（忽略大小写）才会简化。关闭时，文件名包含标题也会简化（如文件名 "260422_note" 匹配标题 "note"）。',
 		'heading-link-separator': '标题链接：文件名与标题间的连接符',
 		'heading-link-separator-desc': '自定义文件名与标题之间的连接符号（仅在禁用"使用标题作为显示文本"时显示）',
 		'link-format': '链接格式',
@@ -299,6 +304,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'use-heading-as-display-desc': '在複製的標題連結中，使用標題文本作為顯示文本',
 		'simplified-heading-to-note-link': '檔案名匹配標題時簡化連結',
 		'simplified-heading-to-note-link-desc': '當檔案名與標題文本匹配時（相同或包含），直接建立筆記連結而不是標題連結',
+		'strict-heading-match': '嚴格匹配',
+		'strict-heading-match-desc': '啟用後，檔案名必須與標題完全相同（忽略大小寫）才會簡化。關閉時，檔案名包含標題也會簡化（如檔案名 "260422_note" 匹配標題 "note"）。',
 		'heading-link-separator': '標題連結：檔案名與標題間的連接符',
 		'heading-link-separator-desc': '自定義檔案名與標題之間的連接符號（僅在禁用「使用標題作為顯示文本」時顯示）',
 		'link-format': '連結格式',

@@ -34,6 +34,7 @@ export interface BuildHeadingLinkOptions {
 	linkFormat: LinkFormat;
 	useHeadingAsDisplayText: boolean;
 	headingLinkSeparator: string;
+	strictHeadingMatch?: boolean;
 }
 
 export interface BuildHeadingLinkResult {
@@ -42,7 +43,7 @@ export interface BuildHeadingLinkResult {
 }
 
 export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeadingLinkResult {
-	const { filename, linkFormat, useHeadingAsDisplayText, headingLinkSeparator } = options;
+	const { filename, linkFormat, useHeadingAsDisplayText, headingLinkSeparator, strictHeadingMatch } = options;
 	const filenameOrTitle = options.frontmatterTitle || filename;
 
 	// 提取标题文本和级别
@@ -65,7 +66,9 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 	let isNoteLink = false;
 
 	const compareIgnoreCase = (a: string, b: string): boolean =>
-		a.toLowerCase() === b.toLowerCase();
+		strictHeadingMatch
+			? a.toLowerCase() === b.toLowerCase()
+			: a.toLowerCase() === b.toLowerCase() || a.toLowerCase().includes(b.toLowerCase());
 
 	// 特殊情况：如果文件名包含标题，则不添加指向标题的 # 部分
 	// 我自己的情况——会把 SomeThing 给拆成 Some Thing 来做标题，所以也考虑空格替换的部分

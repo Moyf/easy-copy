@@ -276,17 +276,17 @@ describe('buildHeadingLink', () => {
 		});
 	});
 
-	// -- compareIgnoreCase: strict equality (no substring matching) -----------
+	// -- compareIgnoreCase: default (includes) vs strict matching -----------
 
-	describe('filename-heading matching (strict equality)', () => {
-		it('does not simplify when filename contains heading as substring', () => {
+	describe('filename-heading matching (default: includes)', () => {
+		it('simplifies when filename contains heading as substring', () => {
 			const result = buildHeadingLink({
 				...defaults,
 				heading: 'Java',
 				filename: 'JavaScript',
 			});
-			expect(result.link).toBe('[[JavaScript#Java|Java]]');
-			expect(result.isNoteLink).toBe(false);
+			expect(result.link).toBe('[[JavaScript|Java]]');
+			expect(result.isNoteLink).toBe(true);
 		});
 
 		it('does not simplify when heading contains filename as substring', () => {
@@ -299,14 +299,68 @@ describe('buildHeadingLink', () => {
 			expect(result.isNoteLink).toBe(false);
 		});
 
-		it('does not simplify on space-removed substring match', () => {
+		it('simplifies on space-removed substring match', () => {
 			const result = buildHeadingLink({
 				...defaults,
 				heading: 'Some Thing',
 				filename: 'SomeThingElse',
 			});
+			expect(result.link).toBe('[[SomeThingElse|Some Thing]]');
+			expect(result.isNoteLink).toBe(true);
+		});
+
+		it('simplifies when filename contains heading (e.g. date-prefixed notes)', () => {
+			const result = buildHeadingLink({
+				...defaults,
+				heading: 'note',
+				filename: '260422_note',
+			});
+			expect(result.link).toBe('[[260422_note|note]]');
+			expect(result.isNoteLink).toBe(true);
+		});
+	});
+
+	describe('filename-heading matching (strict mode)', () => {
+		const strict = { ...defaults, strictHeadingMatch: true };
+
+		it('does not simplify when filename contains heading as substring', () => {
+			const result = buildHeadingLink({
+				...strict,
+				heading: 'Java',
+				filename: 'JavaScript',
+			});
+			expect(result.link).toBe('[[JavaScript#Java|Java]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('does not simplify on space-removed substring match', () => {
+			const result = buildHeadingLink({
+				...strict,
+				heading: 'Some Thing',
+				filename: 'SomeThingElse',
+			});
 			expect(result.link).toBe('[[SomeThingElse#Some Thing|Some Thing]]');
 			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('still simplifies on exact case-insensitive match', () => {
+			const result = buildHeadingLink({
+				...strict,
+				heading: 'mynote',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote|mynote]]');
+			expect(result.isNoteLink).toBe(true);
+		});
+
+		it('still simplifies on space-removed exact match', () => {
+			const result = buildHeadingLink({
+				...strict,
+				heading: 'Some Thing',
+				filename: 'SomeThing',
+			});
+			expect(result.link).toBe('[[SomeThing|Some Thing]]');
+			expect(result.isNoteLink).toBe(true);
 		});
 	});
 

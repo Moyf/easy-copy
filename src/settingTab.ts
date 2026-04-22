@@ -159,6 +159,18 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					this.display();
 				})));
 
+		if (this.plugin.settings.simplifiedHeadingToNoteLink) {
+			formatGroup.addSetting(setting => setting
+				.setName(this.plugin.t('strict-heading-match'))
+				.setDesc(this.plugin.t('strict-heading-match-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.strictHeadingMatch)
+					.onChange(async (value) => {
+						this.plugin.settings.strictHeadingMatch = value;
+						await this.plugin.saveSettings();
+					})));
+		}
+
 
 		// 新增：是否使用 frontmatter 属性作为显示文本
 		formatGroup.addSetting(setting => setting
