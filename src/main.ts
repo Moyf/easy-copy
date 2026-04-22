@@ -3,15 +3,8 @@ import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
-import { buildHeadingLink, buildBlockLink, buildFileLink, sanitizeHeadingForLink, extractBlockDisplayText } from './linkBuilder';
-
-interface CopyMetadata {
-	clipboardText: string;
-	sourceFilePath: string;
-	subpath: string;
-	alias: string;
-	isEmbed: boolean;
-}
+import { buildHeadingLink, buildBlockLink, buildFileLink } from './linkBuilder';
+import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
 
 export default class EasyCopy extends Plugin {
 	settings: EasyCopySettings;
@@ -607,20 +600,17 @@ export default class EasyCopy extends Plugin {
 		// Store metadata for paste-time path resolution
 		const blockFile = this.app.workspace.getActiveFile();
 		if (blockFile) {
-			let alias = content;
-			if (useBrief && firstLine) {
-				alias = extractBlockDisplayText(firstLine, content, this.settings.blockDisplayWordLimit, this.settings.blockDisplayCharLimit);
-			}
-			if (!this.settings.autoBlockDisplayText) {
-				alias = '';
-			}
-			this.lastCopyMeta = {
+			this.lastCopyMeta = buildBlockCopyMetadata({
 				clipboardText: blockIdLink,
 				sourceFilePath: blockFile.path,
-				subpath: `#^${content}`,
-				alias,
-				isEmbed: this.settings.autoEmbedBlockLink,
-			};
+				blockId: content,
+				useBrief,
+				firstLine,
+				autoBlockDisplayText: this.settings.autoBlockDisplayText,
+				autoEmbedBlockLink: this.settings.autoEmbedBlockLink,
+				blockDisplayWordLimit: this.settings.blockDisplayWordLimit,
+				blockDisplayCharLimit: this.settings.blockDisplayCharLimit,
+			});
 		}
 
 		if (this.settings.showNotice) {
@@ -661,26 +651,16 @@ export default class EasyCopy extends Plugin {
 		// Store metadata for paste-time path resolution
 		const headingFile = this.app.workspace.getActiveFile();
 		if (headingFile) {
-			let heading = content;
-			if (heading.startsWith('[[') && heading.endsWith(']]')) {
-				heading = heading.slice(2, -2);
-			}
-			let alias = heading;
-			if (!this.settings.useHeadingAsDisplayText) {
-				const separator = this.settings.headingLinkSeparator || '#';
-				const filenameOrTitle = frontmatterTitle || filename;
-				alias = `${filenameOrTitle}${separator}${heading}`;
-			}
-			if (isNoteLink && filename === heading) {
-				alias = '';
-			}
-			this.lastCopyMeta = {
+			this.lastCopyMeta = buildHeadingCopyMetadata({
 				clipboardText: link,
 				sourceFilePath: headingFile.path,
-				subpath: isNoteLink ? '' : `#${sanitizeHeadingForLink(heading)}`,
-				alias,
-				isEmbed: false,
-			};
+				heading: content,
+				filename,
+				frontmatterTitle,
+				useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
+				headingLinkSeparator: this.settings.headingLinkSeparator,
+				isNoteLink,
+			});
 		}
 
 		if (isNoteLink) {
@@ -725,13 +705,11 @@ export default class EasyCopy extends Plugin {
 		navigator.clipboard.writeText(link);
 
 		// Store metadata for paste-time path resolution
-		this.lastCopyMeta = {
+		this.lastCopyMeta = buildFileCopyMetadata({
 			clipboardText: link,
 			sourceFilePath: file.path,
-			subpath: '',
-			alias: displayText || '',
-			isEmbed: false,
-		};
+			displayText,
+		});
 
 		if (this.settings.showNotice) {
 			new Notice(this.t('file-link-copied'));
