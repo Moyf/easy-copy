@@ -19,7 +19,7 @@ jobs:
 
       - name: Build plugin
         run: |
-          npm install --legacy-peer-deps
+          npm install
           npm run build
 
       - name: Create release
