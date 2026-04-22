@@ -16,7 +16,7 @@ export type TranslationKey =
 	| 'use-heading-as-display' | 'use-heading-as-display-desc' | 'heading-link-separator' | 'heading-link-separator-desc' | 'block-id'
 	| 'simplified-heading-to-note-link' | 'simplified-heading-to-note-link-desc'
 	| 'use-frontmatter-as-display' | 'use-frontmatter-as-display-desc' | 'frontmatter-key' | 'frontmatter-key-desc'
-	| 'link-format'| 'link-format-desc' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
+	| 'link-format'| 'link-format-desc' | 'link-format-obsidian' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
 	| 'copy-current-file-link' | 'file-link-copied'
 	| 'target' | 'customize-targets' | 'customize-targets-desc' 
 	| 'enable-bold' | 'enable-bold-desc' 
@@ -101,6 +101,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'heading-link-separator-desc': 'Customize the separator symbol between filename and heading (only shown when "Use heading as display text" is disabled)',
 		'link-format': 'Link format',
 		'link-format-desc': 'The format used when copying various types of links',
+		'link-format-obsidian': 'Follow Obsidian settings',
 		'markdown-link': 'Markdown link',
 		'wiki-link': 'Wiki link',
 		'customize-targets': 'Customize targets',
@@ -196,6 +197,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'heading-link-separator-desc': '自定义文件名与标题之间的连接符号（仅在禁用"使用标题作为显示文本"时显示）',
 		'link-format': '链接格式',
 		'link-format-desc': '复制各种链接时使用的格式',
+		'link-format-obsidian': '跟随 Obsidian 设置',
 		'markdown-link': 'Markdown链接',
 		'wiki-link': 'Wiki链接',
 		'customize-targets': '自定义复制对象',
@@ -301,6 +303,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'heading-link-separator-desc': '自定義檔案名與標題之間的連接符號（僅在禁用「使用標題作為顯示文本」時顯示）',
 		'link-format': '連結格式',
 		'link-format-desc': '複製各種連結時使用的格式',
+		'link-format-obsidian': '跟隨 Obsidian 設定',
 		'markdown-link': 'Markdown連結',
 		'wiki-link': 'Wiki連結',
 		'customize-targets': '自定義複製對象',

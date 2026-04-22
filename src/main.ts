@@ -1,6 +1,6 @@
 import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
-import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, BlockIdInsertPosition } from './type';
+import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { buildHeadingLink, buildBlockLink, buildFileLink } from './linkBuilder';
@@ -524,7 +524,7 @@ export default class EasyCopy extends Plugin {
 			filename,
 			useBrief,
 			firstLine,
-			linkFormat: this.settings.linkFormat,
+			linkFormat: this.getEffectiveLinkFormat(),
 			autoBlockDisplayText: this.settings.autoBlockDisplayText,
 			autoEmbedBlockLink: this.settings.autoEmbedBlockLink,
 			blockDisplayWordLimit: this.settings.blockDisplayWordLimit,
@@ -560,7 +560,7 @@ export default class EasyCopy extends Plugin {
 			heading: content,
 			filename,
 			frontmatterTitle,
-			linkFormat: this.settings.linkFormat,
+			linkFormat: this.getEffectiveLinkFormat(),
 			useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
 			headingLinkSeparator: this.settings.headingLinkSeparator,
 		});
@@ -603,7 +603,7 @@ export default class EasyCopy extends Plugin {
 			filename: file.basename,
 			filePath: file.path,
 			displayText,
-			linkFormat: this.settings.linkFormat,
+			linkFormat: this.getEffectiveLinkFormat(),
 		});
 
 		navigator.clipboard.writeText(link);
@@ -716,5 +716,19 @@ export default class EasyCopy extends Plugin {
 		// 从 localStorage 中获取 Obsidian 的语言设置
 		const lang = window.localStorage.getItem("language") || 'en';
 		return lang;
+	}
+
+	/**
+	 * 获取实际生效的链接格式
+	 * 如果用户选择了"跟随 Obsidian 设置"，则读取 Obsidian 的 vault 配置
+	 */
+	getEffectiveLinkFormat(): LinkFormat {
+		if (this.settings.linkFormat !== LinkFormat.OBSIDIAN) {
+			return this.settings.linkFormat;
+		}
+		// 读取 Obsidian 的 useMarkdownLinks 配置
+		// @ts-expect-error - getConfig 是非公开但广泛使用的 API
+		const useMarkdownLinks = this.app.vault.getConfig('useMarkdownLinks');
+		return useMarkdownLinks ? LinkFormat.MDLINK : LinkFormat.WIKILINK;
 	}
 }

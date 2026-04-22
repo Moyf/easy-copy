@@ -1,4 +1,5 @@
 export enum LinkFormat {
+	OBSIDIAN = 'obsidian',
 	MDLINK = 'markdown-link',
 	WIKILINK = 'wiki-link'
 }
@@ -72,7 +73,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     useHeadingAsDisplayText: true,
     headingLinkSeparator: '#',
     simplifiedHeadingToNoteLink: true,
-    linkFormat: LinkFormat.WIKILINK,
+    linkFormat: LinkFormat.OBSIDIAN,
     customizeTargets: false,
     enableInlineCode: true,
     enableBold: true,

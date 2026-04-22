@@ -112,6 +112,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setName(this.plugin.t('link-format'))
 			.setDesc(this.plugin.t('link-format-desc'))
 			.addDropdown(dropdown => dropdown
+				.addOption(LinkFormat.OBSIDIAN, this.plugin.t('link-format-obsidian'))
 				.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
 				.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
 				.setValue(this.plugin.settings.linkFormat)
