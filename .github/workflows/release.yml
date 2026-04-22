@@ -15,11 +15,11 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18.x"
+          node-version: "20.x"
 
       - name: Build plugin
         run: |
-          npm install
+          npm install --legacy-peer-deps
           npm run build
 
       - name: Create release
