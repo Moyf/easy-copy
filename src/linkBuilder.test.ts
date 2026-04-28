@@ -344,6 +344,60 @@ describe('buildHeadingLink', () => {
 				expect(result.isNoteLink).toBe(true);
 			});
 		});
+
+		describe('simplifiedHeadingToNoteLink gated on useHeadingAsDisplayText=true (A1.5)', () => {
+			// When the user wants "filename#heading" in the display, dropping the heading
+			// anchor would produce a misleading [filename#heading](filename). The gate
+			// preserves the heading link so display intent and target stay aligned.
+
+			it('does NOT simplify on exact match when useHeadingAsDisplayText is false', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'MyNote',
+					filename: 'MyNote',
+					useHeadingAsDisplayText: false,
+					headingLinkSeparator: '#',
+				});
+				expect(result.link).toBe('[MyNote#MyNote](MyNote#MyNote)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('does NOT simplify on space-removed match when useHeadingAsDisplayText is false', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Some Thing',
+					filename: 'SomeThing',
+					useHeadingAsDisplayText: false,
+					headingLinkSeparator: '#',
+				});
+				expect(result.link).toBe('[SomeThing#Some Thing](SomeThing#Some%20Thing)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('does NOT simplify on substring match when useHeadingAsDisplayText is false', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Java',
+					filename: 'JavaScript',
+					useHeadingAsDisplayText: false,
+					headingLinkSeparator: '#',
+				});
+				expect(result.link).toBe('[JavaScript#Java](JavaScript#Java)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('honors custom separator in display text when not simplified', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Some Thing',
+					filename: 'SomeThing',
+					useHeadingAsDisplayText: false,
+					headingLinkSeparator: ' > ',
+				});
+				expect(result.link).toBe('[SomeThing > Some Thing](SomeThing#Some%20Thing)');
+				expect(result.isNoteLink).toBe(false);
+			});
+		});
 	});
 
 	// -- Special character sanitization in link targets ----------------------
@@ -476,6 +530,74 @@ describe('buildHeadingLink', () => {
 		});
 	});
 
+	// -- A1.5 gate: simplification gated on useHeadingAsDisplayText (wiki side) -----
+
+	describe('simplifiedHeadingToNoteLink gated on useHeadingAsDisplayText=true (A1.5, wiki side)', () => {
+		// Mirrors the markdown-side suite. When the user has asked for "filename#heading"
+		// in the display, the early simplification block is skipped so the heading link
+		// survives. Exception: the WIKI exact-match special case [[filename]] is preserved
+		// regardless, since it renders cleanly as just the filename in Obsidian.
+
+		const wikiNoDisplay = {
+			...defaults,
+			useHeadingAsDisplayText: false,
+			headingLinkSeparator: '#',
+		};
+
+		it('PRESERVES the [[filename]] special case on exact match (the A1.5 exception)', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'MyNote',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote]]');
+			expect(result.isNoteLink).toBe(true);
+		});
+
+		it('does NOT simplify on case-insensitive match', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'mynote',
+				filename: 'MyNote',
+			});
+			// displayText === linkContent → alias collapses, but the heading fragment survives
+			expect(result.link).toBe('[[MyNote#mynote]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('does NOT simplify on space-removed match', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'Some Thing',
+				filename: 'SomeThing',
+			});
+			expect(result.link).toBe('[[SomeThing#Some Thing]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('does NOT simplify on substring match', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'Java',
+				filename: 'JavaScript',
+			});
+			expect(result.link).toBe('[[JavaScript#Java]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('honors custom separator alias when not simplified', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'Some Thing',
+				filename: 'SomeThing',
+				headingLinkSeparator: ' > ',
+			});
+			// displayText "SomeThing > Some Thing" !== linkContent "SomeThing#Some Thing"
+			expect(result.link).toBe('[[SomeThing#Some Thing|SomeThing > Some Thing]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+	});
+
 	// -- simplifiedHeadingToNoteLink: false ---------------------------------
 
 	describe('when simplifiedHeadingToNoteLink is false', () => {
@@ -558,7 +680,7 @@ describe('buildHeadingLink', () => {
 			expect(result.link).toBe('[[my-note#Setup|Setup]]');
 		});
 
-		it('frontmatterTitle + note-link simplification (wiki)', () => {
+		it('frontmatterTitle + heading link kept under useHeadingAsDisplayText=false (wiki, A1.5)', () => {
 			const result = buildHeadingLink({
 				...defaults,
 				heading: 'myNote',
@@ -567,9 +689,10 @@ describe('buildHeadingLink', () => {
 				useHeadingAsDisplayText: false,
 				headingLinkSeparator: '#',
 			});
-			// linkContent simplified to "MyNote", display = "My Pretty Title#myNote"
-			expect(result.link).toBe('[[MyNote|My Pretty Title#myNote]]');
-			expect(result.isNoteLink).toBe(true);
+			// Pre-A1.5 this simplified to [[MyNote|My Pretty Title#myNote]] (target=file, display=heading-style).
+			// A1.5 keeps the heading anchor so the target matches the display intent.
+			expect(result.link).toBe('[[MyNote#myNote|My Pretty Title#myNote]]');
+			expect(result.isNoteLink).toBe(false);
 		});
 
 		it('empty heading produces a heading link with empty fragment (known bug)', () => {

@@ -73,9 +73,13 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 
 	// 特殊情况：如果文件名包含标题，则不添加指向标题的 # 部分
 	// 我自己的情况——会把 SomeThing 给拆成 Some Thing 来做标题，所以也考虑空格替换的部分
-	// Gated on simplifiedHeadingToNoteLink so users can opt out and preserve the heading fragment.
+	// Also gated on useHeadingAsDisplayText: when the user wants "filename#heading" in the
+	// display, dropping the heading anchor here would produce a misleading
+	// [filename#heading](filename) — display promises a heading link the target doesn't deliver.
+	// The WIKI exact-match special case below is exempt — [[filename]] renders cleanly.
 	if (
 		simplifiedHeadingToNoteLink &&
+		useHeadingAsDisplayText &&
 		selectedHeading &&
 		(filename === selectedHeading ||
 		compareIgnoreCase(filename, selectedHeading) ||
