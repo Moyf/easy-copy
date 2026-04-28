@@ -198,14 +198,14 @@ describe('buildHeadingLink', () => {
 			expect(result.link).toBe('[Getting Started](MyNote#Getting%20Started)');
 		});
 
-		it('always includes #heading even when filename matches heading', () => {
+		it('simplifies to file link when filename equals heading exactly', () => {
 			const result = buildHeadingLink({
 				...md,
 				heading: 'MyNote',
 				filename: 'MyNote',
 			});
-			// Markdown format always uses filename#heading; no spaces so no encoding
-			expect(result.link).toBe('[MyNote](MyNote#MyNote)');
+			// simplifiedHeadingToNoteLink (default true) collapses MyNote#MyNote → MyNote
+			expect(result.link).toBe('[MyNote](MyNote)');
 			expect(result.isNoteLink).toBe(true);
 		});
 
@@ -232,6 +232,117 @@ describe('buildHeadingLink', () => {
 			});
 			// No spaces in filename or heading, so no encoding needed
 			expect(result.link).toBe('[My Note#Setup](my-note#Setup)');
+		});
+
+		// -- simplifiedHeadingToNoteLink in markdown format --------------------
+		// Mirror of the wiki "filename-heading matching" suite below.
+
+		describe('simplifiedHeadingToNoteLink (default: includes match)', () => {
+			it('simplifies on case-insensitive exact match', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'mynote',
+					filename: 'MyNote',
+				});
+				// Display preserves heading casing, target preserves filename casing
+				expect(result.link).toBe('[mynote](MyNote)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('simplifies on space-removed match', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Some Thing',
+					filename: 'SomeThing',
+				});
+				expect(result.link).toBe('[Some Thing](SomeThing)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('simplifies when filename contains heading as substring', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Java',
+					filename: 'JavaScript',
+				});
+				expect(result.link).toBe('[Java](JavaScript)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('simplifies for date-prefixed filenames containing heading', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'note',
+					filename: '260422_note',
+				});
+				expect(result.link).toBe('[note](260422_note)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('does not simplify when heading contains filename (asymmetric)', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Notebook',
+					filename: 'Note',
+				});
+				expect(result.link).toBe('[Notebook](Note#Notebook)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('encodes spaces in target when not simplified', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Some Heading',
+					filename: 'My Note',
+				});
+				// No simplification triggers, so target keeps the heading fragment
+				expect(result.link).toBe('[Some Heading](My%20Note#Some%20Heading)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('encodes spaces in target when simplified to filename', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'My Note',
+					filename: 'My Note',
+				});
+				expect(result.link).toBe('[My Note](My%20Note)');
+				expect(result.isNoteLink).toBe(true);
+			});
+		});
+
+		describe('simplifiedHeadingToNoteLink (strict mode)', () => {
+			const strictMd = { ...md, strictHeadingMatch: true };
+
+			it('does not simplify on substring match', () => {
+				const result = buildHeadingLink({
+					...strictMd,
+					heading: 'Java',
+					filename: 'JavaScript',
+				});
+				expect(result.link).toBe('[Java](JavaScript#Java)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('still simplifies on case-insensitive exact match', () => {
+				const result = buildHeadingLink({
+					...strictMd,
+					heading: 'mynote',
+					filename: 'MyNote',
+				});
+				expect(result.link).toBe('[mynote](MyNote)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('still simplifies on space-removed exact match', () => {
+				const result = buildHeadingLink({
+					...strictMd,
+					heading: 'Some Thing',
+					filename: 'SomeThing',
+				});
+				expect(result.link).toBe('[Some Thing](SomeThing)');
+				expect(result.isNoteLink).toBe(true);
+			});
 		});
 	});
 
@@ -420,7 +531,7 @@ describe('buildHeadingLink', () => {
 			expect(result.isNoteLink).toBe(false);
 		});
 
-		it('markdown format always includes heading regardless (sanity check)', () => {
+		it('markdown format keeps heading fragment when simplification is off (sanity check)', () => {
 			const result = buildHeadingLink({
 				...noSimplify,
 				linkFormat: LinkFormat.MDLINK,

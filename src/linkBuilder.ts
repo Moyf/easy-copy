@@ -103,8 +103,10 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 			}
 		}
 	} else {
-		// Markdown链接格式
-		link = `[${displayText}](${encodeMarkdownLinkUrl(`${filename}#${sanitizedHeading}`)})`;
+		// Markdown链接格式 — linkContent already reflects note-link simplification
+		// (set to filename when simplifiedHeadingToNoteLink fires above), so a matching
+		// filename/heading collapses [foo](foo#foo) → [foo](foo).
+		link = `[${displayText}](${encodeMarkdownLinkUrl(linkContent)})`;
 	}
 
 	return { link, isNoteLink };
