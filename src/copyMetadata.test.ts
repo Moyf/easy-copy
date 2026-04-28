@@ -70,6 +70,14 @@ describe('buildBlockCopyMetadata', () => {
 		expect(buildBlockCopyMetadata({ ...base, autoEmbedBlockLink: true }).isEmbed).toBe(true);
 		expect(buildBlockCopyMetadata({ ...base, autoEmbedBlockLink: false }).isEmbed).toBe(false);
 	});
+
+	it('sets timestamp to current time', () => {
+		const before = Date.now();
+		const meta = buildBlockCopyMetadata(base);
+		const after = Date.now();
+		expect(meta.timestamp).toBeGreaterThanOrEqual(before);
+		expect(meta.timestamp).toBeLessThanOrEqual(after);
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -174,6 +182,14 @@ describe('buildHeadingCopyMetadata', () => {
 	it('isEmbed is always false for headings', () => {
 		expect(buildHeadingCopyMetadata(base).isEmbed).toBe(false);
 	});
+
+	it('sets timestamp to current time', () => {
+		const before = Date.now();
+		const meta = buildHeadingCopyMetadata(base);
+		const after = Date.now();
+		expect(meta.timestamp).toBeGreaterThanOrEqual(before);
+		expect(meta.timestamp).toBeLessThanOrEqual(after);
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -224,5 +240,16 @@ describe('buildFileCopyMetadata', () => {
 		});
 		expect(meta.clipboardText).toBe('[[a/b/c]]');
 		expect(meta.sourceFilePath).toBe('a/b/c.md');
+	});
+
+	it('sets timestamp to current time', () => {
+		const before = Date.now();
+		const meta = buildFileCopyMetadata({
+			clipboardText: '[[note]]',
+			sourceFilePath: 'notes/note.md',
+		});
+		const after = Date.now();
+		expect(meta.timestamp).toBeGreaterThanOrEqual(before);
+		expect(meta.timestamp).toBeLessThanOrEqual(after);
 	});
 });

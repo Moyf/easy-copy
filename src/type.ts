@@ -44,6 +44,7 @@ export interface EasyCopySettings {
     simplifiedHeadingToNoteLink: boolean; // 是否简化标题到笔记链接
     strictHeadingMatch: boolean; // 标题与文件名简化匹配时是否使用严格匹配
     linkFormat: LinkFormat;
+    resolveLinkPathOnPaste: boolean; // 当 linkFormat 为 OBSIDIAN 时，粘贴时根据目标文件重新解析链接路径
     customizeTargets: boolean;
     enableInlineCode: boolean;
     enableBold: boolean;
@@ -76,6 +77,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     simplifiedHeadingToNoteLink: true,
     strictHeadingMatch: false,
     linkFormat: LinkFormat.OBSIDIAN,
+    resolveLinkPathOnPaste: false,
     customizeTargets: false,
     enableInlineCode: true,
     enableBold: true,

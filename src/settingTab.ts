@@ -119,7 +119,24 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.linkFormat = value as LinkFormat;
 					await this.plugin.saveSettings();
+					this.plugin.syncPasteHandlerRegistration();
+					this.display();
 				})));
+
+		// Only relevant when linkFormat is OBSIDIAN; the resolver intercepts paste
+		// to regenerate the path (shortest/relative/absolute) for the destination file.
+		if (this.plugin.settings.linkFormat === LinkFormat.OBSIDIAN) {
+			formatGroup.addSetting(setting => setting
+				.setName(this.plugin.t('resolve-link-path-on-paste'))
+				.setDesc(this.plugin.t('resolve-link-path-on-paste-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.resolveLinkPathOnPaste)
+					.onChange(async (value) => {
+						this.plugin.settings.resolveLinkPathOnPaste = value;
+						await this.plugin.saveSettings();
+						this.plugin.syncPasteHandlerRegistration();
+					})));
+		}
 
 		formatGroup.addSetting(setting => setting
 			.setName(this.plugin.t('use-heading-as-display'))

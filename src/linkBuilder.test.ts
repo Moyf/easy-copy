@@ -77,6 +77,7 @@ describe('buildHeadingLink', () => {
 		linkFormat: LinkFormat.WIKILINK,
 		useHeadingAsDisplayText: true,
 		headingLinkSeparator: '#',
+		simplifiedHeadingToNoteLink: true,
 	};
 
 	// -- Wiki format ---------------------------------------------------------
@@ -361,6 +362,73 @@ describe('buildHeadingLink', () => {
 			});
 			expect(result.link).toBe('[[SomeThing|Some Thing]]');
 			expect(result.isNoteLink).toBe(true);
+		});
+	});
+
+	// -- simplifiedHeadingToNoteLink: false ---------------------------------
+
+	describe('when simplifiedHeadingToNoteLink is false', () => {
+		const noSimplify = { ...defaults, simplifiedHeadingToNoteLink: false };
+
+		it('keeps full heading link when filename equals heading exactly (wiki)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'MyNote',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote#MyNote|MyNote]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('keeps full heading link on case-insensitive match (wiki)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'mynote',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote#mynote|mynote]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('keeps full heading link on space-removed match (wiki)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'Some Thing',
+				filename: 'SomeThing',
+			});
+			expect(result.link).toBe('[[SomeThing#Some Thing|Some Thing]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('keeps full heading link on filename-includes-heading match (wiki)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'note',
+				filename: '260422_note',
+			});
+			expect(result.link).toBe('[[260422_note#note|note]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('does not affect non-matching filename/heading (sanity check)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'Getting Started',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote#Getting Started|Getting Started]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('markdown format always includes heading regardless (sanity check)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				linkFormat: LinkFormat.MDLINK,
+				heading: 'MyNote',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[MyNote](MyNote#MyNote)');
+			expect(result.isNoteLink).toBe(false);
 		});
 	});
 

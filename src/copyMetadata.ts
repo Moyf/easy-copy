@@ -6,6 +6,7 @@ export interface CopyMetadata {
 	subpath: string;
 	alias: string;
 	isEmbed: boolean;
+	timestamp: number;
 }
 
 export interface BuildBlockCopyMetadataInput {
@@ -47,6 +48,7 @@ export function buildBlockCopyMetadata(input: BuildBlockCopyMetadataInput): Copy
 		subpath: `#^${blockId}`,
 		alias,
 		isEmbed: autoEmbedBlockLink,
+		timestamp: Date.now(),
 	};
 }
 
@@ -94,6 +96,7 @@ export function buildHeadingCopyMetadata(input: BuildHeadingCopyMetadataInput): 
 		subpath: isNoteLink ? '' : `#${sanitizeHeadingForLink(heading)}`,
 		alias,
 		isEmbed: false,
+		timestamp: Date.now(),
 	};
 }
 
@@ -110,5 +113,6 @@ export function buildFileCopyMetadata(input: BuildFileCopyMetadataInput): CopyMe
 		subpath: '',
 		alias: input.displayText || '',
 		isEmbed: false,
+		timestamp: Date.now(),
 	};
 }

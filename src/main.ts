@@ -1,15 +1,19 @@
-import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile } from 'obsidian';
+import { Editor, EventRef, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { buildHeadingLink, buildBlockLink, buildFileLink } from './linkBuilder';
 import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
+import { decidePasteResolution, shouldRegisterPasteHandler } from './pasteResolution';
+
+const LAST_COPY_META_TTL_MS = 5 * 60 * 1000;
 
 export default class EasyCopy extends Plugin {
 	settings: EasyCopySettings;
 	i18n: I18n;
 	private lastCopyMeta: CopyMetadata | null = null;
+	private pasteEventRef: EventRef | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -118,13 +122,37 @@ export default class EasyCopy extends Plugin {
 			this.lastCopyMeta = null;
 		});
 
-		// Paste-time path resolution: when "Follow Obsidian settings" is active,
-		// intercept paste to regenerate the link with correct path format
-		// (shortest/relative/absolute) based on the destination file.
-		// Uses DOM capture phase to intercept before Obsidian processes the paste.
-		this.registerDomEvent(document, 'paste', (evt: ClipboardEvent) => {
-			this.handlePaste(evt);
-		}, true);
+		// Paste-time path resolution: when enabled and "Follow Obsidian settings"
+		// is active, intercept paste to regenerate the link with correct path
+		// format (shortest/relative/absolute) based on the destination file.
+		// Uses Obsidian's editor-paste workspace event so we cooperate with
+		// other plugins (registration order, defaultPrevented handshake).
+		// Only registered when both conditions hold, so we're absent from the
+		// plugin chain entirely when the user has the feature off.
+		this.syncPasteHandlerRegistration();
+	}
+
+	syncPasteHandlerRegistration(): void {
+		if (shouldRegisterPasteHandler(this.settings)) {
+			this.registerPasteHandler();
+		} else {
+			this.unregisterPasteHandler();
+		}
+	}
+
+	private registerPasteHandler(): void {
+		if (this.pasteEventRef) return;
+		this.pasteEventRef = this.app.workspace.on('editor-paste', (evt, editor, info) => {
+			this.handlePaste(evt, editor, info);
+		});
+		this.registerEvent(this.pasteEventRef);
+	}
+
+	private unregisterPasteHandler(): void {
+		if (!this.pasteEventRef) return;
+		this.app.workspace.offref(this.pasteEventRef);
+		this.pasteEventRef = null;
+		this.lastCopyMeta = null;
 	}
 
 	onunload() {
@@ -143,38 +171,52 @@ export default class EasyCopy extends Plugin {
 	 * Intercept paste when the clipboard contains an Easy Copy link.
 	 * Uses Obsidian's generateMarkdownLink() to resolve the correct path
 	 * format (shortest/relative/absolute) for the destination file.
+	 *
+	 * Per the editor-paste contract (obsidian.d.ts): yield if another handler
+	 * has already preventDefault'd, and call preventDefault to claim the event.
 	 */
-	private handlePaste(evt: ClipboardEvent): void {
-		if (!this.lastCopyMeta) return;
-		if (this.settings.linkFormat !== LinkFormat.OBSIDIAN) return;
-
+	private handlePaste(evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
 		const clipboardText = evt.clipboardData?.getData('text/plain');
-		if (clipboardText !== this.lastCopyMeta.clipboardText) {
+		const decision = decidePasteResolution({
+			defaultPrevented: evt.defaultPrevented,
+			resolveLinkPathOnPaste: this.settings.resolveLinkPathOnPaste,
+			linkFormat: this.settings.linkFormat,
+			lastCopyMeta: this.lastCopyMeta,
+			clipboardText,
+			now: Date.now(),
+			ttlMs: LAST_COPY_META_TTL_MS,
+		});
+
+		if (decision === 'reset-and-skip') {
 			this.lastCopyMeta = null;
 			return;
 		}
+		if (decision === 'skip') return;
 
-		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (!view?.file) return;
+		// decision === 'rewrite' — lastCopyMeta and clipboardText are non-null here.
+		const meta = this.lastCopyMeta!;
 
-		const sourceFile = this.app.vault.getAbstractFileByPath(this.lastCopyMeta.sourceFilePath);
+		const destFile = info.file;
+		if (!destFile) return;
+
+		const sourceFile = this.app.vault.getAbstractFileByPath(meta.sourceFilePath);
 		if (!(sourceFile instanceof TFile)) return;
 
 		try {
 			let link = this.app.fileManager.generateMarkdownLink(
 				sourceFile,
-				view.file.path,
-				this.lastCopyMeta.subpath || undefined,
-				this.lastCopyMeta.alias || undefined,
+				destFile.path,
+				meta.subpath || undefined,
+				meta.alias || undefined,
 			);
 
-			if (this.lastCopyMeta.isEmbed) {
+			if (meta.isEmbed) {
 				link = '!' + link;
 			}
 
 			if (link !== clipboardText) {
 				evt.preventDefault();
-				view.editor.replaceSelection(link);
+				editor.replaceSelection(link);
 			}
 		} catch {
 			// generateMarkdownLink failed — let normal paste proceed
@@ -644,6 +686,7 @@ export default class EasyCopy extends Plugin {
 			useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
 			headingLinkSeparator: this.settings.headingLinkSeparator,
 			strictHeadingMatch: this.settings.strictHeadingMatch,
+			simplifiedHeadingToNoteLink: this.settings.simplifiedHeadingToNoteLink,
 		});
 
 		navigator.clipboard.writeText(link);

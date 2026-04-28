@@ -35,6 +35,7 @@ export interface BuildHeadingLinkOptions {
 	useHeadingAsDisplayText: boolean;
 	headingLinkSeparator: string;
 	strictHeadingMatch?: boolean;
+	simplifiedHeadingToNoteLink: boolean;
 }
 
 export interface BuildHeadingLinkResult {
@@ -43,7 +44,7 @@ export interface BuildHeadingLinkResult {
 }
 
 export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeadingLinkResult {
-	const { filename, linkFormat, useHeadingAsDisplayText, headingLinkSeparator, strictHeadingMatch } = options;
+	const { filename, linkFormat, useHeadingAsDisplayText, headingLinkSeparator, strictHeadingMatch, simplifiedHeadingToNoteLink } = options;
 	const filenameOrTitle = options.frontmatterTitle || filename;
 
 	// 提取标题文本和级别
@@ -72,7 +73,9 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 
 	// 特殊情况：如果文件名包含标题，则不添加指向标题的 # 部分
 	// 我自己的情况——会把 SomeThing 给拆成 Some Thing 来做标题，所以也考虑空格替换的部分
+	// Gated on simplifiedHeadingToNoteLink so users can opt out and preserve the heading fragment.
 	if (
+		simplifiedHeadingToNoteLink &&
 		selectedHeading &&
 		(filename === selectedHeading ||
 		compareIgnoreCase(filename, selectedHeading) ||
@@ -87,7 +90,7 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 	// 根据设置选择链接格式
 	if (linkFormat === LinkFormat.WIKILINK) {
 		// Wiki链接格式
-		if (filename === selectedHeading) {
+		if (simplifiedHeadingToNoteLink && filename === selectedHeading) {
 			// 特殊情况：当文件名与标题相同时，直接链接到文件
 			link = `[[${filename}]]`;
 			isNoteLink = true;
