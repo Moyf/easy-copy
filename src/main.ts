@@ -678,6 +678,10 @@ export default class EasyCopy extends Plugin {
 			}
 		}
 
+		// Under "Follow Obsidian settings", simplified-to-note-link transforms
+		// conflict with deferring format/path choice to Obsidian. Gate inert at
+		// the call site so buildHeadingLink stays format-agnostic.
+		const userExplicitlyPickedFormat = this.settings.linkFormat !== LinkFormat.OBSIDIAN;
 		const { link, isNoteLink } = buildHeadingLink({
 			heading: content,
 			filename,
@@ -686,7 +690,8 @@ export default class EasyCopy extends Plugin {
 			useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
 			headingLinkSeparator: this.settings.headingLinkSeparator,
 			strictHeadingMatch: this.settings.strictHeadingMatch,
-			simplifiedHeadingToNoteLink: this.settings.simplifiedHeadingToNoteLink,
+			simplifiedHeadingToNoteLink:
+				userExplicitlyPickedFormat && this.settings.simplifiedHeadingToNoteLink,
 		});
 
 		navigator.clipboard.writeText(link);
