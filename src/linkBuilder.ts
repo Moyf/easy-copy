@@ -6,6 +6,17 @@ export function encodeMarkdownLinkUrl(url: string): string {
 	return url.replace(/ /g, '%20');
 }
 
+// --- Wiki Bracket Stripping ---
+
+/**
+ * Strip outer [[…]] from a string. Used when a heading captured from
+ * the editor is itself a wiki-link reference.
+ */
+export function stripWikiBrackets(s: string): string {
+	if (s.startsWith('[[') && s.endsWith(']]')) return s.slice(2, -2);
+	return s;
+}
+
 // --- Heading Sanitization ---
 
 /**
@@ -43,75 +54,112 @@ export interface BuildHeadingLinkResult {
 	isNoteLink: boolean;
 }
 
-export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeadingLinkResult {
-	const { filename, linkFormat, useHeadingAsDisplayText, headingLinkSeparator, strictHeadingMatch, simplifiedHeadingToNoteLink } = options;
-	const filenameOrTitle = options.frontmatterTitle || filename;
+interface ComputeDisplayTextOptions {
+	heading: string;
+	filename: string;
+	frontmatterTitle?: string;
+	useHeadingAsDisplayText: boolean;
+	headingLinkSeparator: string;
+}
 
-	// 提取标题文本和级别
-	// 如果内容是[[内容]]，移除[[]]
-	let selectedHeading = options.heading;
-	if (selectedHeading.startsWith('[[') && selectedHeading.endsWith(']]')) {
-		selectedHeading = selectedHeading.slice(2, -2);
-	}
+function computeDisplayText(o: ComputeDisplayTextOptions): string {
+	if (o.useHeadingAsDisplayText) return o.heading;
+	const separator = o.headingLinkSeparator || '#';
+	const filenameOrTitle = o.frontmatterTitle || o.filename;
+	return `${filenameOrTitle}${separator}${o.heading}`;
+}
 
-	// 根据设置决定显示文本
-	let displayText = selectedHeading;
-	if (!useHeadingAsDisplayText) {
-		// 如果不使用标题作为显示文本，则使用"文件名{连接符}标题名"格式
-		const separator = headingLinkSeparator || '#';
-		displayText = `${filenameOrTitle}${separator}${selectedHeading}`;
-	}
+interface ShouldSimplifyHeadingOptions {
+	simplifiedHeadingToNoteLink: boolean;
+	useHeadingAsDisplayText: boolean;
+	selectedHeading: string;
+	filename: string;
+	strictHeadingMatch?: boolean;
+}
 
-	const sanitizedHeading = sanitizeHeadingForLink(selectedHeading);
-	let linkContent = `${filename}#${sanitizedHeading}`;
-	let isNoteLink = false;
+/**
+ * Whether the early simplification block fires (linkContent → filename, isNoteLink → true).
+ *
+ * Gated on useHeadingAsDisplayText: when the user wants "filename#heading" in the
+ * display, dropping the heading anchor would produce a misleading link where the
+ * display text promises a heading the target doesn't deliver. The WIKI exact-match
+ * special case (filename === heading) is handled separately and is exempt.
+ */
+function shouldSimplifyHeading(o: ShouldSimplifyHeadingOptions): boolean {
+	if (!o.simplifiedHeadingToNoteLink) return false;
+	if (!o.useHeadingAsDisplayText) return false;
+	if (!o.selectedHeading) return false;
 
 	const compareIgnoreCase = (a: string, b: string): boolean =>
-		strictHeadingMatch
+		o.strictHeadingMatch
 			? a.toLowerCase() === b.toLowerCase()
 			: a.toLowerCase() === b.toLowerCase() || a.toLowerCase().includes(b.toLowerCase());
 
-	// 特殊情况：如果文件名包含标题，则不添加指向标题的 # 部分
-	// 我自己的情况——会把 SomeThing 给拆成 Some Thing 来做标题，所以也考虑空格替换的部分
-	// Also gated on useHeadingAsDisplayText: when the user wants "filename#heading" in the
-	// display, dropping the heading anchor here would produce a misleading
-	// [filename#heading](filename) — display promises a heading link the target doesn't deliver.
-	// The WIKI exact-match special case below is exempt — [[filename]] renders cleanly.
-	if (
-		simplifiedHeadingToNoteLink &&
-		useHeadingAsDisplayText &&
-		selectedHeading &&
-		(filename === selectedHeading ||
-		compareIgnoreCase(filename, selectedHeading) ||
-		compareIgnoreCase(filename, selectedHeading.replace(/\s+/g, '')))
-	) {
-		linkContent = filename;
-		isNoteLink = true;
-	}
+	return (
+		o.filename === o.selectedHeading ||
+		compareIgnoreCase(o.filename, o.selectedHeading) ||
+		compareIgnoreCase(o.filename, o.selectedHeading.replace(/\s+/g, ''))
+	);
+}
 
-	let link = '';
+interface FormatWikiHeadingLinkOptions {
+	linkContent: string;
+	displayText: string;
+	wikiExactMatch: boolean;
+}
 
-	// 根据设置选择链接格式
-	if (linkFormat === LinkFormat.WIKILINK) {
-		// Wiki链接格式
-		if (simplifiedHeadingToNoteLink && filename === selectedHeading) {
-			// 特殊情况：当文件名与标题相同时，直接链接到文件
-			link = `[[${filename}]]`;
-			isNoteLink = true;
-		} else {
-			if (displayText === linkContent) {
-				// 特殊情况：当显示文本与 "文件名#标题" 相同时，省略显示文本
-				link = `[[${linkContent}]]`;
-			} else {
-				link = `[[${linkContent}|${displayText}]]`;
-			}
-		}
-	} else {
-		// Markdown链接格式 — linkContent already reflects note-link simplification
-		// (set to filename when simplifiedHeadingToNoteLink fires above), so a matching
-		// filename/heading collapses [foo](foo#foo) → [foo](foo).
-		link = `[${displayText}](${encodeMarkdownLinkUrl(linkContent)})`;
+function formatWikiHeadingLink(o: FormatWikiHeadingLinkOptions): string {
+	if (o.wikiExactMatch || o.displayText === o.linkContent) {
+		return `[[${o.linkContent}]]`;
 	}
+	return `[[${o.linkContent}|${o.displayText}]]`;
+}
+
+interface FormatMarkdownHeadingLinkOptions {
+	linkContent: string;
+	displayText: string;
+}
+
+function formatMarkdownHeadingLink(o: FormatMarkdownHeadingLinkOptions): string {
+	return `[${o.displayText}](${encodeMarkdownLinkUrl(o.linkContent)})`;
+}
+
+export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeadingLinkResult {
+	const selectedHeading = stripWikiBrackets(options.heading);
+
+	const displayText = computeDisplayText({
+		heading: selectedHeading,
+		filename: options.filename,
+		frontmatterTitle: options.frontmatterTitle,
+		useHeadingAsDisplayText: options.useHeadingAsDisplayText,
+		headingLinkSeparator: options.headingLinkSeparator,
+	});
+
+	const simplify = shouldSimplifyHeading({
+		simplifiedHeadingToNoteLink: options.simplifiedHeadingToNoteLink,
+		useHeadingAsDisplayText: options.useHeadingAsDisplayText,
+		selectedHeading,
+		filename: options.filename,
+		strictHeadingMatch: options.strictHeadingMatch,
+	});
+
+	// A1.5 exception: WIKI exact match (filename === heading) collapses to
+	// [[filename]] regardless of useHeadingAsDisplayText, since [[filename]]
+	// renders cleanly as just the filename in Obsidian. Owned by the
+	// orchestrator so formatters stay pure string-producers.
+	const wikiExactMatch =
+		options.linkFormat === LinkFormat.WIKILINK &&
+		options.simplifiedHeadingToNoteLink &&
+		options.filename === selectedHeading;
+
+	const isNoteLink = simplify || wikiExactMatch;
+	const linkContent = isNoteLink
+		? options.filename
+		: `${options.filename}#${sanitizeHeadingForLink(selectedHeading)}`;
+
+	const link = options.linkFormat === LinkFormat.WIKILINK
+		? formatWikiHeadingLink({ linkContent, displayText, wikiExactMatch })
+		: formatMarkdownHeadingLink({ linkContent, displayText });
 
 	return { link, isNoteLink };
 }

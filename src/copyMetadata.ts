@@ -1,4 +1,4 @@
-import { extractBlockDisplayText, sanitizeHeadingForLink } from './linkBuilder';
+import { extractBlockDisplayText, sanitizeHeadingForLink, stripWikiBrackets } from './linkBuilder';
 
 export interface CopyMetadata {
 	clipboardText: string;
@@ -75,10 +75,7 @@ export function buildHeadingCopyMetadata(input: BuildHeadingCopyMetadataInput): 
 		isNoteLink,
 	} = input;
 
-	let heading = rawHeading;
-	if (heading.startsWith('[[') && heading.endsWith(']]')) {
-		heading = heading.slice(2, -2);
-	}
+	const heading = stripWikiBrackets(rawHeading);
 
 	let alias = heading;
 	if (!useHeadingAsDisplayText) {
