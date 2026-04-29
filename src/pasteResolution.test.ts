@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { decidePasteResolution, PasteResolutionInput, shouldRegisterPasteHandler } from './pasteResolution';
+import {
+	decidePasteResolution,
+	PasteResolutionInput,
+	shouldOmitAliasForSameFile,
+	shouldRegisterPasteHandler,
+} from './pasteResolution';
 import { CopyMetadata } from './copyMetadata';
 import { LinkFormat } from './type';
 
@@ -137,5 +142,74 @@ describe('decidePasteResolution', () => {
 			now: META.timestamp + TTL + 1,
 			clipboardText: 'mismatch',
 		})).toBe('reset-and-skip');
+	});
+});
+
+describe('shouldOmitAliasForSameFile', () => {
+	const sameFile = 'notes/SomeThing.md';
+	const otherFile = 'notes/MyNote.md';
+
+	const base = {
+		effectiveLinkFormat: LinkFormat.WIKILINK,
+		sourceFilePath: sameFile,
+		destFilePath: sameFile,
+		subpath: '#Other Heading',
+		alias: 'Other Heading',
+		useHeadingAsDisplayText: true,
+	};
+
+	it('omits when WIKI + same-file + heading subpath matches alias (sanitized)', () => {
+		expect(shouldOmitAliasForSameFile(base)).toBe(true);
+	});
+
+	it('keeps alias when WIKI + same-file but alias does not match heading', () => {
+		expect(shouldOmitAliasForSameFile({ ...base, alias: 'Different' })).toBe(false);
+	});
+
+	it('keeps alias when useHeadingAsDisplayText is false', () => {
+		expect(shouldOmitAliasForSameFile({
+			...base,
+			useHeadingAsDisplayText: false,
+			alias: 'SomeThing#Other Heading',
+		})).toBe(false);
+	});
+
+	it('keeps alias on cross-file paste (WIKI)', () => {
+		expect(shouldOmitAliasForSameFile({ ...base, destFilePath: otherFile })).toBe(false);
+	});
+
+	it('keeps alias for MD format even on same-file', () => {
+		expect(shouldOmitAliasForSameFile({ ...base, effectiveLinkFormat: LinkFormat.MDLINK })).toBe(false);
+	});
+
+	it('keeps alias when subpath is empty', () => {
+		expect(shouldOmitAliasForSameFile({ ...base, subpath: '' })).toBe(false);
+	});
+
+	it('keeps alias when alias is empty', () => {
+		expect(shouldOmitAliasForSameFile({ ...base, alias: '' })).toBe(false);
+	});
+
+	it('keeps alias on block-link subpath (#^id)', () => {
+		expect(shouldOmitAliasForSameFile({
+			...base,
+			subpath: '#^abc123',
+			alias: 'The quick brown',
+		})).toBe(false);
+	});
+
+	it('omits when sanitization round-trip collapses alias to subpath', () => {
+		// alias contains | which sanitizeHeadingForLink collapses to a space
+		expect(shouldOmitAliasForSameFile({
+			...base,
+			subpath: '#Some Heading',
+			alias: 'Some|Heading',
+		})).toBe(true);
+	});
+
+	it('keeps alias when OBSIDIAN is passed (helper expects already-resolved format)', () => {
+		// Defensive: callers should never pass OBSIDIAN here, but if they do
+		// the helper bails rather than misbehave.
+		expect(shouldOmitAliasForSameFile({ ...base, effectiveLinkFormat: LinkFormat.OBSIDIAN })).toBe(false);
 	});
 });

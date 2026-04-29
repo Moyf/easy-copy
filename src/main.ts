@@ -5,7 +5,7 @@ import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { buildHeadingLink, buildBlockLink, buildFileLink } from './linkBuilder';
 import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
-import { decidePasteResolution, shouldRegisterPasteHandler } from './pasteResolution';
+import { decidePasteResolution, shouldOmitAliasForSameFile, shouldRegisterPasteHandler } from './pasteResolution';
 
 const LAST_COPY_META_TTL_MS = 5 * 60 * 1000;
 
@@ -199,15 +199,29 @@ export default class EasyCopy extends Plugin {
 		const destFile = info.file;
 		if (!destFile) return;
 
+		// Degenerate self-ref: a same-file paste with no anchor would produce
+		// [[]] / [](#) under either branch. Let normal paste proceed instead.
+		if (meta.subpath === '' && meta.sourceFilePath === destFile.path) return;
+
 		const sourceFile = this.app.vault.getAbstractFileByPath(meta.sourceFilePath);
 		if (!(sourceFile instanceof TFile)) return;
 
 		try {
+			const omitAlias = shouldOmitAliasForSameFile({
+				effectiveLinkFormat: this.getEffectiveLinkFormat(),
+				sourceFilePath: meta.sourceFilePath,
+				destFilePath: destFile.path,
+				subpath: meta.subpath,
+				alias: meta.alias,
+				useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
+			});
+			const aliasArg = omitAlias ? undefined : (meta.alias || undefined);
+
 			let link = this.app.fileManager.generateMarkdownLink(
 				sourceFile,
 				destFile.path,
 				meta.subpath || undefined,
-				meta.alias || undefined,
+				aliasArg,
 			);
 
 			if (meta.isEmbed) {
