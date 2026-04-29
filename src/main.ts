@@ -3,7 +3,7 @@ import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
-import { buildHeadingLink, buildBlockLink, buildFileLink } from './linkBuilder';
+import { buildHeadingLink, buildBlockLink, buildFileLink, buildExplicitPasteLink } from './linkBuilder';
 import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
 import { decidePasteResolution, shouldOmitAliasForSameFile, shouldRegisterPasteHandler } from './pasteResolution';
 
@@ -169,8 +169,9 @@ export default class EasyCopy extends Plugin {
 
 	/**
 	 * Intercept paste when the clipboard contains an Easy Copy link.
-	 * Uses Obsidian's generateMarkdownLink() to resolve the correct path
-	 * format (shortest/relative/absolute) for the destination file.
+	 * Under "Follow Obsidian settings" uses generateMarkdownLink() (full
+	 * path-style support); under explicit Wiki/Markdown uses fileToLinktext()
+	 * (shortest-unique paths only) so the user's format choice is honored.
 	 *
 	 * Per the editor-paste contract (obsidian.d.ts): yield if another handler
 	 * has already preventDefault'd, and call preventDefault to claim the event.
@@ -180,7 +181,6 @@ export default class EasyCopy extends Plugin {
 		const decision = decidePasteResolution({
 			defaultPrevented: evt.defaultPrevented,
 			resolveLinkPathOnPaste: this.settings.resolveLinkPathOnPaste,
-			linkFormat: this.settings.linkFormat,
 			lastCopyMeta: this.lastCopyMeta,
 			clipboardText,
 			now: Date.now(),
@@ -207,22 +207,43 @@ export default class EasyCopy extends Plugin {
 		if (!(sourceFile instanceof TFile)) return;
 
 		try {
+			const effectiveFormat = this.getEffectiveLinkFormat();
 			const omitAlias = shouldOmitAliasForSameFile({
-				effectiveLinkFormat: this.getEffectiveLinkFormat(),
+				effectiveLinkFormat: effectiveFormat,
 				sourceFilePath: meta.sourceFilePath,
 				destFilePath: destFile.path,
 				subpath: meta.subpath,
 				alias: meta.alias,
 				useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
 			});
-			const aliasArg = omitAlias ? undefined : (meta.alias || undefined);
 
-			let link = this.app.fileManager.generateMarkdownLink(
-				sourceFile,
-				destFile.path,
-				meta.subpath || undefined,
-				aliasArg,
-			);
+			let link: string;
+			if (this.settings.linkFormat === LinkFormat.OBSIDIAN) {
+				// generateMarkdownLink honors vault config (useMarkdownLinks +
+				// newLinkFormat) — full path-style support: shortest/relative/absolute.
+				const aliasArg = omitAlias ? undefined : (meta.alias || undefined);
+				link = this.app.fileManager.generateMarkdownLink(
+					sourceFile,
+					destFile.path,
+					meta.subpath || undefined,
+					aliasArg,
+				);
+			} else {
+				// Explicit Wiki/Markdown: build manually so the user's format choice is
+				// honored. fileToLinktext returns the shortest-unique vault path
+				// (no relative/absolute support — documented trade-off).
+				// omitMdExtension=true is REQUIRED — defaulting false would yield
+				// paths with ".md" and break wiki-link convention ([[Note.md]]).
+				const path = this.app.metadataCache.fileToLinktext(sourceFile, destFile.path, true);
+				link = buildExplicitPasteLink({
+					format: effectiveFormat as LinkFormat.WIKILINK | LinkFormat.MDLINK,
+					path,
+					subpath: meta.subpath,
+					alias: meta.alias,
+					sameFile: meta.sourceFilePath === destFile.path,
+					omitAlias,
+				});
+			}
 
 			if (meta.isEmbed) {
 				link = '!' + link;
@@ -233,7 +254,7 @@ export default class EasyCopy extends Plugin {
 				editor.replaceSelection(link);
 			}
 		} catch {
-			// generateMarkdownLink failed — let normal paste proceed
+			// link generation failed — let normal paste proceed
 		}
 	}
 

@@ -205,6 +205,39 @@ export function buildBlockLink(options: BuildBlockLinkOptions): string {
 	return link;
 }
 
+// --- Explicit Paste Link ---
+//
+// Used by the paste handler when the user has explicitly chosen Wiki/Markdown
+// (not "Follow Obsidian settings"). Obsidian's app.fileManager.generateMarkdownLink
+// honors the vault's useMarkdownLinks config which would override an explicit
+// choice — so we build the link manually instead, with the path string already
+// resolved by app.metadataCache.fileToLinktext.
+//
+// Pure string-producer: the caller decides `omitAlias` via shouldOmitAliasForSameFile.
+// Formatter only consumes the flag — Strategy: caller owns policy, formatter owns syntax.
+
+export interface BuildExplicitPasteLinkOptions {
+	format: LinkFormat.WIKILINK | LinkFormat.MDLINK;
+	path: string;       // from fileToLinktext (shortest unique vault path)
+	subpath: string;    // '#Heading' or '#^blockid' or ''
+	alias: string;      // display text or ''
+	sameFile: boolean;  // sourcePath === destPath — drops path portion
+	omitAlias: boolean; // true → render without alias (caller decision)
+}
+
+export function buildExplicitPasteLink(opts: BuildExplicitPasteLinkOptions): string {
+	const linkTarget = opts.sameFile ? opts.subpath : `${opts.path}${opts.subpath}`;
+	const aliasToUse = opts.omitAlias ? '' : opts.alias;
+
+	if (opts.format === LinkFormat.WIKILINK) {
+		return aliasToUse ? `[[${linkTarget}|${aliasToUse}]]` : `[[${linkTarget}]]`;
+	}
+	// MDLINK — alias IS the visible link text. When omitAlias forces it empty,
+	// preserve the original alias as display so we never produce [](path#H).
+	const display = aliasToUse || opts.alias || '';
+	return `[${display}](${encodeMarkdownLinkUrl(linkTarget)})`;
+}
+
 // --- File Link ---
 
 export interface BuildFileLinkOptions {

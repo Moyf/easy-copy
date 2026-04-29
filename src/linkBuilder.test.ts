@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { buildHeadingLink, buildBlockLink, buildFileLink, extractBlockDisplayText, encodeMarkdownLinkUrl, sanitizeHeadingForLink } from './linkBuilder';
+import {
+	buildBlockLink,
+	buildExplicitPasteLink,
+	buildFileLink,
+	buildHeadingLink,
+	encodeMarkdownLinkUrl,
+	extractBlockDisplayText,
+	sanitizeHeadingForLink,
+} from './linkBuilder';
 import { LinkFormat } from './type';
 
 // ---------------------------------------------------------------------------
@@ -1128,6 +1136,206 @@ describe('buildFileLink', () => {
 				linkFormat: LinkFormat.WIKILINK,
 			});
 			expect(result).toBe('[[Pros | Cons|Comparison]]');
+		});
+	});
+});
+
+// ---------------------------------------------------------------------------
+// buildExplicitPasteLink
+// ---------------------------------------------------------------------------
+
+describe('buildExplicitPasteLink', () => {
+	describe('wiki format', () => {
+		it('cross-file with subpath + alias produces [[path#H|alias]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[SomeThing#Other Heading|Other Heading]]');
+		});
+
+		it('cross-file with subpath, omitAlias=true produces [[path#H]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: false,
+				omitAlias: true,
+			})).toBe('[[SomeThing#Other Heading]]');
+		});
+
+		it('same-file with subpath drops path portion to [[#H|alias]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: true,
+				omitAlias: false,
+			})).toBe('[[#Other Heading|Other Heading]]');
+		});
+
+		it('same-file with subpath + omitAlias produces [[#H]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: true,
+				omitAlias: true,
+			})).toBe('[[#Other Heading]]');
+		});
+
+		it('cross-file file link (empty subpath) with alias', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '',
+				alias: 'Some Thing',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[SomeThing|Some Thing]]');
+		});
+
+		it('cross-file file link with empty alias yields [[path]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '',
+				alias: '',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[SomeThing]]');
+		});
+
+		it('block-link cross-file: omitAlias=false (caller-decided) keeps alias', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#^abc123',
+				alias: 'The quick brown',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[SomeThing#^abc123|The quick brown]]');
+		});
+
+		it('block-link same-file produces [[#^id|alias]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#^abc123',
+				alias: 'The quick brown',
+				sameFile: true,
+				omitAlias: false,
+			})).toBe('[[#^abc123|The quick brown]]');
+		});
+
+		it('does not encode spaces in path (wiki-link convention)', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'My Note',
+				subpath: '#Some Heading',
+				alias: 'Some Heading',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[My Note#Some Heading|Some Heading]]');
+		});
+	});
+
+	describe('markdown format', () => {
+		it('cross-file with subpath + alias produces [alias](path#H)', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[Other Heading](SomeThing#Other%20Heading)');
+		});
+
+		it('same-file produces [alias](#H) with no path', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: true,
+				omitAlias: false,
+			})).toBe('[Other Heading](#Other%20Heading)');
+		});
+
+		it('omitAlias=true preserves alias as display (MD never produces empty [])', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: true,
+				omitAlias: true,
+			})).toBe('[Other Heading](#Other%20Heading)');
+		});
+
+		it('cross-file file link (empty subpath) with alias', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '',
+				alias: 'Some Thing',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[Some Thing](SomeThing)');
+		});
+
+		it('encodes spaces in path as %20', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'My Note',
+				subpath: '#Some Heading',
+				alias: 'Some Heading',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[Some Heading](My%20Note#Some%20Heading)');
+		});
+
+		it('encodes spaces in same-file fragment', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'irrelevant',
+				subpath: '#Some Heading',
+				alias: 'Some Heading',
+				sameFile: true,
+				omitAlias: false,
+			})).toBe('[Some Heading](#Some%20Heading)');
+		});
+
+		it('block-link cross-file', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '#^abc123',
+				alias: 'The quick brown',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[The quick brown](SomeThing#^abc123)');
+		});
+
+		it('empty alias yields []() — caller is expected to provide non-empty alias', () => {
+			// Documenting boundary: buildHeadingCopyMetadata clears alias when
+			// isNoteLink+filename===heading. handlePaste should treat that as
+			// the degenerate self-ref case (skip) before reaching here.
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '',
+				alias: '',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[](SomeThing)');
 		});
 	});
 });

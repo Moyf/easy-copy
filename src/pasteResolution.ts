@@ -7,9 +7,9 @@ import { EasyCopySettings, LinkFormat } from './type';
  * The bridge between settings state and "is Easy Copy in the paste plugin chain."
  */
 export function shouldRegisterPasteHandler(
-	settings: Pick<EasyCopySettings, 'resolveLinkPathOnPaste' | 'linkFormat'>,
+	settings: Pick<EasyCopySettings, 'resolveLinkPathOnPaste'>,
 ): boolean {
-	return settings.resolveLinkPathOnPaste && settings.linkFormat === LinkFormat.OBSIDIAN;
+	return settings.resolveLinkPathOnPaste;
 }
 
 export type PasteResolutionAction =
@@ -20,7 +20,6 @@ export type PasteResolutionAction =
 export interface PasteResolutionInput {
 	defaultPrevented: boolean;
 	resolveLinkPathOnPaste: boolean;
-	linkFormat: LinkFormat;
 	lastCopyMeta: CopyMetadata | null;
 	clipboardText: string | undefined;
 	now: number;
@@ -30,7 +29,6 @@ export interface PasteResolutionInput {
 export function decidePasteResolution(input: PasteResolutionInput): PasteResolutionAction {
 	if (input.defaultPrevented) return 'skip';
 	if (!input.resolveLinkPathOnPaste) return 'skip';
-	if (input.linkFormat !== LinkFormat.OBSIDIAN) return 'skip';
 	if (!input.lastCopyMeta) return 'skip';
 	if (input.now - input.lastCopyMeta.timestamp > input.ttlMs) return 'reset-and-skip';
 	if (input.clipboardText !== input.lastCopyMeta.clipboardText) return 'reset-and-skip';

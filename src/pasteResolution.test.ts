@@ -9,39 +9,12 @@ import { CopyMetadata } from './copyMetadata';
 import { LinkFormat } from './type';
 
 describe('shouldRegisterPasteHandler', () => {
-	it('returns true when toggle is on AND linkFormat is OBSIDIAN', () => {
-		expect(shouldRegisterPasteHandler({
-			resolveLinkPathOnPaste: true,
-			linkFormat: LinkFormat.OBSIDIAN,
-		})).toBe(true);
+	it('returns true when toggle is on', () => {
+		expect(shouldRegisterPasteHandler({ resolveLinkPathOnPaste: true })).toBe(true);
 	});
 
 	it('returns false when toggle is off', () => {
-		expect(shouldRegisterPasteHandler({
-			resolveLinkPathOnPaste: false,
-			linkFormat: LinkFormat.OBSIDIAN,
-		})).toBe(false);
-	});
-
-	it('returns false when linkFormat is MDLINK even if toggle is on', () => {
-		expect(shouldRegisterPasteHandler({
-			resolveLinkPathOnPaste: true,
-			linkFormat: LinkFormat.MDLINK,
-		})).toBe(false);
-	});
-
-	it('returns false when linkFormat is WIKILINK even if toggle is on', () => {
-		expect(shouldRegisterPasteHandler({
-			resolveLinkPathOnPaste: true,
-			linkFormat: LinkFormat.WIKILINK,
-		})).toBe(false);
-	});
-
-	it('returns false when both conditions fail', () => {
-		expect(shouldRegisterPasteHandler({
-			resolveLinkPathOnPaste: false,
-			linkFormat: LinkFormat.MDLINK,
-		})).toBe(false);
+		expect(shouldRegisterPasteHandler({ resolveLinkPathOnPaste: false })).toBe(false);
 	});
 });
 
@@ -59,7 +32,6 @@ const TTL = 5 * 60 * 1000;
 const baseInput: PasteResolutionInput = {
 	defaultPrevented: false,
 	resolveLinkPathOnPaste: true,
-	linkFormat: LinkFormat.OBSIDIAN,
 	lastCopyMeta: META,
 	clipboardText: META.clipboardText,
 	now: META.timestamp + 1000,
@@ -77,11 +49,6 @@ describe('decidePasteResolution', () => {
 
 	it('skips when the toggle is off', () => {
 		expect(decidePasteResolution({ ...baseInput, resolveLinkPathOnPaste: false })).toBe('skip');
-	});
-
-	it('skips when linkFormat is not OBSIDIAN', () => {
-		expect(decidePasteResolution({ ...baseInput, linkFormat: LinkFormat.MDLINK })).toBe('skip');
-		expect(decidePasteResolution({ ...baseInput, linkFormat: LinkFormat.WIKILINK })).toBe('skip');
 	});
 
 	it('skips when there is no lastCopyMeta', () => {
@@ -125,11 +92,10 @@ describe('decidePasteResolution', () => {
 		})).toBe('skip');
 	});
 
-	it('toggle takes precedence over linkFormat and meta state', () => {
+	it('toggle takes precedence over meta state', () => {
 		expect(decidePasteResolution({
 			...baseInput,
 			resolveLinkPathOnPaste: false,
-			linkFormat: LinkFormat.MDLINK,
 			lastCopyMeta: null,
 		})).toBe('skip');
 	});
