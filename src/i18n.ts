@@ -18,6 +18,7 @@ export type TranslationKey =
 	| 'strict-heading-match' | 'strict-heading-match-desc'
 	| 'use-frontmatter-as-display' | 'use-frontmatter-as-display-desc' | 'frontmatter-key' | 'frontmatter-key-desc'
 	| 'link-format'| 'link-format-desc' | 'link-format-obsidian' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
+	| 'resolve-link-path-on-paste' | 'resolve-link-path-on-paste-desc'
 	| 'copy-current-file-link' | 'file-link-copied'
 	| 'target' | 'customize-targets' | 'customize-targets-desc' 
 	| 'enable-bold' | 'enable-bold-desc' 
@@ -107,6 +108,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-format-obsidian': 'Follow Obsidian settings',
 		'markdown-link': 'Markdown link',
 		'wiki-link': 'Wiki link',
+		'resolve-link-path-on-paste': 'Resolve link path on paste',
+		'resolve-link-path-on-paste-desc': 'Regenerate the link path at paste time based on the destination file. Under "Follow Obsidian settings", uses your vault\'s path style (shortest/relative/absolute); under explicit Wiki/Markdown, uses shortest-unique paths only. Won\'t interfere with other paste-handling plugins; if one handles the paste first, this feature may be bypassed depending on how that plugin handles the paste.',
 		'customize-targets': 'Customize targets',
 		'customize-targets-desc': 'Enable to customize which elements can be copied (disable to copy all elements)',
 		'enable-inline-code': 'Enable inline code',
@@ -205,6 +208,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-format-obsidian': '跟随 Obsidian 设置',
 		'markdown-link': 'Markdown链接',
 		'wiki-link': 'Wiki链接',
+		'resolve-link-path-on-paste': '粘贴时解析链接路径',
+		'resolve-link-path-on-paste-desc': '粘贴时根据目标文件重新生成链接路径。使用"跟随 Obsidian 设置"时，会沿用 Obsidian 的路径风格（最短/相对/绝对）；选择明确的 Wiki/Markdown 格式时，仅使用最短唯一路径。不会干扰其他处理粘贴的插件；若有其他插件先处理粘贴，此功能可能被绕过，具体取决于该插件的处理方式。',
 		'customize-targets': '自定义复制对象',
 		'customize-targets-desc': '启用后可以自定义哪些元素可以被复制（不启用则默认可复制所有元素）',
 		'enable-inline-code': '启用行内代码',
@@ -313,6 +318,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-format-obsidian': '跟隨 Obsidian 設定',
 		'markdown-link': 'Markdown連結',
 		'wiki-link': 'Wiki連結',
+		'resolve-link-path-on-paste': '貼上時解析連結路徑',
+		'resolve-link-path-on-paste-desc': '貼上時根據目標檔案重新生成連結路徑。使用「跟隨 Obsidian 設定」時，會沿用 Obsidian 的路徑風格（最短/相對/絕對）；選擇明確的 Wiki/Markdown 格式時，僅使用最短唯一路徑。不會干擾其他處理貼上的外掛；若有其他外掛先處理貼上，此功能可能被略過，具體取決於該外掛的處理方式。',
 		'customize-targets': '自定義複製對象',
 		'customize-targets-desc': '啟用後可以自定義哪些元素可以被複製（不啟用則默认可複製所有元素）',
 		'enable-inline-code': '啟用行內代碼',

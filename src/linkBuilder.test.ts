@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { buildHeadingLink, buildBlockLink, buildFileLink, extractBlockDisplayText, encodeMarkdownLinkUrl, sanitizeHeadingForLink } from './linkBuilder';
+import {
+	buildBlockLink,
+	buildExplicitPasteLink,
+	buildFileLink,
+	buildHeadingLink,
+	encodeMarkdownLinkUrl,
+	extractBlockDisplayText,
+	sanitizeHeadingForLink,
+} from './linkBuilder';
 import { LinkFormat } from './type';
 
 // ---------------------------------------------------------------------------
@@ -77,9 +85,10 @@ describe('buildHeadingLink', () => {
 		linkFormat: LinkFormat.WIKILINK,
 		useHeadingAsDisplayText: true,
 		headingLinkSeparator: '#',
+		simplifiedHeadingToNoteLink: true,
 	};
 
-	// -- Wiki format ---------------------------------------------------------
+	// -- Wiki 格式 ---------------------------------------------------------
 
 	describe('wiki format', () => {
 		it('creates a basic heading link with display text', () => {
@@ -108,14 +117,14 @@ describe('buildHeadingLink', () => {
 				heading: 'mynote',
 				filename: 'MyNote',
 			});
-			// linkContent simplified to filename, but since filename !== heading,
-			// it falls to the else branch with displayText vs linkContent
+			// linkContent 被简化为 filename，但因 filename !== heading，
+			// 会落到 else 分支，比较 displayText 与 linkContent
 			expect(result.link).toBe('[[MyNote|mynote]]');
 			expect(result.isNoteLink).toBe(true);
 		});
 
 		it('simplifies when heading matches filename with spaces removed', () => {
-			// e.g. filename "SomeThing" heading "Some Thing"
+			// 例如 filename "SomeThing"、heading "Some Thing"
 			const result = buildHeadingLink({
 				...defaults,
 				heading: 'Some Thing',
@@ -126,8 +135,8 @@ describe('buildHeadingLink', () => {
 		});
 
 		it('omits display text alias when displayText equals linkContent', () => {
-			// When useHeadingAsDisplayText is false AND separator is '#',
-			// displayText = "filename#heading" which equals linkContent
+			// useHeadingAsDisplayText 为 false 且分隔符为 '#' 时，
+			// displayText = "filename#heading"，与 linkContent 相同
 			const result = buildHeadingLink({
 				...defaults,
 				heading: 'Intro',
@@ -158,7 +167,7 @@ describe('buildHeadingLink', () => {
 				useHeadingAsDisplayText: false,
 				headingLinkSeparator: '#',
 			});
-			// displayText = "My Note#Setup", linkContent = "my-note#Setup"
+			// displayText = "My Note#Setup"，linkContent = "my-note#Setup"
 			expect(result.link).toBe('[[my-note#Setup|My Note#Setup]]');
 		});
 
@@ -183,7 +192,7 @@ describe('buildHeadingLink', () => {
 		});
 	});
 
-	// -- Markdown format ------------------------------------------------------
+	// -- Markdown 格式 ------------------------------------------------------
 
 	describe('markdown format', () => {
 		const md = { ...defaults, linkFormat: LinkFormat.MDLINK };
@@ -197,14 +206,14 @@ describe('buildHeadingLink', () => {
 			expect(result.link).toBe('[Getting Started](MyNote#Getting%20Started)');
 		});
 
-		it('always includes #heading even when filename matches heading', () => {
+		it('simplifies to file link when filename equals heading exactly', () => {
 			const result = buildHeadingLink({
 				...md,
 				heading: 'MyNote',
 				filename: 'MyNote',
 			});
-			// Markdown format always uses filename#heading; no spaces so no encoding
-			expect(result.link).toBe('[MyNote](MyNote#MyNote)');
+			// simplifiedHeadingToNoteLink（默认 true）将 MyNote#MyNote 折叠为 MyNote
+			expect(result.link).toBe('[MyNote](MyNote)');
 			expect(result.isNoteLink).toBe(true);
 		});
 
@@ -216,7 +225,7 @@ describe('buildHeadingLink', () => {
 				useHeadingAsDisplayText: false,
 				headingLinkSeparator: ' - ',
 			});
-			// Display text is not encoded, only the URL portion is
+			// 显示文本不做编码，只对 URL 部分编码
 			expect(result.link).toBe('[MyNote - Intro](MyNote#Intro)');
 		});
 
@@ -229,12 +238,177 @@ describe('buildHeadingLink', () => {
 				useHeadingAsDisplayText: false,
 				headingLinkSeparator: '#',
 			});
-			// No spaces in filename or heading, so no encoding needed
+			// filename 和 heading 都没有空格，不需要编码
 			expect(result.link).toBe('[My Note#Setup](my-note#Setup)');
+		});
+
+		// -- Markdown 格式下的 simplifiedHeadingToNoteLink --------------------
+		// 对应下方 wiki 的「文件名-标题匹配」测试套件。
+
+		describe('simplifiedHeadingToNoteLink (default: includes match)', () => {
+			it('simplifies on case-insensitive exact match', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'mynote',
+					filename: 'MyNote',
+				});
+				// 显示文本保持 heading 的大小写，链接目标保持 filename 的大小写
+				expect(result.link).toBe('[mynote](MyNote)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('simplifies on space-removed match', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Some Thing',
+					filename: 'SomeThing',
+				});
+				expect(result.link).toBe('[Some Thing](SomeThing)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('simplifies when filename contains heading as substring', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Java',
+					filename: 'JavaScript',
+				});
+				expect(result.link).toBe('[Java](JavaScript)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('simplifies for date-prefixed filenames containing heading', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'note',
+					filename: '260422_note',
+				});
+				expect(result.link).toBe('[note](260422_note)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('does not simplify when heading contains filename (asymmetric)', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Notebook',
+					filename: 'Note',
+				});
+				expect(result.link).toBe('[Notebook](Note#Notebook)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('encodes spaces in target when not simplified', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Some Heading',
+					filename: 'My Note',
+				});
+				// 不会触发简化，因此目标保留标题片段
+				expect(result.link).toBe('[Some Heading](My%20Note#Some%20Heading)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('encodes spaces in target when simplified to filename', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'My Note',
+					filename: 'My Note',
+				});
+				expect(result.link).toBe('[My Note](My%20Note)');
+				expect(result.isNoteLink).toBe(true);
+			});
+		});
+
+		describe('simplifiedHeadingToNoteLink (strict mode)', () => {
+			const strictMd = { ...md, strictHeadingMatch: true };
+
+			it('does not simplify on substring match', () => {
+				const result = buildHeadingLink({
+					...strictMd,
+					heading: 'Java',
+					filename: 'JavaScript',
+				});
+				expect(result.link).toBe('[Java](JavaScript#Java)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('still simplifies on case-insensitive exact match', () => {
+				const result = buildHeadingLink({
+					...strictMd,
+					heading: 'mynote',
+					filename: 'MyNote',
+				});
+				expect(result.link).toBe('[mynote](MyNote)');
+				expect(result.isNoteLink).toBe(true);
+			});
+
+			it('still simplifies on space-removed exact match', () => {
+				const result = buildHeadingLink({
+					...strictMd,
+					heading: 'Some Thing',
+					filename: 'SomeThing',
+				});
+				expect(result.link).toBe('[Some Thing](SomeThing)');
+				expect(result.isNoteLink).toBe(true);
+			});
+		});
+
+		describe('simplifiedHeadingToNoteLink gated on useHeadingAsDisplayText=true (A1.5)', () => {
+			// 当用户希望显示「filename#heading」时，丢掉标题锚点会
+			// 产生误导性的 [filename#heading](filename)。这道闸门保留
+			// 标题链接，让显示意图与目标保持一致。
+
+			it('does NOT simplify on exact match when useHeadingAsDisplayText is false', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'MyNote',
+					filename: 'MyNote',
+					useHeadingAsDisplayText: false,
+					headingLinkSeparator: '#',
+				});
+				expect(result.link).toBe('[MyNote#MyNote](MyNote#MyNote)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('does NOT simplify on space-removed match when useHeadingAsDisplayText is false', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Some Thing',
+					filename: 'SomeThing',
+					useHeadingAsDisplayText: false,
+					headingLinkSeparator: '#',
+				});
+				expect(result.link).toBe('[SomeThing#Some Thing](SomeThing#Some%20Thing)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('does NOT simplify on substring match when useHeadingAsDisplayText is false', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Java',
+					filename: 'JavaScript',
+					useHeadingAsDisplayText: false,
+					headingLinkSeparator: '#',
+				});
+				expect(result.link).toBe('[JavaScript#Java](JavaScript#Java)');
+				expect(result.isNoteLink).toBe(false);
+			});
+
+			it('honors custom separator in display text when not simplified', () => {
+				const result = buildHeadingLink({
+					...md,
+					heading: 'Some Thing',
+					filename: 'SomeThing',
+					useHeadingAsDisplayText: false,
+					headingLinkSeparator: ' > ',
+				});
+				expect(result.link).toBe('[SomeThing > Some Thing](SomeThing#Some%20Thing)');
+				expect(result.isNoteLink).toBe(false);
+			});
 		});
 	});
 
-	// -- Special character sanitization in link targets ----------------------
+	// -- 链接目标中的特殊字符净化 ----------------------
 
 	describe('special character sanitization', () => {
 		it('wiki format: strips special chars from link target, preserves display text', () => {
@@ -276,7 +450,7 @@ describe('buildHeadingLink', () => {
 		});
 	});
 
-	// -- compareIgnoreCase: default (includes) vs strict matching -----------
+	// -- compareIgnoreCase：默认（包含匹配）与严格匹配的对照 -----------
 
 	describe('filename-heading matching (default: includes)', () => {
 		it('simplifies when filename contains heading as substring', () => {
@@ -364,7 +538,142 @@ describe('buildHeadingLink', () => {
 		});
 	});
 
-	// -- Combinatorial --------------------------------------------------------
+	// -- A1.5 闸门：简化受 useHeadingAsDisplayText 约束（wiki 侧） -----
+
+	describe('simplifiedHeadingToNoteLink gated on useHeadingAsDisplayText=true (A1.5, wiki side)', () => {
+		// 对应 markdown 侧的同名套件。当用户要求显示「filename#heading」时，
+		// 提前简化分支会被跳过，从而保留标题链接。
+		// 例外：WIKI 精确匹配的特例 [[filename]] 始终保留——
+		// 它在 Obsidian 中会被渲染为干净的文件名。
+
+		const wikiNoDisplay = {
+			...defaults,
+			useHeadingAsDisplayText: false,
+			headingLinkSeparator: '#',
+		};
+
+		it('PRESERVES the [[filename]] special case on exact match (the A1.5 exception)', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'MyNote',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote]]');
+			expect(result.isNoteLink).toBe(true);
+		});
+
+		it('does NOT simplify on case-insensitive match', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'mynote',
+				filename: 'MyNote',
+			});
+			// displayText === linkContent → alias 折叠，但标题片段保留
+			expect(result.link).toBe('[[MyNote#mynote]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('does NOT simplify on space-removed match', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'Some Thing',
+				filename: 'SomeThing',
+			});
+			expect(result.link).toBe('[[SomeThing#Some Thing]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('does NOT simplify on substring match', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'Java',
+				filename: 'JavaScript',
+			});
+			expect(result.link).toBe('[[JavaScript#Java]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('honors custom separator alias when not simplified', () => {
+			const result = buildHeadingLink({
+				...wikiNoDisplay,
+				heading: 'Some Thing',
+				filename: 'SomeThing',
+				headingLinkSeparator: ' > ',
+			});
+			// displayText 「SomeThing > Some Thing」!== linkContent「SomeThing#Some Thing」
+			expect(result.link).toBe('[[SomeThing#Some Thing|SomeThing > Some Thing]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+	});
+
+	// -- simplifiedHeadingToNoteLink 关闭时 ---------------------------------
+
+	describe('when simplifiedHeadingToNoteLink is false', () => {
+		const noSimplify = { ...defaults, simplifiedHeadingToNoteLink: false };
+
+		it('keeps full heading link when filename equals heading exactly (wiki)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'MyNote',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote#MyNote|MyNote]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('keeps full heading link on case-insensitive match (wiki)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'mynote',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote#mynote|mynote]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('keeps full heading link on space-removed match (wiki)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'Some Thing',
+				filename: 'SomeThing',
+			});
+			expect(result.link).toBe('[[SomeThing#Some Thing|Some Thing]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('keeps full heading link on filename-includes-heading match (wiki)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'note',
+				filename: '260422_note',
+			});
+			expect(result.link).toBe('[[260422_note#note|note]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('does not affect non-matching filename/heading (sanity check)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				heading: 'Getting Started',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[[MyNote#Getting Started|Getting Started]]');
+			expect(result.isNoteLink).toBe(false);
+		});
+
+		it('markdown format keeps heading fragment when simplification is off (sanity check)', () => {
+			const result = buildHeadingLink({
+				...noSimplify,
+				linkFormat: LinkFormat.MDLINK,
+				heading: 'MyNote',
+				filename: 'MyNote',
+			});
+			expect(result.link).toBe('[MyNote](MyNote#MyNote)');
+			expect(result.isNoteLink).toBe(false);
+		});
+	});
+
+	// -- 组合场景 --------------------------------------------------------
 
 	describe('combinatorial', () => {
 		it('frontmatterTitle has no effect when useHeadingAsDisplayText is true', () => {
@@ -375,11 +684,11 @@ describe('buildHeadingLink', () => {
 				frontmatterTitle: 'My Custom Title',
 				useHeadingAsDisplayText: true,
 			});
-			// Display text is the heading, not the frontmatter title
+			// 显示文本是 heading，而不是 frontmatter title
 			expect(result.link).toBe('[[my-note#Setup|Setup]]');
 		});
 
-		it('frontmatterTitle + note-link simplification (wiki)', () => {
+		it('frontmatterTitle + heading link kept under useHeadingAsDisplayText=false (wiki, A1.5)', () => {
 			const result = buildHeadingLink({
 				...defaults,
 				heading: 'myNote',
@@ -388,15 +697,16 @@ describe('buildHeadingLink', () => {
 				useHeadingAsDisplayText: false,
 				headingLinkSeparator: '#',
 			});
-			// linkContent simplified to "MyNote", display = "My Pretty Title#myNote"
-			expect(result.link).toBe('[[MyNote|My Pretty Title#myNote]]');
-			expect(result.isNoteLink).toBe(true);
+			// A1.5 之前会简化为 [[MyNote|My Pretty Title#myNote]]（目标=文件，显示=标题样式）。
+			// A1.5 保留标题锚点，使目标与显示意图保持一致。
+			expect(result.link).toBe('[[MyNote#myNote|My Pretty Title#myNote]]');
+			expect(result.isNoteLink).toBe(false);
 		});
 
 		it('empty heading produces a heading link with empty fragment (known bug)', () => {
-			// Empty heading is an edge case from Obsidian's UI. The link target
-			// is technically malformed (MyNote#) but this matches current behavior.
-			// Should be addressed in a future PR.
+			// 空 heading 来自 Obsidian UI 的边缘情况。
+			// 链接目标 (MyNote#) 严格说是畸形的，但当前行为如此。
+			// 应在后续 PR 中处理。
 			const result = buildHeadingLink({
 				...defaults,
 				heading: '',
@@ -485,7 +795,7 @@ describe('extractBlockDisplayText', () => {
 	describe('CJK text', () => {
 		it('returns text as-is when within char limit', () => {
 			const result = extractBlockDisplayText('Hello', 'fallback', 3, 5);
-			// "Hello" is ASCII / English, so it hits the English branch
+			// "Hello" 是 ASCII / 英文，会走英文分支
 			expect(result).toBe('Hello');
 		});
 
@@ -495,13 +805,13 @@ describe('extractBlockDisplayText', () => {
 		});
 
 		it('uses punctuation as separator when match is 3+ chars', () => {
-			// '三个字' is 3 chars (>= 3 and <= charLimit), so separator match is used
+			// '三个字' 共 3 个字符（>= 3 且 <= charLimit），命中分隔符匹配分支
 			const result = extractBlockDisplayText('三个字，后面还有很多内容', 'fallback', 3, 5);
 			expect(result).toBe('三个字');
 		});
 
 		it('falls back to char limit slice when separator match is too short (< 3 chars)', () => {
-			// '短语' is 2 chars (< 3), falls back to text.slice(0, charLimit)
+			// '短语' 共 2 个字符（< 3），回退到 text.slice(0, charLimit)
 			const result = extractBlockDisplayText('短语，后面还有很多内容', 'fallback', 3, 5);
 			expect(result).toBe('短语，后面');
 		});
@@ -517,7 +827,7 @@ describe('extractBlockDisplayText', () => {
 		});
 	});
 
-	// -- Boundary values ------------------------------------------------------
+	// -- 边界值 ------------------------------------------------------
 
 	describe('boundary values', () => {
 		it('English: exactly wordLimit words returns all words', () => {
@@ -551,11 +861,11 @@ describe('extractBlockDisplayText', () => {
 		});
 	});
 
-	// -- Mixed content --------------------------------------------------------
+	// -- 混合内容 --------------------------------------------------------
 
 	describe('mixed content', () => {
 		it('mixed English/CJK is treated as non-English', () => {
-			// The ASCII regex fails if any non-ASCII char is present
+			// 出现任意非 ASCII 字符时，纯 ASCII 正则会失败
 			const result = extractBlockDisplayText('Hello 世界 and more text', 'fallback', 3, 5);
 			expect(result).toBe('Hello');
 		});
@@ -656,7 +966,7 @@ describe('buildBlockLink', () => {
 		expect(result).toBe('[[MyNote#^abc123|abc123]]');
 	});
 
-	// -- Combinatorial --------------------------------------------------------
+	// -- 组合场景 --------------------------------------------------------
 
 	describe('combinatorial', () => {
 		it('embed + no display text (wiki) produces ![[...]]', () => {
@@ -670,8 +980,8 @@ describe('buildBlockLink', () => {
 		});
 
 		it('embed + no display text (markdown) produces image-like syntax', () => {
-			// ![](path) is technically an image embed in standard markdown —
-			// documenting that this combo produces that syntax
+			// ![](path) 在标准 markdown 中其实是图片嵌入语法——
+			// 此处仅记录该组合会生成这种语法
 			const result = buildBlockLink({
 				...defaults,
 				linkFormat: LinkFormat.MDLINK,
@@ -794,11 +1104,11 @@ describe('buildFileLink', () => {
 		});
 	});
 
-	// -- Edge cases -----------------------------------------------------------
+	// -- 边缘情况 -----------------------------------------------------------
 
 	describe('edge cases', () => {
 		it('wiki format without displayText produces redundant alias', () => {
-			// [[name|name]] — the alias duplicates the filename
+			// [[name|name]]——alias 与文件名重复
 			const result = buildFileLink({
 				filename: 'MyNote',
 				filePath: 'folder/MyNote.md',
@@ -808,7 +1118,7 @@ describe('buildFileLink', () => {
 		});
 
 		it('filename with parentheses in markdown format', () => {
-			// Parentheses can break [text](path) syntax in strict parsers
+			// 严格的解析器中，括号会破坏 [text](path) 语法
 			const result = buildFileLink({
 				filename: 'Note (draft)',
 				filePath: 'folder/Note (draft).md',
@@ -818,7 +1128,7 @@ describe('buildFileLink', () => {
 		});
 
 		it('filename with pipe in wiki format', () => {
-			// | is the alias separator — pipe in filename creates ambiguity
+			// | 是 alias 分隔符——文件名中含 | 会造成歧义
 			const result = buildFileLink({
 				filename: 'Pros | Cons',
 				filePath: 'Pros | Cons.md',
@@ -826,6 +1136,206 @@ describe('buildFileLink', () => {
 				linkFormat: LinkFormat.WIKILINK,
 			});
 			expect(result).toBe('[[Pros | Cons|Comparison]]');
+		});
+	});
+});
+
+// ---------------------------------------------------------------------------
+// buildExplicitPasteLink
+// ---------------------------------------------------------------------------
+
+describe('buildExplicitPasteLink', () => {
+	describe('wiki format', () => {
+		it('cross-file with subpath + alias produces [[path#H|alias]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[SomeThing#Other Heading|Other Heading]]');
+		});
+
+		it('cross-file with subpath, omitAlias=true produces [[path#H]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: false,
+				omitAlias: true,
+			})).toBe('[[SomeThing#Other Heading]]');
+		});
+
+		it('same-file with subpath drops path portion to [[#H|alias]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: true,
+				omitAlias: false,
+			})).toBe('[[#Other Heading|Other Heading]]');
+		});
+
+		it('same-file with subpath + omitAlias produces [[#H]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: true,
+				omitAlias: true,
+			})).toBe('[[#Other Heading]]');
+		});
+
+		it('cross-file file link (empty subpath) with alias', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '',
+				alias: 'Some Thing',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[SomeThing|Some Thing]]');
+		});
+
+		it('cross-file file link with empty alias yields [[path]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '',
+				alias: '',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[SomeThing]]');
+		});
+
+		it('block-link cross-file: omitAlias=false (caller-decided) keeps alias', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#^abc123',
+				alias: 'The quick brown',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[SomeThing#^abc123|The quick brown]]');
+		});
+
+		it('block-link same-file produces [[#^id|alias]]', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'SomeThing',
+				subpath: '#^abc123',
+				alias: 'The quick brown',
+				sameFile: true,
+				omitAlias: false,
+			})).toBe('[[#^abc123|The quick brown]]');
+		});
+
+		it('does not encode spaces in path (wiki-link convention)', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.WIKILINK,
+				path: 'My Note',
+				subpath: '#Some Heading',
+				alias: 'Some Heading',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[[My Note#Some Heading|Some Heading]]');
+		});
+	});
+
+	describe('markdown format', () => {
+		it('cross-file with subpath + alias produces [alias](path#H)', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[Other Heading](SomeThing#Other%20Heading)');
+		});
+
+		it('same-file produces [alias](#H) with no path', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: true,
+				omitAlias: false,
+			})).toBe('[Other Heading](#Other%20Heading)');
+		});
+
+		it('omitAlias=true preserves alias as display (MD never produces empty [])', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '#Other Heading',
+				alias: 'Other Heading',
+				sameFile: true,
+				omitAlias: true,
+			})).toBe('[Other Heading](#Other%20Heading)');
+		});
+
+		it('cross-file file link (empty subpath) with alias', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '',
+				alias: 'Some Thing',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[Some Thing](SomeThing)');
+		});
+
+		it('encodes spaces in path as %20', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'My Note',
+				subpath: '#Some Heading',
+				alias: 'Some Heading',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[Some Heading](My%20Note#Some%20Heading)');
+		});
+
+		it('encodes spaces in same-file fragment', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'irrelevant',
+				subpath: '#Some Heading',
+				alias: 'Some Heading',
+				sameFile: true,
+				omitAlias: false,
+			})).toBe('[Some Heading](#Some%20Heading)');
+		});
+
+		it('block-link cross-file', () => {
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '#^abc123',
+				alias: 'The quick brown',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[The quick brown](SomeThing#^abc123)');
+		});
+
+		it('empty alias yields []() — caller is expected to provide non-empty alias', () => {
+			// 边界记录：buildHeadingCopyMetadata 在 isNoteLink 且
+			// filename===heading 时会清空 alias。handlePaste 应在抵达
+			// 这里之前作为退化的自引用情况（skip）处理掉。
+			expect(buildExplicitPasteLink({
+				format: LinkFormat.MDLINK,
+				path: 'SomeThing',
+				subpath: '',
+				alias: '',
+				sameFile: false,
+				omitAlias: false,
+			})).toBe('[](SomeThing)');
 		});
 	});
 });

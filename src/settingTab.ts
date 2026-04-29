@@ -119,6 +119,22 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.linkFormat = value as LinkFormat;
 					await this.plugin.saveSettings();
+					this.plugin.syncPasteHandlerRegistration();
+					this.display();
+				})));
+
+		// 解析器在粘贴时拦截事件，根据目标文件重新生成链接。
+		// 「跟随 Obsidian 设置」时遵循 vault 的路径风格（最短/相对/绝对）；
+		// 选择明确的 Wiki/Markdown 格式时仅使用最短唯一路径。
+		formatGroup.addSetting(setting => setting
+			.setName(this.plugin.t('resolve-link-path-on-paste'))
+			.setDesc(this.plugin.t('resolve-link-path-on-paste-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.resolveLinkPathOnPaste)
+				.onChange(async (value) => {
+					this.plugin.settings.resolveLinkPathOnPaste = value;
+					await this.plugin.saveSettings();
+					this.plugin.syncPasteHandlerRegistration();
 				})));
 
 		formatGroup.addSetting(setting => setting
@@ -148,27 +164,33 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		}
 
 		// 后续新增：文件名包含标题时，简化为复制文件链接（通常用于复制一级标题时）
-		formatGroup.addSetting(setting => setting
-			.setName(this.plugin.t('simplified-heading-to-note-link'))
-			.setDesc(this.plugin.t('simplified-heading-to-note-link-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.simplifiedHeadingToNoteLink)
-				.onChange(async (value) => {
-					this.plugin.settings.simplifiedHeadingToNoteLink = value;
-					await this.plugin.saveSettings();
-					this.display();
-				})));
-
-		if (this.plugin.settings.simplifiedHeadingToNoteLink) {
+		// 「跟随 Obsidian 设置」时，格式与路径选择应交给 Obsidian——
+		// Obsidian 自身的 generateMarkdownLink 从不会把标题链接自动
+		// 简化为文件链接，因此这里把该选项隐藏并令其失效。
+		// 存储值在切换格式时保留不变（与 resolveLinkPathOnPaste 一致）。
+		if (this.plugin.settings.linkFormat !== LinkFormat.OBSIDIAN) {
 			formatGroup.addSetting(setting => setting
-				.setName(this.plugin.t('strict-heading-match'))
-				.setDesc(this.plugin.t('strict-heading-match-desc'))
+				.setName(this.plugin.t('simplified-heading-to-note-link'))
+				.setDesc(this.plugin.t('simplified-heading-to-note-link-desc'))
 				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.strictHeadingMatch)
+					.setValue(this.plugin.settings.simplifiedHeadingToNoteLink)
 					.onChange(async (value) => {
-						this.plugin.settings.strictHeadingMatch = value;
+						this.plugin.settings.simplifiedHeadingToNoteLink = value;
 						await this.plugin.saveSettings();
+						this.display();
 					})));
+
+			if (this.plugin.settings.simplifiedHeadingToNoteLink) {
+				formatGroup.addSetting(setting => setting
+					.setName(this.plugin.t('strict-heading-match'))
+					.setDesc(this.plugin.t('strict-heading-match-desc'))
+					.addToggle(toggle => toggle
+						.setValue(this.plugin.settings.strictHeadingMatch)
+						.onChange(async (value) => {
+							this.plugin.settings.strictHeadingMatch = value;
+							await this.plugin.saveSettings();
+						})));
+			}
 		}
 
 
