@@ -101,8 +101,8 @@ describe('decidePasteResolution', () => {
 	});
 
 	it('TTL check runs before clipboard match', () => {
-		// Stale meta with mismatched clipboard text — TTL should fire first,
-		// resulting in reset-and-skip either way, but staleness is the cause.
+		// 过期的 meta 加上不匹配的剪贴板文本——TTL 检查会先触发，
+		// 两种情况下结果都是 reset-and-skip，但根因是过期。
 		expect(decidePasteResolution({
 			...baseInput,
 			now: META.timestamp + TTL + 1,
@@ -165,7 +165,7 @@ describe('shouldOmitAliasForSameFile', () => {
 	});
 
 	it('omits when sanitization round-trip collapses alias to subpath', () => {
-		// alias contains | which sanitizeHeadingForLink collapses to a space
+		// alias 中的 | 会被 sanitizeHeadingForLink 折叠为空格
 		expect(shouldOmitAliasForSameFile({
 			...base,
 			subpath: '#Some Heading',
@@ -174,8 +174,8 @@ describe('shouldOmitAliasForSameFile', () => {
 	});
 
 	it('keeps alias when OBSIDIAN is passed (helper expects already-resolved format)', () => {
-		// Defensive: callers should never pass OBSIDIAN here, but if they do
-		// the helper bails rather than misbehave.
+		// 防御性检查：调用方不应在此传入 OBSIDIAN；
+		// 即使误传，本函数也会安全地返回 false。
 		expect(shouldOmitAliasForSameFile({ ...base, effectiveLinkFormat: LinkFormat.OBSIDIAN })).toBe(false);
 	});
 });

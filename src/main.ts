@@ -110,25 +110,21 @@ export default class EasyCopy extends Plugin {
 			})
 		);
 
-		// Clear paste metadata on manual copy (Ctrl+C, right-click copy, etc.)
-		// so we don't falsely intercept paste of non-Easy-Copy content.
-		// navigator.clipboard.writeText() does not fire DOM copy events,
-		// so Easy Copy's own writes are unaffected.
-		// Note: plugins that also use navigator.clipboard.writeText() bypass
-		// this listener. A conflict would require identical clipboard text,
-		// which is extremely unlikely. If needed, a custom ClipboardItem MIME
-		// type could serve as a more robust authentication mechanism.
+		// 手动复制（Ctrl+C、右键复制等）时清除 lastCopyMeta，
+		// 避免在粘贴非 Easy Copy 内容时被误拦截。
+		// navigator.clipboard.writeText() 不会触发 DOM 的 copy 事件，
+		// 所以 Easy Copy 自身写入剪贴板时不受影响。
+		// 注意：其他也使用 navigator.clipboard.writeText() 的插件会
+		// 绕过这个监听器；冲突需要剪贴板文本完全相同，概率极低。
+		// 如果需要更稳健的识别机制，可改用自定义 ClipboardItem MIME 类型。
 		this.registerDomEvent(document, 'copy', () => {
 			this.lastCopyMeta = null;
 		});
 
-		// Paste-time path resolution: when enabled and "Follow Obsidian settings"
-		// is active, intercept paste to regenerate the link with correct path
-		// format (shortest/relative/absolute) based on the destination file.
-		// Uses Obsidian's editor-paste workspace event so we cooperate with
-		// other plugins (registration order, defaultPrevented handshake).
-		// Only registered when both conditions hold, so we're absent from the
-		// plugin chain entirely when the user has the feature off.
+		// 粘贴时解析链接路径：启用后拦截粘贴，根据目标文件重新生成链接。
+		// 使用 Obsidian 的 editor-paste workspace 事件，
+		// 与其他插件保持协作（按注册顺序、遵循 defaultPrevented 协议）。
+		// 仅在开关启用时注册，关闭时彻底退出粘贴插件链。
 		this.syncPasteHandlerRegistration();
 	}
 
@@ -168,13 +164,13 @@ export default class EasyCopy extends Plugin {
 	}
 
 	/**
-	 * Intercept paste when the clipboard contains an Easy Copy link.
-	 * Under "Follow Obsidian settings" uses generateMarkdownLink() (full
-	 * path-style support); under explicit Wiki/Markdown uses fileToLinktext()
-	 * (shortest-unique paths only) so the user's format choice is honored.
+	 * 当剪贴板内容是 Easy Copy 生成的链接时，拦截粘贴并按目标文件重写。
+	 * 「跟随 Obsidian 设置」时调用 generateMarkdownLink()（完整支持
+	 * 最短/相对/绝对路径风格）；选择明确的 Wiki/Markdown 格式时改用
+	 * fileToLinktext()（仅支持最短唯一路径），以尊重用户的格式选择。
 	 *
-	 * Per the editor-paste contract (obsidian.d.ts): yield if another handler
-	 * has already preventDefault'd, and call preventDefault to claim the event.
+	 * 依照 editor-paste 契约（见 obsidian.d.ts）：若有其他处理器已经
+	 * preventDefault，则让出事件；本处理器接管时也需调用 preventDefault。
 	 */
 	private handlePaste(evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
 		const clipboardText = evt.clipboardData?.getData('text/plain');
@@ -193,14 +189,14 @@ export default class EasyCopy extends Plugin {
 		}
 		if (decision === 'skip') return;
 
-		// decision === 'rewrite' — lastCopyMeta and clipboardText are non-null here.
+		// decision === 'rewrite'：此时 lastCopyMeta 和 clipboardText 必非空。
 		const meta = this.lastCopyMeta!;
 
 		const destFile = info.file;
 		if (!destFile) return;
 
-		// Degenerate self-ref: a same-file paste with no anchor would produce
-		// [[]] / [](#) under either branch. Let normal paste proceed instead.
+		// 退化的自引用：同文件粘贴且无锚点会生成 [[]] / [](#) 之类的空链接，
+		// 这种情况下让正常粘贴流程接手即可。
 		if (meta.subpath === '' && meta.sourceFilePath === destFile.path) return;
 
 		const sourceFile = this.app.vault.getAbstractFileByPath(meta.sourceFilePath);
@@ -219,8 +215,8 @@ export default class EasyCopy extends Plugin {
 
 			let link: string;
 			if (this.settings.linkFormat === LinkFormat.OBSIDIAN) {
-				// generateMarkdownLink honors vault config (useMarkdownLinks +
-				// newLinkFormat) — full path-style support: shortest/relative/absolute.
+				// generateMarkdownLink 会遵循 vault 配置（useMarkdownLinks +
+				// newLinkFormat），完整支持最短/相对/绝对三种路径风格。
 				const aliasArg = omitAlias ? undefined : (meta.alias || undefined);
 				link = this.app.fileManager.generateMarkdownLink(
 					sourceFile,
@@ -229,11 +225,10 @@ export default class EasyCopy extends Plugin {
 					aliasArg,
 				);
 			} else {
-				// Explicit Wiki/Markdown: build manually so the user's format choice is
-				// honored. fileToLinktext returns the shortest-unique vault path
-				// (no relative/absolute support — documented trade-off).
-				// omitMdExtension=true is REQUIRED — defaulting false would yield
-				// paths with ".md" and break wiki-link convention ([[Note.md]]).
+				// 用户选择了明确的 Wiki/Markdown：手动拼接以尊重该格式选择。
+				// fileToLinktext 只返回最短唯一路径（不支持相对/绝对路径，
+				// 这是有意识的权衡）。omitMdExtension=true 必须传入——
+				// 默认 false 会带 ".md"，破坏 wiki 链接约定（[[Note.md]]）。
 				const path = this.app.metadataCache.fileToLinktext(sourceFile, destFile.path, true);
 				link = buildExplicitPasteLink({
 					format: effectiveFormat as LinkFormat.WIKILINK | LinkFormat.MDLINK,
@@ -254,7 +249,7 @@ export default class EasyCopy extends Plugin {
 				editor.replaceSelection(link);
 			}
 		} catch {
-			// link generation failed — let normal paste proceed
+			// 链接生成失败——让正常粘贴流程继续
 		}
 	}
 
@@ -674,7 +669,7 @@ export default class EasyCopy extends Plugin {
 
 		navigator.clipboard.writeText(blockIdLink);
 
-		// Store metadata for paste-time path resolution
+		// 存储元数据，供粘贴时解析链接路径使用
 		const blockFile = this.app.workspace.getActiveFile();
 		if (blockFile) {
 			this.lastCopyMeta = buildBlockCopyMetadata({
@@ -713,9 +708,9 @@ export default class EasyCopy extends Plugin {
 			}
 		}
 
-		// Under "Follow Obsidian settings", simplified-to-note-link transforms
-		// conflict with deferring format/path choice to Obsidian. Gate inert at
-		// the call site so buildHeadingLink stays format-agnostic.
+		// 「跟随 Obsidian 设置」时应将格式与路径选择交给 Obsidian，
+		// 此时 simplifiedHeadingToNoteLink 的链接转换会与该原则冲突。
+		// 在调用点直接禁用该选项，让 buildHeadingLink 保持与格式无关。
 		const userExplicitlyPickedFormat = this.settings.linkFormat !== LinkFormat.OBSIDIAN;
 		const { link, isNoteLink } = buildHeadingLink({
 			heading: content,
@@ -731,7 +726,7 @@ export default class EasyCopy extends Plugin {
 
 		navigator.clipboard.writeText(link);
 
-		// Store metadata for paste-time path resolution
+		// 存储元数据，供粘贴时解析链接路径使用
 		const headingFile = this.app.workspace.getActiveFile();
 		if (headingFile) {
 			this.lastCopyMeta = buildHeadingCopyMetadata({
@@ -787,7 +782,7 @@ export default class EasyCopy extends Plugin {
 
 		navigator.clipboard.writeText(link);
 
-		// Store metadata for paste-time path resolution
+		// 存储元数据，供粘贴时解析链接路径使用
 		this.lastCopyMeta = buildFileCopyMetadata({
 			clipboardText: link,
 			sourceFilePath: file.path,

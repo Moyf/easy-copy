@@ -1,33 +1,33 @@
 import { LinkFormat } from './type';
 
-// --- URL Encoding ---
+// --- URL 编码 ---
 
 export function encodeMarkdownLinkUrl(url: string): string {
 	return url.replace(/ /g, '%20');
 }
 
-// --- Wiki Bracket Stripping ---
+// --- 去除 Wiki 链接外层括号 ---
 
 /**
- * Strip outer [[…]] from a string. Used when a heading captured from
- * the editor is itself a wiki-link reference.
+ * 去除字符串外层的 [[…]]。当从编辑器中捕获的「标题」本身已是
+ * 一个 wiki 链接引用时使用。
  */
 export function stripWikiBrackets(s: string): string {
 	if (s.startsWith('[[') && s.endsWith(']]')) return s.slice(2, -2);
 	return s;
 }
 
-// --- Heading Sanitization ---
+// --- 标题净化 ---
 
 /**
- * Sanitize heading text for use in link targets.
+ * 净化标题文本，使其可作为链接目标。
  *
- * Obsidian's [[ autocomplete surprisingly strips # | ^ : %% [[ ]] from
- * heading link targets rather than URL-encoding them, replacing each
- * occurrence (and any surrounding whitespace) with a single space.
- * URL-encoding these characters does not work reliably in Obsidian.
+ * Obsidian 的 [[ 自动补全在生成标题链接目标时，会出乎意料地
+ * 直接「剥除」# | ^ : %% [[ ]] 等字符（连同周围的空白），
+ * 用单个空格替换，而不是 URL 编码。Obsidian 对这些字符的
+ * URL 编码支持并不可靠。
  *
- * See: https://help.obsidian.md/Linking+notes+and+files/Internal+links
+ * 参考：https://help.obsidian.md/Linking+notes+and+files/Internal+links
  */
 export function sanitizeHeadingForLink(heading: string): string {
 	return heading
@@ -36,7 +36,7 @@ export function sanitizeHeadingForLink(heading: string): string {
 		.trim();
 }
 
-// --- Heading Link ---
+// --- 标题链接 ---
 
 export interface BuildHeadingLinkOptions {
 	heading: string;
@@ -78,12 +78,12 @@ interface ShouldSimplifyHeadingOptions {
 }
 
 /**
- * Whether the early simplification block fires (linkContent → filename, isNoteLink → true).
+ * 判断是否触发提前简化分支（linkContent → filename，isNoteLink → true）。
  *
- * Gated on useHeadingAsDisplayText: when the user wants "filename#heading" in the
- * display, dropping the heading anchor would produce a misleading link where the
- * display text promises a heading the target doesn't deliver. The WIKI exact-match
- * special case (filename === heading) is handled separately and is exempt.
+ * 受 useHeadingAsDisplayText 约束：当用户希望显示文本是「文件名#标题」时，
+ * 若把目标的标题锚点丢掉，会出现「显示承诺一个标题链接、但目标其实只是
+ * 文件链接」的错位。WIKI 精确匹配（filename === heading）的特例由
+ * 调度层另行处理，不受该约束。
  */
 function shouldSimplifyHeading(o: ShouldSimplifyHeadingOptions): boolean {
 	if (!o.simplifiedHeadingToNoteLink) return false;
@@ -143,10 +143,10 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 		strictHeadingMatch: options.strictHeadingMatch,
 	});
 
-	// A1.5 exception: WIKI exact match (filename === heading) collapses to
-	// [[filename]] regardless of useHeadingAsDisplayText, since [[filename]]
-	// renders cleanly as just the filename in Obsidian. Owned by the
-	// orchestrator so formatters stay pure string-producers.
+	// A1.5 例外：WIKI 精确匹配（filename === heading）无论
+	// useHeadingAsDisplayText 如何，都简化为 [[filename]]——
+	// Obsidian 渲染时 [[filename]] 直接显示为文件名，干净利落。
+	// 该策略由调度层持有，使各个格式化函数保持为纯字符串生成器。
 	const wikiExactMatch =
 		options.linkFormat === LinkFormat.WIKILINK &&
 		options.simplifiedHeadingToNoteLink &&
@@ -164,7 +164,7 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 	return { link, isNoteLink };
 }
 
-// --- Block Display Text ---
+// --- 块显示文本 ---
 
 export function extractBlockDisplayText(
 	firstLine: string,
@@ -207,7 +207,7 @@ export function extractBlockDisplayText(
 	return text;
 }
 
-// --- Block Link ---
+// --- 块链接 ---
 
 export interface BuildBlockLinkOptions {
 	blockId: string;
@@ -253,24 +253,25 @@ export function buildBlockLink(options: BuildBlockLinkOptions): string {
 	return link;
 }
 
-// --- Explicit Paste Link ---
+// --- 明确格式的粘贴链接 ---
 //
-// Used by the paste handler when the user has explicitly chosen Wiki/Markdown
-// (not "Follow Obsidian settings"). Obsidian's app.fileManager.generateMarkdownLink
-// honors the vault's useMarkdownLinks config which would override an explicit
-// choice — so we build the link manually instead, with the path string already
-// resolved by app.metadataCache.fileToLinktext.
+// 当用户明确选择 Wiki / Markdown（而非「跟随 Obsidian 设置」）时，
+// 粘贴处理器会调用此函数。Obsidian 的 app.fileManager.generateMarkdownLink
+// 会遵循 vault 的 useMarkdownLinks 配置，会覆盖用户的明确格式选择——
+// 因此这里改为手动拼接链接，路径部分由 app.metadataCache.fileToLinktext
+// 预先解析。
 //
-// Pure string-producer: the caller decides `omitAlias` via shouldOmitAliasForSameFile.
-// Formatter only consumes the flag — Strategy: caller owns policy, formatter owns syntax.
+// 纯字符串生成器：是否省略 alias 由调用方通过 shouldOmitAliasForSameFile
+// 决定，本函数只消费该布尔值——Strategy 模式：调用方持有策略，
+// 格式化函数只负责语法。
 
 export interface BuildExplicitPasteLinkOptions {
 	format: LinkFormat.WIKILINK | LinkFormat.MDLINK;
-	path: string;       // from fileToLinktext (shortest unique vault path)
-	subpath: string;    // '#Heading' or '#^blockid' or ''
-	alias: string;      // display text or ''
-	sameFile: boolean;  // sourcePath === destPath — drops path portion
-	omitAlias: boolean; // true → render without alias (caller decision)
+	path: string;       // 来自 fileToLinktext（vault 内最短唯一路径）
+	subpath: string;    // '#Heading'、'#^blockid' 或 ''
+	alias: string;      // 显示文本，或 ''
+	sameFile: boolean;  // sourcePath === destPath——同文件粘贴时去掉路径段
+	omitAlias: boolean; // true → 渲染时省略 alias（由调用方决定）
 }
 
 export function buildExplicitPasteLink(opts: BuildExplicitPasteLinkOptions): string {
@@ -280,13 +281,13 @@ export function buildExplicitPasteLink(opts: BuildExplicitPasteLinkOptions): str
 	if (opts.format === LinkFormat.WIKILINK) {
 		return aliasToUse ? `[[${linkTarget}|${aliasToUse}]]` : `[[${linkTarget}]]`;
 	}
-	// MDLINK — alias IS the visible link text. When omitAlias forces it empty,
-	// preserve the original alias as display so we never produce [](path#H).
+	// MDLINK——alias 就是用户看到的链接文本。当 omitAlias 把它清空时，
+	// 用原始 alias 作为显示文本，避免出现 [](path#H) 这样的空显示链接。
 	const display = aliasToUse || opts.alias || '';
 	return `[${display}](${encodeMarkdownLinkUrl(linkTarget)})`;
 }
 
-// --- File Link ---
+// --- 文件链接 ---
 
 export interface BuildFileLinkOptions {
 	filename: string;

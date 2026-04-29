@@ -41,7 +41,7 @@ describe('buildBlockCopyMetadata', () => {
 			firstLine: 'The quick brown fox jumps over the lazy dog',
 			blockDisplayWordLimit: 4,
 		});
-		// extractBlockDisplayText truncates to the word limit
+		// extractBlockDisplayText 会截断到单词数上限
 		expect(meta.alias).not.toBe('abc123');
 		expect(meta.alias.length).toBeGreaterThan(0);
 	});
