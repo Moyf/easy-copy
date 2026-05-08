@@ -18,7 +18,6 @@ export type PasteResolutionAction =
 	| 'rewrite';       // 重新生成链接并替换粘贴内容
 
 export interface PasteResolutionInput {
-	defaultPrevented: boolean;
 	resolveLinkPathOnPaste: boolean;
 	lastCopyMeta: CopyMetadata | null;
 	clipboardText: string | undefined;
@@ -27,7 +26,6 @@ export interface PasteResolutionInput {
 }
 
 export function decidePasteResolution(input: PasteResolutionInput): PasteResolutionAction {
-	if (input.defaultPrevented) return 'skip';
 	if (!input.resolveLinkPathOnPaste) return 'skip';
 	if (!input.lastCopyMeta) return 'skip';
 	if (input.now - input.lastCopyMeta.timestamp > input.ttlMs) return 'reset-and-skip';

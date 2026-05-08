@@ -169,13 +169,12 @@ export default class EasyCopy extends Plugin {
 	 * 最短/相对/绝对路径风格）；选择明确的 Wiki/Markdown 格式时改用
 	 * fileToLinktext()（仅支持最短唯一路径），以尊重用户的格式选择。
 	 *
-	 * 依照 editor-paste 契约（见 obsidian.d.ts）：若有其他处理器已经
-	 * preventDefault，则让出事件；本处理器接管时也需调用 preventDefault。
+	 * 用户启用此功能即表示希望 Easy Copy 处理粘贴，因此不检查
+	 * defaultPrevented，避免被其他插件（如 Linter）阻断。
 	 */
 	private handlePaste(evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
 		const clipboardText = evt.clipboardData?.getData('text/plain');
 		const decision = decidePasteResolution({
-			defaultPrevented: evt.defaultPrevented,
 			resolveLinkPathOnPaste: this.settings.resolveLinkPathOnPaste,
 			lastCopyMeta: this.lastCopyMeta,
 			clipboardText,
@@ -708,10 +707,6 @@ export default class EasyCopy extends Plugin {
 			}
 		}
 
-		// 「跟随 Obsidian 设置」时应将格式与路径选择交给 Obsidian，
-		// 此时 simplifiedHeadingToNoteLink 的链接转换会与该原则冲突。
-		// 在调用点直接禁用该选项，让 buildHeadingLink 保持与格式无关。
-		const userExplicitlyPickedFormat = this.settings.linkFormat !== LinkFormat.OBSIDIAN;
 		const { link, isNoteLink } = buildHeadingLink({
 			heading: content,
 			filename,
@@ -720,8 +715,7 @@ export default class EasyCopy extends Plugin {
 			useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
 			headingLinkSeparator: this.settings.headingLinkSeparator,
 			strictHeadingMatch: this.settings.strictHeadingMatch,
-			simplifiedHeadingToNoteLink:
-				userExplicitlyPickedFormat && this.settings.simplifiedHeadingToNoteLink,
+			simplifiedHeadingToNoteLink: this.settings.simplifiedHeadingToNoteLink,
 		});
 
 		navigator.clipboard.writeText(link);
