@@ -30,6 +30,7 @@ const META: CopyMetadata = {
 const TTL = 5 * 60 * 1000;
 
 const baseInput: PasteResolutionInput = {
+	defaultPrevented: false,
 	resolveLinkPathOnPaste: true,
 	lastCopyMeta: META,
 	clipboardText: META.clipboardText,
@@ -40,6 +41,10 @@ const baseInput: PasteResolutionInput = {
 describe('decidePasteResolution', () => {
 	it('returns rewrite when all guards pass', () => {
 		expect(decidePasteResolution(baseInput)).toBe('rewrite');
+	});
+
+	it('skips when another handler already preventDefault\'d', () => {
+		expect(decidePasteResolution({ ...baseInput, defaultPrevented: true })).toBe('skip');
 	});
 
 	it('skips when the toggle is off', () => {
@@ -76,6 +81,15 @@ describe('decidePasteResolution', () => {
 			...baseInput,
 			clipboardText: undefined,
 		})).toBe('reset-and-skip');
+	});
+
+	it('defaultPrevented takes precedence over toggle and other state', () => {
+		expect(decidePasteResolution({
+			...baseInput,
+			defaultPrevented: true,
+			resolveLinkPathOnPaste: false,
+			lastCopyMeta: null,
+		})).toBe('skip');
 	});
 
 	it('toggle takes precedence over meta state', () => {

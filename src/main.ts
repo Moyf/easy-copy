@@ -169,12 +169,15 @@ export default class EasyCopy extends Plugin {
 	 * 最短/相对/绝对路径风格）；选择明确的 Wiki/Markdown 格式时改用
 	 * fileToLinktext()（仅支持最短唯一路径），以尊重用户的格式选择。
 	 *
-	 * 用户启用此功能即表示希望 Easy Copy 处理粘贴，因此不检查
-	 * defaultPrevented，避免被其他插件（如 Linter）阻断。
+	 * 依照 editor-paste 契约：若有其他处理器已经 preventDefault，则让出事件。
+	 * 插件加载顺序决定 handler 的执行顺序——越早启用的插件越先执行。
+	 * 如果其他粘贴类插件（如 Linter）抢先处理了事件，本功能会被跳过。
+	 * 此时需确保 Easy Copy 在冲突插件之前启用（先禁用再启用即可调整顺序）。
 	 */
 	private handlePaste(evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
 		const clipboardText = evt.clipboardData?.getData('text/plain');
 		const decision = decidePasteResolution({
+			defaultPrevented: evt.defaultPrevented,
 			resolveLinkPathOnPaste: this.settings.resolveLinkPathOnPaste,
 			lastCopyMeta: this.lastCopyMeta,
 			clipboardText,
