@@ -126,16 +126,25 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		// 解析器在粘贴时拦截事件，根据目标文件重新生成链接。
 		// 「跟随 Obsidian 设置」时遵循 vault 的路径风格（最短/相对/绝对）；
 		// 选择明确的 Wiki/Markdown 格式时仅使用最短唯一路径。
-		formatGroup.addSetting(setting => setting
-			.setName(this.plugin.t('resolve-link-path-on-paste'))
-			.setDesc(this.plugin.t('resolve-link-path-on-paste-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.resolveLinkPathOnPaste)
-				.onChange(async (value) => {
-					this.plugin.settings.resolveLinkPathOnPaste = value;
-					await this.plugin.saveSettings();
-					this.plugin.syncPasteHandlerRegistration();
-				})));
+		formatGroup.addSetting(setting => {
+			const descFragment = document.createDocumentFragment();
+			descFragment.append(this.plugin.t('resolve-link-path-on-paste-desc') + ' ');
+			const infoIcon = descFragment.createEl('span', {
+				attr: { 'aria-label': this.plugin.t('resolve-link-path-on-paste-tooltip'), class: 'clickable-icon setting-editor-extra-setting-button' },
+			});
+			infoIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+
+			setting
+				.setName(this.plugin.t('resolve-link-path-on-paste'))
+				.setDesc(descFragment)
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.resolveLinkPathOnPaste)
+					.onChange(async (value) => {
+						this.plugin.settings.resolveLinkPathOnPaste = value;
+						await this.plugin.saveSettings();
+						this.plugin.syncPasteHandlerRegistration();
+					}));
+		});
 
 		formatGroup.addSetting(setting => setting
 			.setName(this.plugin.t('use-heading-as-display'))
