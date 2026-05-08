@@ -176,6 +176,13 @@ export default class EasyCopy extends Plugin {
 	 */
 	private handlePaste(evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
 		const clipboardText = evt.clipboardData?.getData('text/plain');
+
+		// 如果有活跃的 meta 且剪贴板内容匹配，但被其他插件抢先处理了，输出提示
+		if (evt.defaultPrevented && this.lastCopyMeta && clipboardText === this.lastCopyMeta.clipboardText) {
+			console.log('[Easy Copy] Paste event was already handled by another plugin. Link path resolution skipped. You can adjust plugin load order in .obsidian/community-plugins.json.');
+			return;
+		}
+
 		const decision = decidePasteResolution({
 			defaultPrevented: evt.defaultPrevented,
 			resolveLinkPathOnPaste: this.settings.resolveLinkPathOnPaste,
