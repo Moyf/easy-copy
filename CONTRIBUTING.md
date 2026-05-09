@@ -1,5 +1,7 @@
 # Contributing
 
+English | [中文文档](./CONTRIBUTING-zh.md)
+
 ## Development Setup
 
 ```bash

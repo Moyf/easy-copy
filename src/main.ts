@@ -1,13 +1,19 @@
-import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo } from 'obsidian';
+import { Editor, EventRef, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
-import { buildHeadingLink, buildBlockLink, buildFileLink } from './linkBuilder';
+import { buildHeadingLink, buildBlockLink, buildFileLink, buildExplicitPasteLink } from './linkBuilder';
+import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
+import { decidePasteResolution, shouldOmitAliasForSameFile, shouldRegisterPasteHandler } from './pasteResolution';
+
+const LAST_COPY_META_TTL_MS = 5 * 60 * 1000;
 
 export default class EasyCopy extends Plugin {
 	settings: EasyCopySettings;
 	i18n: I18n;
+	private lastCopyMeta: CopyMetadata | null = null;
+	private pasteEventRef: EventRef | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -103,6 +109,46 @@ export default class EasyCopy extends Plugin {
 				}
 			})
 		);
+
+		// 手动复制（Ctrl+C、右键复制等）时清除 lastCopyMeta，
+		// 避免在粘贴非 Easy Copy 内容时被误拦截。
+		// navigator.clipboard.writeText() 不会触发 DOM 的 copy 事件，
+		// 所以 Easy Copy 自身写入剪贴板时不受影响。
+		// 注意：其他也使用 navigator.clipboard.writeText() 的插件会
+		// 绕过这个监听器；冲突需要剪贴板文本完全相同，概率极低。
+		// 如果需要更稳健的识别机制，可改用自定义 ClipboardItem MIME 类型。
+		this.registerDomEvent(document, 'copy', () => {
+			this.lastCopyMeta = null;
+		});
+
+		// 粘贴时解析链接路径：启用后拦截粘贴，根据目标文件重新生成链接。
+		// 使用 Obsidian 的 editor-paste workspace 事件，
+		// 与其他插件保持协作（按注册顺序、遵循 defaultPrevented 协议）。
+		// 仅在开关启用时注册，关闭时彻底退出粘贴插件链。
+		this.syncPasteHandlerRegistration();
+	}
+
+	syncPasteHandlerRegistration(): void {
+		if (shouldRegisterPasteHandler(this.settings)) {
+			this.registerPasteHandler();
+		} else {
+			this.unregisterPasteHandler();
+		}
+	}
+
+	private registerPasteHandler(): void {
+		if (this.pasteEventRef) return;
+		this.pasteEventRef = this.app.workspace.on('editor-paste', (evt, editor, info) => {
+			this.handlePaste(evt, editor, info);
+		});
+		this.registerEvent(this.pasteEventRef);
+	}
+
+	private unregisterPasteHandler(): void {
+		if (!this.pasteEventRef) return;
+		this.app.workspace.offref(this.pasteEventRef);
+		this.pasteEventRef = null;
+		this.lastCopyMeta = null;
 	}
 
 	onunload() {
@@ -115,6 +161,105 @@ export default class EasyCopy extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	/**
+	 * 当剪贴板内容是 Easy Copy 生成的链接时，拦截粘贴并按目标文件重写。
+	 * 「跟随 Obsidian 设置」时调用 generateMarkdownLink()（完整支持
+	 * 最短/相对/绝对路径风格）；选择明确的 Wiki/Markdown 格式时改用
+	 * fileToLinktext()（仅支持最短唯一路径），以尊重用户的格式选择。
+	 *
+	 * 依照 editor-paste 契约：若有其他处理器已经 preventDefault，则让出事件。
+	 * 插件加载顺序决定 handler 的执行顺序——越早启用的插件越先执行。
+	 * 如果其他粘贴类插件（如 Linter）抢先处理了事件，本功能会被跳过。
+	 * 此时需确保 Easy Copy 在冲突插件之前启用（先禁用再启用即可调整顺序）。
+	 */
+	private handlePaste(evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
+		const clipboardText = evt.clipboardData?.getData('text/plain');
+
+		// 如果有活跃的 meta 且剪贴板内容匹配，但被其他插件抢先处理了，输出提示
+		if (evt.defaultPrevented && this.lastCopyMeta && clipboardText === this.lastCopyMeta.clipboardText) {
+			console.log('[Easy Copy] Paste event was already handled by another plugin. Link path resolution skipped. You can adjust plugin load order in .obsidian/community-plugins.json.');
+			return;
+		}
+
+		const decision = decidePasteResolution({
+			defaultPrevented: evt.defaultPrevented,
+			resolveLinkPathOnPaste: this.settings.resolveLinkPathOnPaste,
+			lastCopyMeta: this.lastCopyMeta,
+			clipboardText,
+			now: Date.now(),
+			ttlMs: LAST_COPY_META_TTL_MS,
+		});
+
+		if (decision === 'reset-and-skip') {
+			this.lastCopyMeta = null;
+			return;
+		}
+		if (decision === 'skip') return;
+
+		// decision === 'rewrite'：此时 lastCopyMeta 和 clipboardText 必非空。
+		const meta = this.lastCopyMeta!;
+
+		const destFile = info.file;
+		if (!destFile) return;
+
+		// 退化的自引用：同文件粘贴且无锚点会生成 [[]] / [](#) 之类的空链接，
+		// 这种情况下让正常粘贴流程接手即可。
+		if (meta.subpath === '' && meta.sourceFilePath === destFile.path) return;
+
+		const sourceFile = this.app.vault.getAbstractFileByPath(meta.sourceFilePath);
+		if (!(sourceFile instanceof TFile)) return;
+
+		try {
+			const effectiveFormat = this.getEffectiveLinkFormat();
+			const omitAlias = shouldOmitAliasForSameFile({
+				effectiveLinkFormat: effectiveFormat,
+				sourceFilePath: meta.sourceFilePath,
+				destFilePath: destFile.path,
+				subpath: meta.subpath,
+				alias: meta.alias,
+				useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
+			});
+
+			let link: string;
+			if (this.settings.linkFormat === LinkFormat.OBSIDIAN) {
+				// generateMarkdownLink 会遵循 vault 配置（useMarkdownLinks +
+				// newLinkFormat），完整支持最短/相对/绝对三种路径风格。
+				const aliasArg = omitAlias ? undefined : (meta.alias || undefined);
+				link = this.app.fileManager.generateMarkdownLink(
+					sourceFile,
+					destFile.path,
+					meta.subpath || undefined,
+					aliasArg,
+				);
+			} else {
+				// 用户选择了明确的 Wiki/Markdown：手动拼接以尊重该格式选择。
+				// fileToLinktext 只返回最短唯一路径（不支持相对/绝对路径，
+				// 这是有意识的权衡）。omitMdExtension=true 必须传入——
+				// 默认 false 会带 ".md"，破坏 wiki 链接约定（[[Note.md]]）。
+				const path = this.app.metadataCache.fileToLinktext(sourceFile, destFile.path, true);
+				link = buildExplicitPasteLink({
+					format: effectiveFormat as LinkFormat.WIKILINK | LinkFormat.MDLINK,
+					path,
+					subpath: meta.subpath,
+					alias: meta.alias,
+					sameFile: meta.sourceFilePath === destFile.path,
+					omitAlias,
+				});
+			}
+
+			if (meta.isEmbed) {
+				link = '!' + link;
+			}
+
+			if (link !== clipboardText) {
+				evt.preventDefault();
+				editor.replaceSelection(link);
+			}
+		} catch {
+			// 链接生成失败——让正常粘贴流程继续
+		}
 	}
 
 	/**
@@ -533,11 +678,27 @@ export default class EasyCopy extends Plugin {
 
 		navigator.clipboard.writeText(blockIdLink);
 
+		// 存储元数据，供粘贴时解析链接路径使用
+		const blockFile = this.app.workspace.getActiveFile();
+		if (blockFile) {
+			this.lastCopyMeta = buildBlockCopyMetadata({
+				clipboardText: blockIdLink,
+				sourceFilePath: blockFile.path,
+				blockId: content,
+				useBrief,
+				firstLine,
+				autoBlockDisplayText: this.settings.autoBlockDisplayText,
+				autoEmbedBlockLink: this.settings.autoEmbedBlockLink,
+				blockDisplayWordLimit: this.settings.blockDisplayWordLimit,
+				blockDisplayCharLimit: this.settings.blockDisplayCharLimit,
+			});
+		}
+
 		if (this.settings.showNotice) {
 			new Notice(this.t('block-id-copied'));
 		}
 	}
-	
+
 	/**
 	 * 复制标题链接
 	 */
@@ -564,9 +725,25 @@ export default class EasyCopy extends Plugin {
 			useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
 			headingLinkSeparator: this.settings.headingLinkSeparator,
 			strictHeadingMatch: this.settings.strictHeadingMatch,
+			simplifiedHeadingToNoteLink: this.settings.simplifiedHeadingToNoteLink,
 		});
 
 		navigator.clipboard.writeText(link);
+
+		// 存储元数据，供粘贴时解析链接路径使用
+		const headingFile = this.app.workspace.getActiveFile();
+		if (headingFile) {
+			this.lastCopyMeta = buildHeadingCopyMetadata({
+				clipboardText: link,
+				sourceFilePath: headingFile.path,
+				heading: content,
+				filename,
+				frontmatterTitle,
+				useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
+				headingLinkSeparator: this.settings.headingLinkSeparator,
+				isNoteLink,
+			});
+		}
 
 		if (isNoteLink) {
 			new Notice(this.t('note-link-simplified'));
@@ -608,6 +785,14 @@ export default class EasyCopy extends Plugin {
 		});
 
 		navigator.clipboard.writeText(link);
+
+		// 存储元数据，供粘贴时解析链接路径使用
+		this.lastCopyMeta = buildFileCopyMetadata({
+			clipboardText: link,
+			sourceFilePath: file.path,
+			displayText,
+		});
+
 		if (this.settings.showNotice) {
 			new Notice(this.t('file-link-copied'));
 		}
