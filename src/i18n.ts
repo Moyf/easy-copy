@@ -11,6 +11,7 @@ export type TranslationKey =
 	| 'inline-code-copied' | 'block-id-copied' | 'note-link-copied' | 'heading-copied' | 'strikethrough-copied' 
 	| 'inline-latex-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied' | 'link-text-copied' | 'link-url-copied'
 	| 'wiki-link-copied' | 'callout-copied' | 'note-link-simplified'
+	| 'code-block-copied'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'add-extra-commands' | 'add-extra-commands-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc' | 'heading-link-separator' | 'heading-link-separator-desc' | 'block-id'
@@ -34,6 +35,8 @@ export type TranslationKey =
 	| 'auto-embed-block-link' | 'auto-embed-block-link-desc'
 	| 'enable-callout-copy' | 'enable-callout-copy-desc'
 	| 'callout-copy-priority' | 'callout-copy-priority-desc'
+	| 'code-block-behavior' | 'code-block-behavior-desc'
+	| 'code-block' | 'code-block-copy-content' | 'code-block-copy-with-fences' | 'code-block-generate-block-link' | 'code-block-disabled'
     | 'auto-add-block-id' | 'auto-add-block-id-desc'
     | 'manual-block-id' | 'manual-block-id-desc'
     | 'block-id-insert-position' | 'block-id-insert-position-desc'
@@ -79,6 +82,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-url-copied': 'Link URL copied!',
 		'wiki-link-copied': 'Wiki link copied!',
 		'callout-copied': 'Callout copied!',
+		'code-block-copied': 'Code block copied!',
 		'note-link-simplified': 'Link simplified (filename matches heading)',
 		
 		// 设置界面
@@ -143,6 +147,13 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-callout-copy-desc': 'When the cursor is inside a callout (">" block), copy the callout content as plain text',
 		'callout-copy-priority': 'Prioritize callout copy',
 		'callout-copy-priority-desc': 'When the cursor is inside a callout, prioritize copying the callout content instead of generating a block ID link',
+		'code-block-behavior': 'Code block copy behavior',
+		'code-block-behavior-desc': 'Choose the behavior when the cursor is inside a fenced code block (``` ... ```)',
+		'code-block': 'Code Block',
+		'code-block-copy-content': 'Copy plain text',
+		'code-block-copy-with-fences': 'Copy code block (with fences)',
+		'code-block-generate-block-link': 'Generate block link',
+		'code-block-disabled': 'Disabled',
 		'keep-wiki-brackets': 'Wikilink: Keep [[ ]] brackets',
 		'keep-wiki-brackets-desc': 'When copying wiki links, keep the surrounding [[ ]] brackets',
 		
@@ -184,6 +195,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'link-url-copied': '链接地址已复制！',
 		'wiki-link-copied': 'Wiki链接已复制！',
 		'callout-copied': '标注内容已复制！',
+		'code-block-copied': '代码块已复制！',
 		'note-link-simplified': '链接已简化（文件名与标题相匹配）',
 		
 		// 设置界面
@@ -237,6 +249,13 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-callout-copy-desc': '当光标在 ">" 标注块内时，复制该标注的纯文本内容',
 		'callout-copy-priority': '优先复制标注内内容',
 		'callout-copy-priority-desc': '当光标位于标注内时，优先复制标注内内容而不是生成该标注的块ID链接',
+		'code-block-behavior': '代码块复制行为',
+		'code-block-behavior-desc': '当光标位于代码块（``` ... ```）内时的复制行为',
+		'code-block': '代码块',
+		'code-block-copy-content': '复制纯文本',
+		'code-block-copy-with-fences': '复制代码块（含 ```）',
+		'code-block-generate-block-link': '生成块链接',
+		'code-block-disabled': '禁用',
 		'keep-wiki-brackets': 'Wiki 链接：保留 [[ ]] 括号',
 		'keep-wiki-brackets-desc': '复制 wiki 链接时保留两侧 [[ ]] 括号',
 		
@@ -348,6 +367,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-callout-copy-desc': '當游標在 ">" 標註塊內時，複製該標註的純文本內容',
 		'callout-copy-priority': '優先複製標註內容',
 		'callout-copy-priority-desc': '當游標位於標註內時，優先複製標註內容而不是生成該標註的塊ID連結',
+		'code-block-behavior': '代碼塊複製行為',
+		'code-block-behavior-desc': '當游標位於代碼塊（``` ... ```）內時的複製行為',
+		'code-block': '代碼塊',
+		'code-block-copy-content': '複製純文本',
+		'code-block-copy-with-fences': '複製代碼塊（含 ```）',
+		'code-block-generate-block-link': '生成塊連結',
+		'code-block-disabled': '禁用',
+		'code-block-copied': '代碼塊已複製！',
 		'keep-wiki-brackets': 'Wiki連結：保留 [[ ]] 括號',
 		'keep-wiki-brackets-desc': '複製 wiki 連結時保留兩側 [[ ]] 括號',
 		

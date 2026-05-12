@@ -6,7 +6,7 @@ import {
  } from "obsidian";
 import * as ObsidianModule from "obsidian";
 import EasyCopy from "./main";
-import { LinkFormat, BlockIdInsertPosition } from "./type";
+import { LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from "./type";
 
 interface SettingsContainer {
 	addSetting(cb: (setting: Setting) => void): void;
@@ -230,6 +230,22 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				));
 		}
 
+
+		const codeBlockGroup = createSettingsGroup(containerEl, this.plugin.t('code-block'));
+
+		codeBlockGroup.addSetting(setting => setting
+			.setName(this.plugin.t('code-block-behavior'))
+			.setDesc(this.plugin.t('code-block-behavior-desc'))
+			.addDropdown(dropdown => dropdown
+				.addOption(CodeBlockBehavior.COPY_CONTENT, this.plugin.t('code-block-copy-content'))
+				.addOption(CodeBlockBehavior.COPY_WITH_FENCES, this.plugin.t('code-block-copy-with-fences'))
+				.addOption(CodeBlockBehavior.GENERATE_BLOCK_LINK, this.plugin.t('code-block-generate-block-link'))
+				.addOption(CodeBlockBehavior.DISABLED, this.plugin.t('code-block-disabled'))
+				.setValue(this.plugin.settings.codeBlockBehavior)
+				.onChange(async (value) => {
+					this.plugin.settings.codeBlockBehavior = value as CodeBlockBehavior;
+					await this.plugin.saveSettings();
+				})));
 
 		const blockIdGroup = createSettingsGroup(containerEl, this.plugin.t('block-id'));
 

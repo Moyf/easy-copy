@@ -4,6 +4,13 @@ export enum LinkFormat {
 	WIKILINK = 'wiki-link'
 }
 
+export enum CodeBlockBehavior {
+	COPY_CONTENT = 'copy-content',           // 复制代码块纯文本（不含 ``` 行）
+	COPY_WITH_FENCES = 'copy-with-fences',   // 复制代码块（含前后 ``` 行）
+	GENERATE_BLOCK_LINK = 'generate-block-link', // 给代码块生成块链接
+	DISABLED = 'disabled',                    // 禁用（不做任何操作）
+}
+
 export enum BlockIdInsertPosition {
 	END_OF_BLOCK = 'end-of-block',      // 当前块的末尾
 	NEXT_LINE = 'next-line',            // 当前块的下方一行
@@ -24,6 +31,7 @@ export enum ContextType {
     LINEURL = 'line-url',
     WIKILINK = 'wiki-link', // 光标在 [[双链]] 内
     CALLOUT = 'callout', // 光标在 callout 区块内
+    CODEBLOCK = 'code-block', // 光标在代码块内
 }
 
 export interface ContextData {
@@ -58,6 +66,7 @@ export interface EasyCopySettings {
     autoEmbedBlockLink: boolean; // 复制块链接时自动添加 !（嵌入块）
     enableCalloutCopy: boolean; // 是否启用复制 Callout 内文本
     calloutCopyPriority: boolean; // Callout 与块ID冲突时，优先复制 Callout
+    codeBlockBehavior: CodeBlockBehavior; // 代码块内的复制行为
     autoAddBlockId: boolean; // 是否自动添加 Block ID
     allowManualBlockId: boolean; // 是否允许手动输入 Block ID
     blockIdInsertPosition: BlockIdInsertPosition; // 块ID的插入位置
@@ -91,6 +100,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     autoEmbedBlockLink: false,
     enableCalloutCopy: true,
     calloutCopyPriority: true,
+    codeBlockBehavior: CodeBlockBehavior.COPY_CONTENT, // 默认复制代码块纯文本
     autoAddBlockId: false, // 默认关闭
     allowManualBlockId: false, // 默认关闭
     blockIdInsertPosition: BlockIdInsertPosition.END_OF_BLOCK, // 默认在块末尾插入

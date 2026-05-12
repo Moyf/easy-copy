@@ -1,6 +1,6 @@
 import { Editor, EventRef, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
-import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
+import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { buildHeadingLink, buildBlockLink, buildFileLink, buildExplicitPasteLink } from './linkBuilder';
@@ -280,6 +280,81 @@ export default class EasyCopy extends Plugin {
 	}
 
 	/**
+	 * 检测光标是否在代码块内，如果是，返回代码块内容
+	 * @returns ContextData 或 null
+	 */
+	private detectCodeBlock(editor: Editor): ContextData | null {
+		const behavior = this.settings.codeBlockBehavior;
+		if (behavior === CodeBlockBehavior.DISABLED) return null;
+
+		const cursor = editor.getCursor();
+		const curLine = cursor.line;
+		const totalLines = editor.lineCount();
+
+		// 向上搜索开始围栏 ```
+		let fenceStart = -1;
+		for (let i = curLine; i >= 0; i--) {
+			const line = editor.getLine(i);
+			if (/^```/.test(line.trimStart())) {
+				fenceStart = i;
+				break;
+			}
+		}
+		if (fenceStart === -1) return null;
+
+		// 如果 fenceStart 就是光标所在行，光标在 ``` 行上，不算在代码块"内"
+		if (fenceStart === curLine) return null;
+
+		// 从 fenceStart 之后向下搜索结束围栏 ```
+		let fenceEnd = -1;
+		for (let i = fenceStart + 1; i < totalLines; i++) {
+			const line = editor.getLine(i);
+			if (/^```\s*$/.test(line.trimStart())) {
+				fenceEnd = i;
+				break;
+			}
+		}
+		if (fenceEnd === -1) return null;
+
+		// 光标必须在 fenceStart 和 fenceEnd 之间（不含两端的 ``` 行）
+		if (curLine >= fenceEnd) return null;
+
+		// 根据行为模式决定返回内容
+		if (behavior === CodeBlockBehavior.GENERATE_BLOCK_LINK) {
+			// 返回 null，让后续的 block ID 逻辑处理
+			return null;
+		}
+
+		// 收集代码块内容行（不含 ``` 行）
+		const contentLines: string[] = [];
+		for (let i = fenceStart + 1; i < fenceEnd; i++) {
+			contentLines.push(editor.getLine(i));
+		}
+
+		if (behavior === CodeBlockBehavior.COPY_WITH_FENCES) {
+			// 包含前后 ``` 行
+			const fenceStartLine = editor.getLine(fenceStart);
+			const fenceEndLine = editor.getLine(fenceEnd);
+			const fullBlock = [fenceStartLine, ...contentLines, fenceEndLine].join('\n');
+			return {
+				type: ContextType.CODEBLOCK,
+				curLine: editor.getLine(curLine),
+				match: fullBlock,
+				range: null,
+			};
+		}
+
+		// 默认：COPY_CONTENT — 纯文本（不含 ``` 行）
+		const content = contentLines.join('\n');
+		return {
+			type: ContextType.CODEBLOCK,
+			curLine: editor.getLine(curLine),
+			match: content,
+			range: null,
+		};
+	}
+
+	/**
 	 * 检测光标所在行末尾或下 1~2 行开头的 block ID
 	 */
 	private detectBlockRange(editor: Editor, cursorLine: number): { start: number, end: number } {
@@ -438,6 +513,12 @@ export default class EasyCopy extends Plugin {
 					range: linkInfo.range,
 				};
 			}
+		}
+
+		// 检测代码块（在 block ID 之前，因为两者会冲突）
+		const codeBlockInfo = this.detectCodeBlock(editor);
+		if (codeBlockInfo) {
+			return codeBlockInfo;
 		}
 
 		// 检测 block ID
@@ -643,6 +724,14 @@ export default class EasyCopy extends Plugin {
 				navigator.clipboard.writeText(wikiCopyText);
 				if (this.settings.showNotice) {
 					new Notice(this.t('wiki-link-copied'));
+				}
+				return;
+			}
+			case ContextType.CODEBLOCK: {
+				// 复制代码块内容（纯文本或含围栏，由 detectCodeBlock 已决定）
+				navigator.clipboard.writeText(contextType.match ?? '');
+				if (this.settings.showNotice) {
+					new Notice(this.t('code-block-copied'));
 				}
 				return;
 			}

@@ -22,6 +22,15 @@ jobs:
           npm install
           npm run build
 
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          # Extract content between this version's heading and the next version's heading
+          notes=$(awk "/^## \[${tag}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          # Write to file to handle multiline content safely
+          echo "$notes" > release_notes.md
+
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -31,4 +40,5 @@ jobs:
           gh release create "$tag" \
             --title="$tag" \
             --draft \
+            --notes-file release_notes.md \
             main.js manifest.json styles.css
