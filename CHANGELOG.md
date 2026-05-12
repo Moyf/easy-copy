@@ -18,9 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Generate block link** — falls through to the existing block ID generation behavior (same as before this feature)
   - **Disabled** — skips code block detection entirely
 
----
-
-## 改动内容
+<details>
+<summary>改动内容（点击展开中文说明）</summary>
 
 ### ✨ 新增
 
@@ -30,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **复制代码块（含 ` ``` `）** —— 复制完整代码块，包括开头的 ` ```lang ` 和结尾的 ` ``` ` 行
   - **生成块链接** —— 沿用原有的块ID生成逻辑（与此功能上线前行为一致）
   - **禁用** —— 跳过代码块检测，不做任何特殊处理
+
+</details>
 
 ---
 
@@ -51,9 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extracted `copyMetadata.ts` and `pasteResolution.ts` as pure-function modules with full test coverage
 - Added 98 new tests (total: 184)
 
----
-
-## 改动内容
+<details>
+<summary>改动内容（点击展开中文说明）</summary>
 
 ### ✨ 新增
 
@@ -70,6 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 提取 `copyMetadata.ts` 和 `pasteResolution.ts` 为纯函数模块，完整测试覆盖
 - 新增 98 个测试（总计 184 个）
+
+</details>
 
 ---
 
@@ -88,9 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Extracted link-building logic into pure functions; added vitest with 86 tests
 
----
-
-## 改动内容
+<details>
+<summary>改动内容（点击展开中文说明）</summary>
 
 ### ✨ 新增
 
@@ -105,6 +106,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 将链接构建逻辑提取为纯函数，新增 vitest 测试框架，86 个测试用例
 
+</details>
+
 ---
 
 ## [1.5.2] - 2026-04-02
@@ -118,9 +121,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Inline code, bold, highlight, italic, strikethrough, inline LaTeX detection improvements
 
----
-
-## 改动内容
+<details>
+<summary>改动内容（点击展开中文说明）</summary>
 
 ### ✨ 新增
 
@@ -131,6 +133,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 行内代码、加粗、高亮、斜体、删除线、行内LaTeX 检测改进
 
+</details>
+
 ---
 
 ## [1.5.1] - 2025-12-11
@@ -140,14 +144,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Frontmatter display text**: Use a note property (e.g. `title`) as the display text for note links
 - **Auto block display text**: Automatically generate display text for block ID links, with configurable word/character limits
 
----
-
-## 改动内容
+<details>
+<summary>改动内容（点击展开中文说明）</summary>
 
 ### ✨ 新增
 
 - **Frontmatter 显示文本**：使用笔记属性（如 `title`）作为笔记链接的显示文本
 - **块链接自动显示文本**：自动为块ID链接生成显示文本，可配置单词数/字符数限制
+
+</details>
 
 ---
 
@@ -160,9 +165,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Block ID insert position**: Choose between end-of-block or next-line insertion
 - **Extra commands**: "Copy current file link" and "Generate & copy current block link" commands added to command palette
 
----
-
-## 改动内容
+<details>
+<summary>改动内容（点击展开中文说明）</summary>
 
 ### ✨ 新增
 
@@ -170,6 +174,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **手动输入块ID**：可通过弹窗手动输入自定义块ID
 - **块ID插入位置**：可选择在块末尾或下一行插入
 - **拓展命令**：命令面板新增「复制当前文件链接」和「生成并复制当前块链接」命令
+
+</details>
 
 ---
 

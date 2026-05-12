@@ -26,10 +26,33 @@ jobs:
         id: changelog
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-          # Extract content between this version's heading and the next version's heading
-          notes=$(awk "/^## \[${tag}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
-          # Write to file to handle multiline content safely
-          echo "$notes" > release_notes.md
+          # Derive the minor version prefix (e.g. "1.6" from "1.6.1")
+          minor=$(echo "$tag" | sed 's/\.[0-9]*$//')
+
+          # Collect all patch versions of this minor series present in CHANGELOG,
+          # in the order they appear (newest first).
+          # Each version block runs from its "## [X.Y.Z]" heading to the next "## [" heading.
+          python3 - "$minor" <<'PYEOF' > release_notes.md
+          import sys, re
+
+          minor = sys.argv[1]
+
+          with open("CHANGELOG.md", "r", encoding="utf-8") as f:
+              content = f.read()
+
+          # Split into version blocks on "## [x.y.z]" headings
+          pattern = re.compile(r'^(## \[\d+\.\d+\.\d+\].*?)(?=^## \[|\Z)', re.MULTILINE | re.DOTALL)
+          blocks = pattern.findall(content)
+
+          output = []
+          for block in blocks:
+              # Check if this block belongs to our minor version
+              heading_match = re.match(r'^## \[(\d+\.\d+)\.\d+\]', block)
+              if heading_match and heading_match.group(1) == minor:
+                  output.append(block.strip())
+
+          print("\n\n---\n\n".join(output))
+          PYEOF
 
       - name: Create release
         env:
