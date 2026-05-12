@@ -49,9 +49,11 @@ jobs:
               # Check if this block belongs to our minor version
               heading_match = re.match(r'^## \[(\d+\.\d+)\.\d+\]', block)
               if heading_match and heading_match.group(1) == minor:
-                  output.append(block.strip())
+                  # Strip trailing whitespace and trailing "---" separator
+                  cleaned = re.sub(r'\n---\s*$', '', block.strip())
+                  output.append(cleaned)
 
-          print("\n\n---\n\n".join(output))
+          print("\n\n".join(output))
           PYEOF
 
       - name: Create release
