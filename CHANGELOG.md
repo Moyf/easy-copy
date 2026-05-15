@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.3] - 2026-05-15
+
+### 🔧 Maintenance
+
+- Updated pnpm lockfile after removing `builtin-modules` and `dotenv` dependencies
+
+<details>
+<summary>改动内容（点击展开中文说明）</summary>
+
+### 🔧 维护
+
+- 移除 `builtin-modules` 和 `dotenv` 依赖后同步更新 pnpm lockfile
+
+</details>
+
+---
+
 ## [1.6.2] - 2026-05-15
 
 ### 🔧 Maintenance
