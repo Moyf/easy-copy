@@ -1,16 +1,27 @@
 // copy-to-vault.mjs
-import { copyFile, mkdir } from 'fs/promises';
+import { copyFile, mkdir, readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
 
 // 获取当前文件的目录
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 
-// 加载 .env 文件中的环境变量
-dotenv.config();
+// 手动加载 .env 文件中的环境变量（替代 dotenv，避免额外依赖）
+const envPath = join(rootDir, '.env');
+if (existsSync(envPath)) {
+  const envContent = await readFile(envPath, 'utf-8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const value = trimmed.slice(eqIdx + 1).trim().replace(/^['"]|['"]$/g, '');
+    if (key && !(key in process.env)) process.env[key] = value;
+  }
+}
 // 获取 VAULT_PATH 环境变量
 const VAULT_PATH = process.env.VAULT_PATH;
 if (!VAULT_PATH) {

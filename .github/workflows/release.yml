@@ -9,11 +9,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "20.x"
 
@@ -21,6 +26,13 @@ jobs:
         run: |
           npm install
           npm run build
+
+      - name: Generate artifact attestations
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            main.js
+            styles.css
 
       - name: Extract release notes from CHANGELOG
         id: changelog
@@ -67,3 +79,4 @@ jobs:
             --draft \
             --notes-file release_notes.md \
             main.js manifest.json styles.css
+

@@ -3,7 +3,8 @@ import {
 	PluginSettingTab, 
 	Setting,
 	requireApiVersion,
- } from "obsidian";
+	setIcon,
+} from "obsidian";
 import * as ObsidianModule from "obsidian";
 import EasyCopy from "./main";
 import { LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from "./type";
@@ -127,16 +128,16 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		// 「跟随 Obsidian 设置」时遵循 vault 的路径风格（最短/相对/绝对）；
 		// 选择明确的 Wiki/Markdown 格式时仅使用最短唯一路径。
 		formatGroup.addSetting(setting => {
-			const descFragment = document.createDocumentFragment();
-			descFragment.append(this.plugin.t('resolve-link-path-on-paste-desc') + ' ');
-			const infoIcon = descFragment.createEl('span', {
-				attr: {
-					'aria-label': this.plugin.t('resolve-link-path-on-paste-tooltip'),
-					'class': 'clickable-icon setting-editor-extra-setting-button',
-					'style': 'display:inline; vertical-align:middle; cursor:help;',
-				},
-			});
-			infoIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+		const descFragment = activeDocument.createDocumentFragment();
+		descFragment.append(this.plugin.t('resolve-link-path-on-paste-desc') + ' ');
+		const infoIcon = descFragment.createEl('span', {
+			attr: {
+				'aria-label': this.plugin.t('resolve-link-path-on-paste-tooltip'),
+				'class': 'clickable-icon setting-editor-extra-setting-button',
+				'style': 'display:inline; vertical-align:middle; cursor:help;',
+			},
+		});
+		setIcon(infoIcon, 'info');
 
 			setting
 				.setName(this.plugin.t('resolve-link-path-on-paste'))

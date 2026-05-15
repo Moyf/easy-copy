@@ -1,4 +1,4 @@
-import { Editor, EventRef, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile, getLanguage } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from './type';
 import { EasyCopySettingTab } from './settingTab';
@@ -13,7 +13,7 @@ export default class EasyCopy extends Plugin {
 	settings: EasyCopySettings;
 	i18n: I18n;
 	private lastCopyMeta: CopyMetadata | null = null;
-	private pasteEventRef: EventRef | null = null;
+	private pasteEventRef: ReturnType<typeof this.app.workspace.on> | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -38,7 +38,7 @@ export default class EasyCopy extends Plugin {
 			icon: 'copy-plus',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				// 实现智能复制功能
-				this.contextualCopy(editor, view);
+				void this.contextualCopy(editor, view);
 			}
 		});
 
@@ -64,9 +64,9 @@ export default class EasyCopy extends Plugin {
 						new Notice(this.t('no-file'));
 						return;
 					}
-					const filename = file.basename;
-					// 自动生成名称
-					this.insertBlockIdAndCopyLink(editor, filename, false);
+				const filename = file.basename;
+				// 自动生成名称
+				void this.insertBlockIdAndCopyLink(editor, filename, false);
 				}
 			});
 			
@@ -81,9 +81,9 @@ export default class EasyCopy extends Plugin {
 						new Notice(this.t('no-file'));
 						return;
 					}
-					const filename = file.basename;
-					// 手动输入名称
-					this.insertBlockIdAndCopyLink(editor, filename, true);
+				const filename = file.basename;
+				// 手动输入名称
+				void this.insertBlockIdAndCopyLink(editor, filename, true);
 				}
 			});
 			
@@ -101,10 +101,10 @@ export default class EasyCopy extends Plugin {
 					menu.addItem(item => {
 						item
 							.setTitle(this.t('contextual-copy'))
-							.setIcon('copy-slash')
-							.onClick(async () => {
-								this.contextualCopy(editor, view);
-							});
+						.setIcon('copy-slash')
+						.onClick(async () => {
+							void this.contextualCopy(editor, view);
+						});
 					})
 				}
 			})
@@ -117,7 +117,7 @@ export default class EasyCopy extends Plugin {
 		// 注意：其他也使用 navigator.clipboard.writeText() 的插件会
 		// 绕过这个监听器；冲突需要剪贴板文本完全相同，概率极低。
 		// 如果需要更稳健的识别机制，可改用自定义 ClipboardItem MIME 类型。
-		this.registerDomEvent(document, 'copy', () => {
+		this.registerDomEvent(activeDocument, 'copy', () => {
 			this.lastCopyMeta = null;
 		});
 
@@ -139,7 +139,9 @@ export default class EasyCopy extends Plugin {
 	private registerPasteHandler(): void {
 		if (this.pasteEventRef) return;
 		this.pasteEventRef = this.app.workspace.on('editor-paste', (evt, editor, info) => {
-			this.handlePaste(evt, editor, info);
+			if (evt.defaultPrevented) return;
+			const handled = this.handlePaste(evt, editor, info);
+			if (handled) evt.preventDefault();
 		});
 		this.registerEvent(this.pasteEventRef);
 	}
@@ -174,13 +176,14 @@ export default class EasyCopy extends Plugin {
 	 * 如果其他粘贴类插件（如 Linter）抢先处理了事件，本功能会被跳过。
 	 * 此时需确保 Easy Copy 在冲突插件之前启用（先禁用再启用即可调整顺序）。
 	 */
-	private handlePaste(evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo): void {
+	private handlePaste(evt: ClipboardEvent, editor: Editor, info: MarkdownFileInfo): boolean {
 		const clipboardText = evt.clipboardData?.getData('text/plain');
 
 		// 如果有活跃的 meta 且剪贴板内容匹配，但被其他插件抢先处理了，输出提示
+		// （外层已在 defaultPrevented 时 return，此处作为二次保险）
 		if (evt.defaultPrevented && this.lastCopyMeta && clipboardText === this.lastCopyMeta.clipboardText) {
-			console.log('[Easy Copy] Paste event was already handled by another plugin. Link path resolution skipped. You can adjust plugin load order in .obsidian/community-plugins.json.');
-			return;
+			console.log('[Easy Copy] Paste event was already handled by another plugin. Link path resolution skipped. You can adjust plugin load order in the community-plugins.json file inside your vault\'s config folder (' + this.app.vault.configDir + ').');
+			return false;
 		}
 
 		const decision = decidePasteResolution({
@@ -194,22 +197,22 @@ export default class EasyCopy extends Plugin {
 
 		if (decision === 'reset-and-skip') {
 			this.lastCopyMeta = null;
-			return;
+			return false;
 		}
-		if (decision === 'skip') return;
+		if (decision === 'skip') return false;
 
 		// decision === 'rewrite'：此时 lastCopyMeta 和 clipboardText 必非空。
 		const meta = this.lastCopyMeta!;
 
 		const destFile = info.file;
-		if (!destFile) return;
+		if (!destFile) return false;
 
 		// 退化的自引用：同文件粘贴且无锚点会生成 [[]] / [](#) 之类的空链接，
 		// 这种情况下让正常粘贴流程接手即可。
-		if (meta.subpath === '' && meta.sourceFilePath === destFile.path) return;
+		if (meta.subpath === '' && meta.sourceFilePath === destFile.path) return false;
 
 		const sourceFile = this.app.vault.getAbstractFileByPath(meta.sourceFilePath);
-		if (!(sourceFile instanceof TFile)) return;
+		if (!(sourceFile instanceof TFile)) return false;
 
 		try {
 			const effectiveFormat = this.getEffectiveLinkFormat();
@@ -254,11 +257,13 @@ export default class EasyCopy extends Plugin {
 			}
 
 			if (link !== clipboardText) {
-				evt.preventDefault();
 				editor.replaceSelection(link);
+				return true;
 			}
+			return false;
 		} catch {
 			// 链接生成失败——让正常粘贴流程继续
+			return false;
 		}
 	}
 
@@ -658,37 +663,37 @@ export default class EasyCopy extends Plugin {
 				this.copyBlockLink(contextType.match!, filename, true, contextType.curLine);
 				return;
 			case ContextType.BOLD:
-				navigator.clipboard.writeText(contextType.match!);
+				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('bold-copied'));
 				}
 				return;
 			case ContextType.ITALIC:
-				navigator.clipboard.writeText(contextType.match!);
+				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('italic-copied'));
 				}
 				return;
 			case ContextType.HIGHLIGHT:
-				navigator.clipboard.writeText(contextType.match!);
+				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('highlight-copied'));
 				}
 				return;
 			case ContextType.STRIKETHROUGH:
-				navigator.clipboard.writeText(contextType.match!);
+				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('strikethrough-copied'));
 				}
 				return;
 			case ContextType.INLINECODE:
-				navigator.clipboard.writeText(contextType.match!);
+				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('inline-code-copied'));
 				}
 				return;
 			case ContextType.INLINELATEX:
-				navigator.clipboard.writeText(contextType.match!);
+				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('inline-latex-copied'));
 				}
@@ -696,14 +701,14 @@ export default class EasyCopy extends Plugin {
 			
 			case ContextType.LINKTITLE:
 				// 复制链接标题
-				navigator.clipboard.writeText(contextType.match!);
+				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('link-text-copied'));
 				}
 				return;
 			case ContextType.LINEURL:
 				// 复制链接地址
-				navigator.clipboard.writeText(contextType.match!);
+				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('link-url-copied'));
 				}
@@ -714,14 +719,14 @@ export default class EasyCopy extends Plugin {
 			case ContextType.WIKILINK: {
 				// 复制 [[双链]]，可选保留括号
 				if (!contextType.match) return;
-				let wikiCopyText = contextType.match!;
+				let wikiCopyText = contextType.match;
 				if (this.settings.keepWikiBrackets) {
 					wikiCopyText = `[[${wikiCopyText}]]`;
 				} else {
 					// 如果有 |别名，去掉|后面的内容
 					wikiCopyText = wikiCopyText.split('|')[0];
 				}
-				navigator.clipboard.writeText(wikiCopyText);
+				void navigator.clipboard.writeText(wikiCopyText);
 				if (this.settings.showNotice) {
 					new Notice(this.t('wiki-link-copied'));
 				}
@@ -729,7 +734,7 @@ export default class EasyCopy extends Plugin {
 			}
 			case ContextType.CODEBLOCK: {
 				// 复制代码块内容（纯文本或含围栏，由 detectCodeBlock 已决定）
-				navigator.clipboard.writeText(contextType.match ?? '');
+				void navigator.clipboard.writeText(contextType.match ?? '');
 				if (this.settings.showNotice) {
 					new Notice(this.t('code-block-copied'));
 				}
@@ -738,7 +743,7 @@ export default class EasyCopy extends Plugin {
 			case ContextType.CALLOUT: {
 				// 复制 Callout 区块纯文本
 				const calloutText = contextType.match?.replace(/\n+/g, '\n').replace(/\s+$/g, '');
-				navigator.clipboard.writeText(calloutText ?? '');
+				void navigator.clipboard.writeText(calloutText ?? '');
 				if (this.settings.showNotice) {
 					new Notice(this.t('callout-copied'));
 				}
@@ -765,7 +770,7 @@ export default class EasyCopy extends Plugin {
 			blockDisplayCharLimit: this.settings.blockDisplayCharLimit,
 		});
 
-		navigator.clipboard.writeText(blockIdLink);
+		void navigator.clipboard.writeText(blockIdLink);
 
 		// 存储元数据，供粘贴时解析链接路径使用
 		const blockFile = this.app.workspace.getActiveFile();
@@ -817,7 +822,7 @@ export default class EasyCopy extends Plugin {
 			simplifiedHeadingToNoteLink: this.settings.simplifiedHeadingToNoteLink,
 		});
 
-		navigator.clipboard.writeText(link);
+		void navigator.clipboard.writeText(link);
 
 		// 存储元数据，供粘贴时解析链接路径使用
 		const headingFile = this.app.workspace.getActiveFile();
@@ -873,7 +878,7 @@ export default class EasyCopy extends Plugin {
 			linkFormat: this.getEffectiveLinkFormat(),
 		});
 
-		navigator.clipboard.writeText(link);
+		void navigator.clipboard.writeText(link);
 
 		// 存储元数据，供粘贴时解析链接路径使用
 		this.lastCopyMeta = buildFileCopyMetadata({
@@ -910,7 +915,7 @@ export default class EasyCopy extends Plugin {
 			blockId = modalBlockId;
 		} else {
 			// 随机生成
-			const randomId = Math.random().toString(36).substr(2, 6);
+			const randomId = Math.random().toString(36).substring(2, 8);
 			blockId = `${randomId}`;
 		}
 
@@ -988,9 +993,8 @@ export default class EasyCopy extends Plugin {
 	 * @returns Obsidian的语言代码
 	 */
 	private getObsidianLanguage(): string {
-		// 从 localStorage 中获取 Obsidian 的语言设置
-		const lang = window.localStorage.getItem("language") || 'en';
-		return lang;
+		// 使用 Obsidian 官方 API 获取语言设置
+		return getLanguage();
 	}
 
 	/**
