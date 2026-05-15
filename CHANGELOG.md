@@ -11,38 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Maintenance
 
-- Replaced `builtin-modules` (dev dependency) with Node.js built-in `module.builtinModules`
-- Replaced `dotenv` dependency with native `.env` parsing in the copy-to-vault script
 - Added GitHub artifact attestations for `main.js` and `styles.css` release assets
-- Fixed all Obsidian plugin linter warnings:
-  - Used `activeDocument` instead of `document` for popout window compatibility
-  - Added `defaultPrevented` check and `preventDefault()` call in `editor-paste` handler per Obsidian protocol
-  - Replaced `MarkdownView | MarkdownFileInfo` union with `MarkdownFileInfo` (parent type) in paste handler
-  - Used `Vault#configDir` instead of hardcoded `.obsidian` path
-  - Used `getLanguage()` instead of `localStorage.getItem("language")`
-  - Used `setIcon()` (Lucide) instead of inline SVG for the info icon in settings
-  - Added `void` operator on unhandled `navigator.clipboard.writeText()` and async calls
-  - Replaced deprecated `substr()` with `substring()`
-  - Removed unnecessary non-null assertion after narrowing guard
+- Fixed all Obsidian plugin linter warnings.
 
 <details>
-<summary>改动内容（点击展开中文说明）</summary>
+<summary>中文说明（点击展开）</summary>
 
 ### 🔧 维护
 
-- 移除 `builtin-modules` 依赖，改用 Node.js 内置 `module.builtinModules`
-- 移除 `dotenv` 依赖，在 copy-to-vault 脚本中改用原生 `.env` 解析
 - 为 release 产物 `main.js` 和 `styles.css` 添加 GitHub Artifact Attestation（加密溯源证明）
-- 修复所有 Obsidian 插件 linter 警告：
-  - 使用 `activeDocument` 替代 `document`，兼容弹出窗口
-  - 在 `editor-paste` handler 中补充 `defaultPrevented` 检查与 `preventDefault()` 调用
-  - 将粘贴 handler 的参数类型从 `MarkdownView | MarkdownFileInfo` 简化为 `MarkdownFileInfo`
-  - 使用 `Vault#configDir` 替代硬编码的 `.obsidian` 路径
-  - 使用 `getLanguage()` 替代 `localStorage.getItem("language")`
-  - 设置页 info 图标改用 `setIcon()`（Lucide）替代内联 SVG
-  - 为未处理的 `navigator.clipboard.writeText()` 和异步调用补加 `void` 运算符
-  - 将废弃的 `substr()` 替换为 `substring()`
-  - 移除守卫语句后不必要的非空断言
+- 修复所有 Obsidian 插件 linter 警告
 
 </details>
 
@@ -60,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Disabled** — skips code block detection entirely
 
 <details>
-<summary>改动内容（点击展开中文说明）</summary>
+<summary>中文说明（点击展开）</summary>
 
 ### ✨ 新增
 
@@ -94,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added 98 new tests (total: 184)
 
 <details>
-<summary>改动内容（点击展开中文说明）</summary>
+<summary>中文说明（点击展开）</summary>
 
 ### ✨ 新增
 
@@ -132,7 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extracted link-building logic into pure functions; added vitest with 86 tests
 
 <details>
-<summary>改动内容（点击展开中文说明）</summary>
+<summary>中文说明（点击展开）</summary>
 
 ### ✨ 新增
 
@@ -163,7 +141,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Inline code, bold, highlight, italic, strikethrough, inline LaTeX detection improvements
 
 <details>
-<summary>改动内容（点击展开中文说明）</summary>
+<summary>中文说明（点击展开）</summary>
 
 ### ✨ 新增
 
@@ -186,7 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Auto block display text**: Automatically generate display text for block ID links, with configurable word/character limits
 
 <details>
-<summary>改动内容（点击展开中文说明）</summary>
+<summary>中文说明（点击展开）</summary>
 
 ### ✨ 新增
 
@@ -207,7 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Extra commands**: "Copy current file link" and "Generate & copy current block link" commands added to command palette
 
 <details>
-<summary>改动内容（点击展开中文说明）</summary>
+<summary>中文说明（点击展开）</summary>
 
 ### ✨ 新增
 
