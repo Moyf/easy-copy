@@ -7,17 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.6.3] - 2026-05-15
+## [1.6.2~1.6.3] - 2026-05-15
 
 ### 🔧 Maintenance
 
 - Updated pnpm lockfile after removing `builtin-modules` and `dotenv` dependencies
+- Added GitHub artifact attestations for `main.js` and `styles.css` release assets
+- Fixed all Obsidian plugin linter warnings.
 
 <details>
-<summary>改动内容（点击展开中文说明）</summary>
+<summary>中文说明（点击展开）</summary>
 
 ### 🔧 维护
 
+- 为 release 产物 `main.js` 和 `styles.css` 添加 GitHub Artifact Attestation（加密溯源证明）
+- 修复所有 Obsidian 插件 linter 警告
 - 移除 `builtin-modules` 和 `dotenv` 依赖后同步更新 pnpm lockfile
 
 </details>

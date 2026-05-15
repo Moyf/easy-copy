@@ -82,29 +82,29 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('add-to-menu-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.addToMenu)
-				.onChange(async (value) => {
-				this.plugin.settings.addToMenu = value;
-				await this.plugin.saveSettings();
-			})));
+				.onChange((value) => {
+					this.plugin.settings.addToMenu = value;
+					void this.plugin.saveSettings();
+				})));
 
 		generalGroup.addSetting(setting => setting
 			.setName(this.plugin.t('add-extra-commands'))
 			.setDesc(this.plugin.t('add-extra-commands-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.addExtraCommands)
-				.onChange(async (value) => {
-				this.plugin.settings.addExtraCommands = value;
-				await this.plugin.saveSettings();
-			})));
+				.onChange((value) => {
+					this.plugin.settings.addExtraCommands = value;
+					void this.plugin.saveSettings();
+				})));
 
 		generalGroup.addSetting(setting => setting
 			.setName(this.plugin.t('show-notice'))
 			.setDesc(this.plugin.t('show-notice-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showNotice)
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.plugin.settings.showNotice = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 				})));
 
 		const formatGroup = createSettingsGroup(containerEl, this.plugin.t('format'));
@@ -117,9 +117,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
 				.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
 				.setValue(this.plugin.settings.linkFormat)
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.plugin.settings.linkFormat = value as LinkFormat;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.plugin.syncPasteHandlerRegistration();
 					this.display();
 				})));
@@ -144,11 +144,11 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(descFragment)
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.resolveLinkPathOnPaste)
-					.onChange(async (value) => {
-						this.plugin.settings.resolveLinkPathOnPaste = value;
-						await this.plugin.saveSettings();
-						this.plugin.syncPasteHandlerRegistration();
-					}));
+			.onChange((value) => {
+				this.plugin.settings.resolveLinkPathOnPaste = value;
+				void this.plugin.saveSettings();
+				this.plugin.syncPasteHandlerRegistration();
+			}));
 		});
 
 		formatGroup.addSetting(setting => setting
@@ -156,9 +156,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('use-heading-as-display-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.useHeadingAsDisplayText)
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.plugin.settings.useHeadingAsDisplayText = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})));
 
@@ -170,10 +170,10 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.addText(text => text
 					.setPlaceholder('#')
 					.setValue(this.plugin.settings.headingLinkSeparator)
-					.onChange(async (value) => {
-						this.plugin.settings.headingLinkSeparator = value || '#';
-						await this.plugin.saveSettings();
-					})
+				.onChange((value) => {
+					this.plugin.settings.headingLinkSeparator = value || '#';
+					void this.plugin.saveSettings();
+				})
 				));
 		}
 
@@ -184,9 +184,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('simplified-heading-to-note-link-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.simplifiedHeadingToNoteLink)
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.plugin.settings.simplifiedHeadingToNoteLink = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})));
 
@@ -196,10 +196,10 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(this.plugin.t('strict-heading-match-desc'))
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.strictHeadingMatch)
-					.onChange(async (value) => {
-						this.plugin.settings.strictHeadingMatch = value;
-						await this.plugin.saveSettings();
-					})));
+				.onChange((value) => {
+					this.plugin.settings.strictHeadingMatch = value;
+					void this.plugin.saveSettings();
+				})));
 		}
 
 
@@ -209,9 +209,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('use-frontmatter-as-display-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.useFrontmatterAsDisplay)
-				.onChange(async (value) => {
+				.onChange((value) => {
 					this.plugin.settings.useFrontmatterAsDisplay = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})
 			));
