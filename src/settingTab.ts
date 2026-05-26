@@ -82,9 +82,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('add-to-menu-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.addToMenu)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.addToMenu = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 				})));
 
 		generalGroup.addSetting(setting => setting
@@ -92,9 +92,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('add-extra-commands-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.addExtraCommands)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.addExtraCommands = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 				})));
 
 		generalGroup.addSetting(setting => setting
@@ -102,9 +102,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('show-notice-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showNotice)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.showNotice = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 				})));
 
 		const formatGroup = createSettingsGroup(containerEl, this.plugin.t('format'));
@@ -117,9 +117,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
 				.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
 				.setValue(this.plugin.settings.linkFormat)
-				.onChange(async (value) => {
+				.onChange( (value) => {
 					this.plugin.settings.linkFormat = value as LinkFormat;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.plugin.syncPasteHandlerRegistration();
 					this.display();
 				})));
@@ -144,11 +144,11 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(descFragment)
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.resolveLinkPathOnPaste)
-			.onChange(async (value) => {
-				this.plugin.settings.resolveLinkPathOnPaste = value;
-				await this.plugin.saveSettings();
-				this.plugin.syncPasteHandlerRegistration();
-			}));
+					.onChange( (value) => {
+						this.plugin.settings.resolveLinkPathOnPaste = value;
+						void this.plugin.saveSettings();
+						this.plugin.syncPasteHandlerRegistration();
+					}));
 		});
 
 		formatGroup.addSetting(setting => setting
@@ -156,9 +156,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('use-heading-as-display-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.useHeadingAsDisplayText)
-				.onChange(async (value) => {
+				.onChange( (value) => {
 					this.plugin.settings.useHeadingAsDisplayText = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})));
 
@@ -170,9 +170,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.addText(text => text
 					.setPlaceholder('#')
 					.setValue(this.plugin.settings.headingLinkSeparator)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.headingLinkSeparator = value || '#';
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 				})
 				));
 		}
@@ -184,9 +184,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('simplified-heading-to-note-link-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.simplifiedHeadingToNoteLink)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.simplifiedHeadingToNoteLink = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})));
 
@@ -196,9 +196,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(this.plugin.t('strict-heading-match-desc'))
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.strictHeadingMatch)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.strictHeadingMatch = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 				})));
 		}
 
@@ -209,9 +209,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('use-frontmatter-as-display-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.useFrontmatterAsDisplay)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.useFrontmatterAsDisplay = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})
 			));
@@ -224,9 +224,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.addText(text => text
 					.setPlaceholder('title')
 					.setValue(this.plugin.settings.frontmatterKey)
-					.onChange(async (value) => {
+					.onChange( value => {
 						this.plugin.settings.frontmatterKey = value || 'title';
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})
 				));
 		}
@@ -243,9 +243,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.addOption(CodeBlockBehavior.GENERATE_BLOCK_LINK, this.plugin.t('code-block-generate-block-link'))
 				.addOption(CodeBlockBehavior.DISABLED, this.plugin.t('code-block-disabled'))
 				.setValue(this.plugin.settings.codeBlockBehavior)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.codeBlockBehavior = value as CodeBlockBehavior;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 				})));
 
 		const blockIdGroup = createSettingsGroup(containerEl, this.plugin.t('block-id'));
@@ -255,9 +255,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('auto-add-block-id-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.autoAddBlockId)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.autoAddBlockId = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})));
 
@@ -270,9 +270,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					.addOption(BlockIdInsertPosition.END_OF_BLOCK, this.plugin.t('block-id-end-of-block'))
 					.addOption(BlockIdInsertPosition.NEXT_LINE, this.plugin.t('block-id-next-line'))
 					.setValue(this.plugin.settings.blockIdInsertPosition)
-					.onChange(async (value) => {
+					.onChange( value => {
 						this.plugin.settings.blockIdInsertPosition = value as BlockIdInsertPosition;
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})));
 		}
 
@@ -282,9 +282,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(this.plugin.t('manual-block-id-desc'))
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.allowManualBlockId)
-					.onChange(async (value) => {
+					.onChange( value => {
 						this.plugin.settings.allowManualBlockId = value;
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})));
 		}
 		
@@ -294,9 +294,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('auto-block-display-text-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.autoBlockDisplayText)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.autoBlockDisplayText = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})
 			));
@@ -309,10 +309,10 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.addText(text => text
 					.setPlaceholder('3')
 					.setValue(String(this.plugin.settings.blockDisplayWordLimit))
-					.onChange(async (value) => {
+					.onChange( value => {
 						const numValue = parseInt(value) || 3;
 						this.plugin.settings.blockDisplayWordLimit = Math.max(1, numValue);
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})
 				));
 
@@ -322,10 +322,10 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.addText(text => text
 					.setPlaceholder('5')
 					.setValue(String(this.plugin.settings.blockDisplayCharLimit))
-					.onChange(async (value) => {
+					.onChange( value => {
 						const numValue = parseInt(value) || 5;
 						this.plugin.settings.blockDisplayCharLimit = Math.max(1, numValue);
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})
 				));
 		}
@@ -337,9 +337,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('customize-targets-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.customizeTargets)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.customizeTargets = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})));
 
@@ -350,9 +350,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(this.plugin.t('enable-inline-code-desc'))
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.enableInlineCode)
-					.onChange(async (value) => {
+					.onChange( value => {
 						this.plugin.settings.enableInlineCode = value;
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})));
 
 			targetGroup.addSetting(setting => setting
@@ -360,9 +360,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(this.plugin.t('enable-bold-desc'))
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.enableBold)
-					.onChange(async (value) => {
+					.onChange( value => {
 						this.plugin.settings.enableBold = value;
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})));
 
 			targetGroup.addSetting(setting => setting
@@ -370,9 +370,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(this.plugin.t('enable-highlight-desc'))
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.enableHighlight)
-					.onChange(async (value) => {
+					.onChange( value => {
 						this.plugin.settings.enableHighlight = value;
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})));
 
 			targetGroup.addSetting(setting => setting
@@ -380,9 +380,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(this.plugin.t('enable-italic-desc'))
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.enableItalic)
-					.onChange(async (value) => {
+					.onChange( value => {
 						this.plugin.settings.enableItalic = value;
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})));
             
             targetGroup.addSetting(setting => setting
@@ -390,9 +390,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
                 .setDesc(this.plugin.t('enable-strikethrough-desc'))
                 .addToggle(toggle => toggle
                     .setValue(this.plugin.settings.enableStrikethrough)
-                    .onChange(async (value) => {
+                    .onChange( value => {
                         this.plugin.settings.enableStrikethrough = value;
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
                     })));
             
             targetGroup.addSetting(setting => setting
@@ -400,9 +400,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
                 .setDesc(this.plugin.t('enable-inline-latex-desc'))
                 .addToggle(toggle => toggle
                     .setValue(this.plugin.settings.enableInlineLatex)
-                    .onChange(async (value) => {
+                    .onChange( value => {
                         this.plugin.settings.enableInlineLatex = value;
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
                     })));
             
             targetGroup.addSetting(setting => setting
@@ -410,9 +410,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
                 .setDesc(this.plugin.t('enable-link-desc'))
                 .addToggle(toggle => toggle
                     .setValue(this.plugin.settings.enableLink)
-                    .onChange(async (value) => {
+                    .onChange( value => {
                         this.plugin.settings.enableLink = value;
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
                     })));
 
             targetGroup.addSetting(setting => setting
@@ -420,9 +420,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
                 .setDesc(this.plugin.t('enable-wikilink-desc'))
                 .addToggle(toggle => toggle
                     .setValue(this.plugin.settings.enableWikiLink ?? true)
-                    .onChange(async (value) => {
+                    .onChange( value => {
                         this.plugin.settings.enableWikiLink = value;
-                        await this.plugin.saveSettings();
+                        void this.plugin.saveSettings();
 						this.display(); // 切换后刷新界面以显示/隐藏下方选项
                     })));
             
@@ -433,9 +433,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('enable-callout-copy-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.enableCalloutCopy ?? true)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.enableCalloutCopy = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 					this.display();
 				})));
 		// 优先复制 Callout 内容
@@ -445,9 +445,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(this.plugin.t('callout-copy-priority-desc'))
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.calloutCopyPriority ?? true)
-					.onChange(async (value) => {
+					.onChange( value => {
 						this.plugin.settings.calloutCopyPriority = value;
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})));
 		}
 
@@ -460,9 +460,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.setDesc(this.plugin.t('auto-embed-block-link-desc'))
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.autoEmbedBlockLink ?? false)
-				.onChange(async (value) => {
+				.onChange( value => {
 					this.plugin.settings.autoEmbedBlockLink = value;
-					await this.plugin.saveSettings();
+					void this.plugin.saveSettings();
 				})));
 
 		// 仅当启用 Wiki 链接复制时显示
@@ -472,9 +472,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setDesc(this.plugin.t('keep-wiki-brackets-desc'))
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.keepWikiBrackets ?? true)
-					.onChange(async (value) => {
+					.onChange( value => {
 						this.plugin.settings.keepWikiBrackets = value;
-						await this.plugin.saveSettings();
+						void this.plugin.saveSettings();
 					})));
 		}
 	}

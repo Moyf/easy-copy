@@ -1,9 +1,5 @@
 import { CodeBlockBehavior, ContextData, ContextType } from './type';
 
-/**
- * 解析一行是否为有效的反引号围栏行，返回围栏长度；否则返回 0。
- * trimStart 后开头必须是 3 个或更多连续反引号。
- */
 function parseFenceLength(line: string): number {
 	const trimmed = line.trimStart();
 	const match = trimmed.match(/^(`{3,})/);
@@ -11,10 +7,6 @@ function parseFenceLength(line: string): number {
 	return match[1].length;
 }
 
-/**
- * 判断某行是否为有效的结束围栏：
- * 反引号数量 >= minLen，且反引号后面只有空白。
- */
 function isClosingFence(line: string, minLen: number): boolean {
 	const trimmed = line.trimStart();
 	const match = trimmed.match(/^(`+)\s*$/);
@@ -23,12 +15,17 @@ function isClosingFence(line: string, minLen: number): boolean {
 }
 
 /**
- * 纯函数版本的代码块检测，符合 CommonMark 嵌套围栏规则：
- *   - 开始围栏：3 个或更多连续反引号，后可跟 info string
- *   - 结束围栏：反引号数量 >= 开始围栏，且行内只有空白
- *   - 内层较短的围栏不会关闭外层较长的围栏（如 ```` 内的 ``` 是内容）
+ * 纯函数版本的代码块检测。
  *
- * 当前只处理反引号围栏；波浪号 ~~~ 不在支持范围内。
+ * 符合 CommonMark 规范的围栏规则：
+ *   - 开始围栏：3 个或更多连续反引号，后可跟 info string
+ *   - 结束围栏：反引号数量 >= 开始围栏长度，且行内只有空白
+ *
+ * 嵌套语义：返回光标所在的**最内层**围栏块。
+ *   例如 ```` 包裹 ``` 时，光标在内层 ``` 的内容行 → 返回内层块；
+ *   光标在内层的围栏行上（属于外层内容）→ 返回外层块。
+ *
+ * 注意：仅处理反引号围栏，波浪号 ~~~ 不在支持范围内。
  *
  * @param lines      文件所有行（按行号索引）
  * @param cursorLine 光标所在行号（0-based）
@@ -44,34 +41,41 @@ export function detectCodeBlockFromLines(
 
 	const totalLines = lines.length;
 
-	// 阶段一：从文件开头向下扫描到 cursorLine。
-	// openLen = 0 → 不在块内；openLen > 0 → 在块内，值为开始围栏的反引号数。
+	// 阶段一：用栈追踪嵌套层级，找到光标所在的最内层开始围栏。
 	//
-	// 不在块内时：遇到有效围栏行（parseFenceLength >= 3）→ 进入块
-	// 在块内时：遇到 isClosingFence（长度 >= openLen 且纯反引号）→ 离开块
-	//           其他反引号行（内层短围栏 / 带 info string）→ 忽略，视为内容
+	// 栈为空（不在任何块内）：
+	//   遇到有效围栏行（parseFenceLength >= 3）→ push 进栈
+	// 栈非空（在某块内）：
+	//   遇到满足 isClosingFence（长度 >= 栈顶 openLen 的纯反引号行）→ pop
+	//   遇到带 info string 的围栏行（不是结束围栏）→ push（进入内层块）
+	//   遇到短于 openLen 的纯反引号行 → 视为内容，忽略
 
-	let openLen = 0;
-	let fenceStart = -1;
+	const stack: Array<{ fenceStart: number; openLen: number }> = [];
 
 	for (let i = 0; i <= cursorLine; i++) {
-		if (openLen === 0) {
-			const len = parseFenceLength(lines[i]);
-			if (len > 0) {
-				openLen = len;
-				fenceStart = i;
-			}
+		const len = parseFenceLength(lines[i]);
+		if (len === 0) continue;
+
+		if (stack.length === 0) {
+			stack.push({ fenceStart: i, openLen: len });
 		} else {
+			const { openLen } = stack[stack.length - 1];
 			if (isClosingFence(lines[i], openLen)) {
-				openLen = 0;
-				fenceStart = -1;
+				// 满足关闭当前层的条件
+				stack.pop();
+			} else if (!isClosingFence(lines[i], len)) {
+				// 有反引号开头，但后面跟了 info string（不是纯围栏行）
+				// → 内层块的开始围栏
+				stack.push({ fenceStart: i, openLen: len });
 			}
+			// 其他情况：纯反引号行但长度不足以关闭当前层 → 内容，忽略
 		}
 	}
 
-	// 光标不在任何代码块内
-	if (openLen === 0) return null;
-	if (fenceStart === -1) return null;
+	if (stack.length === 0) return null;
+
+	const { fenceStart, openLen } = stack[stack.length - 1];
+
 	// 光标正好在开始围栏行上，不算「块内」
 	if (fenceStart === cursorLine) return null;
 
@@ -84,12 +88,10 @@ export function detectCodeBlockFromLines(
 		}
 	}
 	if (fenceEnd === -1) return null;
-	// 光标必须在两个围栏之间（不含两端）
 	if (cursorLine >= fenceEnd) return null;
 
 	if (behavior === CodeBlockBehavior.GENERATE_BLOCK_LINK) return null;
 
-	// 收集代码块内容行（不含围栏行）
 	const contentLines: string[] = [];
 	for (let i = fenceStart + 1; i < fenceEnd; i++) {
 		contentLines.push(lines[i]);
@@ -102,6 +104,5 @@ export function detectCodeBlockFromLines(
 		return { type: ContextType.CODEBLOCK, curLine: curLineText, match: fullBlock, range: null };
 	}
 
-	// 默认 COPY_CONTENT
 	return { type: ContextType.CODEBLOCK, curLine: curLineText, match: contentLines.join('\n'), range: null };
 }

@@ -8,6 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2026-05-26
+
+### ✨ Improvements
+
+- **Code block detection — innermost block semantics**: when the cursor is inside nested fenced code blocks (e.g. a ```````` block wrapping a ` ``` ` block), the command now copies the **innermost** block the cursor is in, rather than the outermost. Placing the cursor on an inner fence line (which belongs to the outer block's content) correctly returns the outer block.
+
+### 🔧 Maintenance
+
+- **Settings tab**: replace `async/await` with `void` in all `onChange` handlers, following the Obsidian plugin coding guidelines
+- **Settings tab**: apply SettingGroup grouping updates
+- **package.json**: fix `name` field from `obsidian-sample-plugin` to `easy-copy`
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### ✨ 改进
+
+- **代码块检测——最内层语义**：光标在嵌套代码块内时（如 ```````` 包裹 ` ``` `），智能复制现在复制**最内层**的代码块，而不是最外层。光标停在内层围栏行上（属于外层块的内容）时，则正确返回外层块。
+
+### 🔧 维护
+
+- **设置页**：将所有 `onChange` 回调中的 `async/await` 改为 `void`，符合 Obsidian 插件编码规范
+- **设置页**：更新 SettingGroup 分组
+- **package.json**：修正 `name` 字段，从 `obsidian-sample-plugin` 更正为 `easy-copy`
+
+</details>
+
+---
+
 ## [1.6.5] - 2026-05-26
 
 ### 🐛 Bug Fixes
