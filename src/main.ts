@@ -3,6 +3,7 @@ import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
+import { detectCodeBlockFromLines } from './codeBlockDetect';
 import { buildHeadingLink, buildBlockLink, buildFileLink, buildExplicitPasteLink } from './linkBuilder';
 import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
 import { decidePasteResolution, shouldOmitAliasForSameFile, shouldRegisterPasteHandler } from './pasteResolution';
@@ -289,74 +290,13 @@ export default class EasyCopy extends Plugin {
 	 * @returns ContextData 或 null
 	 */
 	private detectCodeBlock(editor: Editor): ContextData | null {
-		const behavior = this.settings.codeBlockBehavior;
-		if (behavior === CodeBlockBehavior.DISABLED) return null;
-
-		const cursor = editor.getCursor();
-		const curLine = cursor.line;
+		const cursorLine = editor.getCursor().line;
 		const totalLines = editor.lineCount();
-
-		// 向上搜索开始围栏 ```
-		let fenceStart = -1;
-		for (let i = curLine; i >= 0; i--) {
-			const line = editor.getLine(i);
-			if (/^```/.test(line.trimStart())) {
-				fenceStart = i;
-				break;
-			}
+		const allLines: string[] = [];
+		for (let i = 0; i < totalLines; i++) {
+			allLines.push(editor.getLine(i));
 		}
-		if (fenceStart === -1) return null;
-
-		// 如果 fenceStart 就是光标所在行，光标在 ``` 行上，不算在代码块"内"
-		if (fenceStart === curLine) return null;
-
-		// 从 fenceStart 之后向下搜索结束围栏 ```
-		let fenceEnd = -1;
-		for (let i = fenceStart + 1; i < totalLines; i++) {
-			const line = editor.getLine(i);
-			if (/^```\s*$/.test(line.trimStart())) {
-				fenceEnd = i;
-				break;
-			}
-		}
-		if (fenceEnd === -1) return null;
-
-		// 光标必须在 fenceStart 和 fenceEnd 之间（不含两端的 ``` 行）
-		if (curLine >= fenceEnd) return null;
-
-		// 根据行为模式决定返回内容
-		if (behavior === CodeBlockBehavior.GENERATE_BLOCK_LINK) {
-			// 返回 null，让后续的 block ID 逻辑处理
-			return null;
-		}
-
-		// 收集代码块内容行（不含 ``` 行）
-		const contentLines: string[] = [];
-		for (let i = fenceStart + 1; i < fenceEnd; i++) {
-			contentLines.push(editor.getLine(i));
-		}
-
-		if (behavior === CodeBlockBehavior.COPY_WITH_FENCES) {
-			// 包含前后 ``` 行
-			const fenceStartLine = editor.getLine(fenceStart);
-			const fenceEndLine = editor.getLine(fenceEnd);
-			const fullBlock = [fenceStartLine, ...contentLines, fenceEndLine].join('\n');
-			return {
-				type: ContextType.CODEBLOCK,
-				curLine: editor.getLine(curLine),
-				match: fullBlock,
-				range: null,
-			};
-		}
-
-		// 默认：COPY_CONTENT — 纯文本（不含 ``` 行）
-		const content = contentLines.join('\n');
-		return {
-			type: ContextType.CODEBLOCK,
-			curLine: editor.getLine(curLine),
-			match: content,
-			range: null,
-		};
+		return detectCodeBlockFromLines(allLines, cursorLine, this.settings.codeBlockBehavior);
 	}
 
 	/**

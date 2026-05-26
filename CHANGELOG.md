@@ -8,6 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.5] - 2026-05-26
+
+### 🐛 Bug Fixes
+
+- **Code block detection**: fix false positive when cursor is on a heading/paragraph between two fenced code blocks. The old implementation searched upward for the nearest `` ``` `` line without distinguishing opening from closing fences — a closing fence of the previous block was mistakenly treated as an opening fence.
+- **Nested fence support**: the detector now correctly handles fences of different lengths (e.g. ```` ```` ```` wrapping ` ``` `). Per CommonMark spec, a closing fence must be at least as long as its opening fence, so a shorter inner fence is treated as content, not as a closing fence.
+
+### 🧪 Tests
+
+- Extract core detection logic into a pure function `detectCodeBlockFromLines` in `src/codeBlockDetect.ts`, making it independently testable
+- Add 37 unit tests covering: the reported bug scenario, nested fences, unclosed blocks, all `CodeBlockBehavior` modes, and fence-line edge cases
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### 🐛 Bug 修复
+
+- **代码块检测误判**：修复了光标在两个代码块之间的标题行或段落时，被错误识别为「在代码块内」的问题。原实现向上搜索第一个 ` ``` ` 行时，无法区分开始围栏和结束围栏，导致上方代码块的结束围栏被当成开始围栏。
+- **嵌套围栏支持**：检测逻辑现在正确处理不同长度的嵌套围栏（如 ```` ```` ```` 包裹 ` ``` `）。依照 CommonMark 规范，结束围栏长度必须 ≥ 开始围栏，较短的内层围栏视为内容行而非结束围栏。
+
+### 🧪 测试
+
+- 将核心检测逻辑提取为纯函数 `detectCodeBlockFromLines`（位于 `src/codeBlockDetect.ts`），使其可独立进行单元测试
+- 新增 37 个单元测试，覆盖：问题复现场景、嵌套围栏、未闭合块、所有 `CodeBlockBehavior` 模式、围栏行边界情况
+
+</details>
+
+---
+
 ## [1.6.4] - 2026-05-15
 
 ### 🔧 Maintenance
