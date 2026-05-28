@@ -46,7 +46,10 @@ export type TranslationKey =
 	| 'block-display-word-limit' | 'block-display-word-limit-desc'
 	| 'block-display-char-limit' | 'block-display-char-limit-desc' 
 	| 'generate-current-block-link-auto' | 'generate-current-block-link-manual'
-    | 'error-block-id-empty' | 'error-block-id-invalid';
+	| 'error-block-id-empty' | 'error-block-id-invalid'
+	| 'enable-display-name-regex' | 'enable-display-name-regex-desc'
+	| 'display-name-regex-from' | 'display-name-regex-from-desc'
+	| 'display-name-regex-to' | 'display-name-regex-to-desc';
 
 // 本地化翻译字典
 export const translations: Record<Language, Record<TranslationKey, string>> = {
@@ -163,6 +166,12 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'generate-current-block-link-auto': 'Copy current block link (auto-generate ID)',
 		'generate-current-block-link-manual': 'Copy current block link (manual ID input)',
 		'file-link-copied': 'File link copied!',
+		'enable-display-name-regex': 'Display name: Regex replacement',
+		'enable-display-name-regex-desc': 'When enabled, apply a regex find-and-replace to the display text of copied heading/note links',
+		'display-name-regex-from': 'Find (regex)',
+		'display-name-regex-from-desc': 'Regular expression pattern to match in the display text (e.g. ^\\d+\\.\\s* to remove leading numbers)',
+		'display-name-regex-to': 'Replace with',
+		'display-name-regex-to-desc': 'Replacement string, supports capture groups like $1, $2 (e.g. $1 to keep only the first captured group)',
 	},
 	[Language.ZH]: {
 		// 复制 Block ID
@@ -275,6 +284,12 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'block-display-word-limit-desc': '使用空格分隔的语言（如英语 "this is a sentence"）在块显示文本中显示的最大单词数',
 		'block-display-char-limit': '块显示文本：CJK 类语言的字符数限制',
 		'block-display-char-limit-desc': '非英语类语言（如中文 "这是一句话"）在块显示文本中显示的最大字符数——当第一行包含非ASCII字符时，会采用此设置。',
+		'enable-display-name-regex': '显示名称：正则替换',
+		'enable-display-name-regex-desc': '启用后，对复制的标题/笔记链接的显示文本进行正则查找替换',
+		'display-name-regex-from': '查找（正则）',
+		'display-name-regex-from-desc': '用于匹配显示文本的正则表达式（如 ^\\d+\\.\\s* 可去除开头的序号）',
+		'display-name-regex-to': '替换为',
+		'display-name-regex-to-desc': '替换字符串，支持捕获组引用如 $1、$2（如 $1 只保留第一个捕获组的内容）',
 	},
 	[Language.ZH_TW]: {
 		// 复制 Block ID
@@ -388,6 +403,12 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'use-frontmatter-as-display-desc': '啟用後，使用指定的筆記屬性的值作為筆記連結的顯示文本',
 		'frontmatter-key': '筆記屬性名',
 		'frontmatter-key-desc': '用於顯示文本的筆記屬性名（默認：title）',
+		'enable-display-name-regex': '顯示名稱：正規表示式替換',
+		'enable-display-name-regex-desc': '啟用後，對複製的標題/筆記連結的顯示文本進行正規表示式查找替換',
+		'display-name-regex-from': '查找（正則）',
+		'display-name-regex-from-desc': '用於匹配顯示文本的正規表示式（如 ^\\d+\\.\\s* 可去除開頭的序號）',
+		'display-name-regex-to': '替換為',
+		'display-name-regex-to-desc': '替換字符串，支持捕獲組引用如 $1、$2',
 	}
 };
 

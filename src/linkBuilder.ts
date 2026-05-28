@@ -47,6 +47,9 @@ export interface BuildHeadingLinkOptions {
 	headingLinkSeparator: string;
 	strictHeadingMatch?: boolean;
 	simplifiedHeadingToNoteLink: boolean;
+	enableDisplayNameRegex?: boolean;
+	displayNameRegexFrom?: string;
+	displayNameRegexTo?: string;
 }
 
 export interface BuildHeadingLinkResult {
@@ -127,13 +130,24 @@ function formatMarkdownHeadingLink(o: FormatMarkdownHeadingLinkOptions): string 
 export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeadingLinkResult {
 	const selectedHeading = stripWikiBrackets(options.heading);
 
-	const displayText = computeDisplayText({
+	let displayText = computeDisplayText({
 		heading: selectedHeading,
 		filename: options.filename,
 		frontmatterTitle: options.frontmatterTitle,
 		useHeadingAsDisplayText: options.useHeadingAsDisplayText,
 		headingLinkSeparator: options.headingLinkSeparator,
 	});
+
+	// 应用正则替换显示名称
+	if (options.enableDisplayNameRegex && options.displayNameRegexFrom) {
+		try {
+			const regex = new RegExp(options.displayNameRegexFrom, 'gm');
+			const replaceTo = options.displayNameRegexTo ?? '';
+			displayText = displayText.replace(regex, replaceTo);
+		} catch (e) {
+			console.warn('[Easy Copy] Invalid display name regex:', e);
+		}
+	}
 
 	const simplify = shouldSimplifyHeading({
 		simplifiedHeadingToNoteLink: options.simplifiedHeadingToNoteLink,

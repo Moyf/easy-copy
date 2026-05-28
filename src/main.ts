@@ -760,6 +760,9 @@ export default class EasyCopy extends Plugin {
 			headingLinkSeparator: this.settings.headingLinkSeparator,
 			strictHeadingMatch: this.settings.strictHeadingMatch,
 			simplifiedHeadingToNoteLink: this.settings.simplifiedHeadingToNoteLink,
+			enableDisplayNameRegex: this.settings.enableDisplayNameRegex,
+			displayNameRegexFrom: this.settings.displayNameRegexFrom,
+			displayNameRegexTo: this.settings.displayNameRegexTo,
 		});
 
 		void navigator.clipboard.writeText(link);

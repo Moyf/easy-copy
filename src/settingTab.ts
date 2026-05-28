@@ -477,5 +477,41 @@ export class EasyCopySettingTab extends PluginSettingTab {
 						void this.plugin.saveSettings();
 					})));
 		}
+
+		// 正则替换显示名称
+		specialFormatGroup.addSetting(setting => setting
+			.setName(this.plugin.t('enable-display-name-regex'))
+			.setDesc(this.plugin.t('enable-display-name-regex-desc'))
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.enableDisplayNameRegex ?? false)
+				.onChange( value => {
+					this.plugin.settings.enableDisplayNameRegex = value;
+					void this.plugin.saveSettings();
+					this.display();
+				})));
+
+		if (this.plugin.settings.enableDisplayNameRegex) {
+			specialFormatGroup.addSetting(setting => setting
+				.setName(this.plugin.t('display-name-regex-from'))
+				.setDesc(this.plugin.t('display-name-regex-from-desc'))
+				.addText(text => text
+					.setPlaceholder('e.g. ^\\d+\\.\\s*')
+					.setValue(this.plugin.settings.displayNameRegexFrom ?? '')
+					.onChange( value => {
+						this.plugin.settings.displayNameRegexFrom = value;
+						void this.plugin.saveSettings();
+					})));
+
+			specialFormatGroup.addSetting(setting => setting
+				.setName(this.plugin.t('display-name-regex-to'))
+				.setDesc(this.plugin.t('display-name-regex-to-desc'))
+				.addText(text => text
+					.setPlaceholder('e.g. $1')
+					.setValue(this.plugin.settings.displayNameRegexTo ?? '')
+					.onChange( value => {
+						this.plugin.settings.displayNameRegexTo = value;
+						void this.plugin.saveSettings();
+					})));
+		}
 	}
 }

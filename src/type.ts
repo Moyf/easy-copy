@@ -73,6 +73,9 @@ export interface EasyCopySettings {
     autoBlockDisplayText: boolean; // 自动为 Block 添加显示文本
     blockDisplayWordLimit: number; // Block 显示文本英文单词限制（按空格分隔）
     blockDisplayCharLimit: number; // Block 显示文本字符限制（非英文语言）
+    enableDisplayNameRegex: boolean; // 是否启用正则替换显示名称
+    displayNameRegexFrom: string; // 正则替换：from 模式
+    displayNameRegexTo: string; // 正则替换：to 内容（支持 $1 等捕获组）
 }
 
 export const DEFAULT_SETTINGS: EasyCopySettings = {
@@ -107,4 +110,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     autoBlockDisplayText: true,
     blockDisplayWordLimit: 3, // 英文单词限制：3个单词
     blockDisplayCharLimit: 5, // 字符限制：5个字符
+    enableDisplayNameRegex: false,
+    displayNameRegexFrom: '',
+    displayNameRegexTo: '',
 }

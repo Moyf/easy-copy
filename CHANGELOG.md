@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.1] - 2026-05-28
+
+### ✨ New Features
+
+- **Display name regex replacement** (closes [#37](https://github.com/Moyf/easy-copy/issues/37)): added a "Display name: Regex replacement" option under Special copy format options. When enabled, a find-and-replace (with full regex support including capture groups like `$1`) is applied to the display text of copied heading/note links. Useful for stripping leading numbers (e.g. `^\d+\.\s*`) or other prefixes from headings.
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### ✨ 新功能
+
+- **显示名称正则替换**（修复 [#37](https://github.com/Moyf/easy-copy/issues/37)）：在「特殊复制格式选项」中新增「显示名称：正则替换」选项。启用后，可对复制的标题/笔记链接的显示文本进行正则查找替换，支持 `$1` 等捕获组引用。适合去除标题前的序号（如 `^\d+\.\s*`）等场景。
+
+</details>
+
+---
+
 ## [1.7.0] - 2026-05-26
 
 ### ✨ Improvements
