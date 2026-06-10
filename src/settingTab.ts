@@ -111,6 +111,7 @@ function createSettingsGroup(containerEl: HTMLElement, heading?: string): Settin
 export class EasyCopySettingTab extends PluginSettingTab {
 	plugin: EasyCopy;
 	private expandedCustomMatcherId: string | null = null;
+	private expandedCustomMatcherEl: HTMLElement | null = null;
 
 	icon: string = 'copy-plus';
 
@@ -157,6 +158,23 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		void this.plugin.saveSettings();
 	}
 
+	private toggleCustomMatcherConfig(settingEl: HTMLElement, customMatcher: CustomCopyMatcherSetting): void {
+		if (this.expandedCustomMatcherId === customMatcher.id && this.expandedCustomMatcherEl) {
+			this.expandedCustomMatcherEl.remove();
+			this.expandedCustomMatcherEl = null;
+			this.expandedCustomMatcherId = null;
+			return;
+		}
+
+		this.expandedCustomMatcherEl?.remove();
+		const configEl = activeDocument.createElement('div');
+		configEl.addClass('easy-copy-matcher-config');
+		settingEl.insertAdjacentElement('afterend', configEl);
+		this.renderCustomMatcherConfig(configEl, customMatcher);
+		this.expandedCustomMatcherEl = configEl;
+		this.expandedCustomMatcherId = customMatcher.id;
+	}
+
 	private isRegexValid(pattern: string, flags: string): boolean {
 		try {
 			new RegExp(pattern, flags);
@@ -170,6 +188,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 
 		containerEl.empty();
+		this.expandedCustomMatcherEl = null;
 
 		const generalGroup = createSettingsGroup(containerEl);
 
@@ -599,8 +618,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					.setIcon('settings')
 					.setTooltip(this.plugin.t('configure-custom-matcher'))
 					.onClick(() => {
-						this.expandedCustomMatcherId = this.expandedCustomMatcherId === customMatcher.id ? null : customMatcher.id;
-						this.display();
+						this.toggleCustomMatcherConfig(setting.settingEl, customMatcher);
 					}));
 			}
 
