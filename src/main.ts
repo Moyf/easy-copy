@@ -1,6 +1,6 @@
 import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile, getLanguage } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
-import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from './type';
+import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { detectCodeBlockFromLines } from './codeBlockDetect';
@@ -333,7 +333,7 @@ export default class EasyCopy extends Plugin {
 	/*
 	 * 从给定的块里查找 Block ID（最多延伸至下一个空行+下第二行）
 	*/
-	private detectBlockId(editor: Editor, view: MarkdownView): ContextData | null {
+	private detectBlockId(editor: Editor): ContextData | null {
 		const cursor = editor.getCursor();
 		const { end } = this.detectBlockRange(editor, cursor.line);
 		let lastLine = editor.getLine(end);
@@ -454,7 +454,7 @@ export default class EasyCopy extends Plugin {
 		}
 
 		// 检测 block ID
-		const blockIdInfo = this.detectBlockId(editor, view);
+		const blockIdInfo = this.detectBlockId(editor);
 		if (blockIdInfo) {
 			return blockIdInfo;
 		}
