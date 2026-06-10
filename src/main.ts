@@ -4,7 +4,7 @@ import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkForma
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { detectCodeBlockFromLines } from './codeBlockDetect';
-import { buildBuiltinCopyMatchers, normalizeBuiltinMatcherOrder } from './copyMatcher';
+import { buildCopyMatchers, getMatchInfo, normalizeMatcherOrder } from './copyMatcher';
 import { buildHeadingLink, buildBlockLink, buildFileLink, buildExplicitPasteLink } from './linkBuilder';
 import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
 import { decidePasteResolution, shouldOmitAliasForSameFile, shouldRegisterPasteHandler } from './pasteResolution';
@@ -161,7 +161,8 @@ export default class EasyCopy extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-		this.settings.matcherOrder = normalizeBuiltinMatcherOrder(this.settings.matcherOrder);
+		this.settings.customMatchers = this.settings.customMatchers ?? [];
+		this.settings.matcherOrder = normalizeMatcherOrder(this.settings.matcherOrder, this.settings.customMatchers);
 	}
 
 	async saveSettings() {
@@ -417,17 +418,18 @@ export default class EasyCopy extends Plugin {
 
 
 		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID > 双链
-		const matchers = buildBuiltinCopyMatchers(this.settings, Platform.isIosApp);
+		const matchers = buildCopyMatchers(this.settings, Platform.isIosApp);
 	
 		for (const matcher of matchers) {
 			if (!matcher.enabled) continue; // 如果当前类型未启用，则跳过
-			const matchInfo = this.getMatchInfo(beforeCursor, afterCursor, matcher.regex);
+			const matchInfo = getMatchInfo(beforeCursor + afterCursor, beforeCursor.length, matcher.regex, matcher.captureGroup);
 			if (matchInfo) {
 				return {
 					type: matcher.type,
 					curLine,
 					match: matchInfo.content, // 返回内容，不包括语法
 					range: matchInfo.range,
+					matcherName: matcher.name,
 				};
 			}
 		}
@@ -489,32 +491,6 @@ export default class EasyCopy extends Plugin {
 	 * @param regex 匹配的正则表达式
 	 * @returns 匹配信息，包括匹配内容和范围
 	 */
-	private getMatchInfo(beforeCursor: string, afterCursor: string, regex: RegExp): { content: string; range: [number, number] } | null {
-		let match;
-		while ((match = regex.exec(beforeCursor + afterCursor)) !== null) {
-			const matchStart = match.index;
-			const matchEnd = match.index + match[0].length;
-	
-			// 判断光标是否在匹配范围内
-			if (beforeCursor.length >= matchStart && beforeCursor.length <= matchEnd) {
-				// 找到第一个非空且非整体匹配的捕获组作为内容
-				let content = '';
-				for (let i = 1; i < match.length; i++) {
-					if (match[i] !== undefined) {
-						content = match[i];
-						break;
-					}
-				}
-				
-				return {
-					content: content, // 返回内容，不包括语法
-					range: [matchStart, matchEnd],
-				};
-			}
-		}
-		return null;
-	}
-
 	private isCursorInLink(beforeCursor: string, afterCursor: string): {type: ContextType.LINKTITLE | ContextType.LINEURL, content: string, range: [number, number]} | null {
 		// 匹配链接的正则表达式
 		const linkRegex = /\[([^\]]*?)\]\(([^)]*?)\)/g;
@@ -621,6 +597,12 @@ export default class EasyCopy extends Plugin {
 				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('inline-latex-copied'));
+				}
+				return;
+			case ContextType.CUSTOM:
+				void navigator.clipboard.writeText(contextType.match!);
+				if (this.settings.showNotice) {
+					new Notice(`${contextType.matcherName ?? this.t('custom-matcher')} ${this.t('custom-matcher-copied')}`);
 				}
 				return;
 			

@@ -30,6 +30,7 @@ export enum ContextType {
     LINKTITLE = 'link-title',
     LINEURL = 'line-url',
     WIKILINK = 'wiki-link', // 光标在 [[双链]] 内
+    CUSTOM = 'custom', // 用户自定义正则复制对象
     CALLOUT = 'callout', // 光标在 callout 区块内
     CODEBLOCK = 'code-block', // 光标在代码块内
 }
@@ -48,6 +49,16 @@ export interface ContextData {
     curLine: string;
     match: string | null;
     range: [number, number] | null;
+    matcherName?: string;
+}
+
+export interface CustomCopyMatcherSetting {
+    id: string;
+    name: string;
+    pattern: string;
+    flags: string;
+    captureGroup: number;
+    enabled: boolean;
 }
 
 export interface EasyCopySettings {
@@ -71,7 +82,8 @@ export interface EasyCopySettings {
     enableInlineLatex: boolean;
     enableLink: boolean;
     enableWikiLink: boolean; // 是否启用 Wiki 链接复制
-    matcherOrder: BuiltinCopyMatcherId[]; // 复制对象匹配优先级
+    matcherOrder: string[]; // 复制对象匹配优先级
+    customMatchers: CustomCopyMatcherSetting[]; // 用户自定义正则复制对象
     keepWikiBrackets: boolean; // 复制 wiki-link 时保留 [[ ]]
     autoEmbedBlockLink: boolean; // 复制块链接时自动添加 !（嵌入块）
     enableCalloutCopy: boolean; // 是否启用复制 Callout 内文本
@@ -110,6 +122,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableLink: true,
     enableWikiLink: true,
     matcherOrder: ['bold', 'italic', 'highlight', 'strikethrough', 'inline-code', 'inline-latex', 'wiki-link'],
+    customMatchers: [],
     keepWikiBrackets: true,
     autoEmbedBlockLink: false,
     enableCalloutCopy: true,

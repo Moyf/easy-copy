@@ -11,7 +11,7 @@ export type TranslationKey =
 	| 'inline-code-copied' | 'block-id-copied' | 'note-link-copied' | 'heading-copied' | 'strikethrough-copied' 
 	| 'inline-latex-copied' | 'bold-copied' | 'highlight-copied' | 'italic-copied' | 'link-text-copied' | 'link-url-copied'
 	| 'wiki-link-copied' | 'callout-copied' | 'note-link-simplified'
-	| 'code-block-copied'
+	| 'code-block-copied' | 'custom-matcher' | 'custom-matcher-copied'
 	| 'format' | 'add-to-menu' | 'add-to-menu-desc' | 'show-notice' | 'show-notice-desc'
 	| 'add-extra-commands' | 'add-extra-commands-desc'
 	| 'use-heading-as-display' | 'use-heading-as-display-desc' | 'heading-link-separator' | 'heading-link-separator-desc' | 'block-id'
@@ -50,7 +50,9 @@ export type TranslationKey =
 	| 'enable-display-name-regex' | 'enable-display-name-regex-desc'
 	| 'display-name-regex-from' | 'display-name-regex-from-desc'
 	| 'display-name-regex-to' | 'display-name-regex-to-desc'
-	| 'matcher-priority' | 'matcher-priority-desc' | 'move-up' | 'move-down' | 'reset-order';
+	| 'matcher-priority' | 'matcher-priority-desc' | 'move-up' | 'move-down' | 'reset-order'
+	| 'custom-matchers' | 'custom-matchers-desc' | 'add-custom-matcher' | 'delete-custom-matcher'
+	| 'custom-matcher-name' | 'custom-matcher-pattern' | 'custom-matcher-flags' | 'custom-matcher-capture-group';
 
 // 本地化翻译字典
 export const translations: Record<Language, Record<TranslationKey, string>> = {
@@ -87,6 +89,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'wiki-link-copied': 'Wiki link copied!',
 		'callout-copied': 'Callout copied!',
 		'code-block-copied': 'Code block copied!',
+		'custom-matcher': 'Custom matcher',
+		'custom-matcher-copied': 'copied!',
 		'note-link-simplified': 'Link simplified (filename matches heading)',
 		
 		// 设置界面
@@ -178,6 +182,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'move-up': 'Move up',
 		'move-down': 'Move down',
 		'reset-order': 'Reset order',
+		'custom-matchers': 'Custom regex targets',
+		'custom-matchers-desc': 'Add current-line regex rules. Use capture group 1 to copy the text inside quotes or brackets.',
+		'add-custom-matcher': 'Add custom target',
+		'delete-custom-matcher': 'Delete',
+		'custom-matcher-name': 'Name',
+		'custom-matcher-pattern': 'Regex',
+		'custom-matcher-flags': 'Flags',
+		'custom-matcher-capture-group': 'Capture group',
 	},
 	[Language.ZH]: {
 		// 复制 Block ID
@@ -211,6 +223,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'wiki-link-copied': 'Wiki链接已复制！',
 		'callout-copied': '标注内容已复制！',
 		'code-block-copied': '代码块已复制！',
+		'custom-matcher': '自定义规则',
+		'custom-matcher-copied': '已复制！',
 		'note-link-simplified': '链接已简化（文件名与标题相匹配）',
 		
 		// 设置界面
@@ -301,6 +315,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'move-up': '上移',
 		'move-down': '下移',
 		'reset-order': '重置顺序',
+		'custom-matchers': '自定义正则复制对象',
+		'custom-matchers-desc': '添加仅匹配当前行的正则规则。可用捕获组 1 复制引号或括号内部文本。',
+		'add-custom-matcher': '添加自定义对象',
+		'delete-custom-matcher': '删除',
+		'custom-matcher-name': '名称',
+		'custom-matcher-pattern': '正则',
+		'custom-matcher-flags': '标志',
+		'custom-matcher-capture-group': '捕获组',
 	},
 	[Language.ZH_TW]: {
 		// 复制 Block ID
@@ -401,6 +423,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'code-block-generate-block-link': '生成塊連結',
 		'code-block-disabled': '禁用',
 		'code-block-copied': '代碼塊已複製！',
+		'custom-matcher': '自定義規則',
+		'custom-matcher-copied': '已複製！',
 		'keep-wiki-brackets': 'Wiki連結：保留 [[ ]] 括號',
 		'keep-wiki-brackets-desc': '複製 wiki 連結時保留兩側 [[ ]] 括號',
 		
@@ -425,6 +449,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'move-up': '上移',
 		'move-down': '下移',
 		'reset-order': '重置順序',
+		'custom-matchers': '自定義正則複製對象',
+		'custom-matchers-desc': '添加僅匹配當前行的正則規則。可用捕獲組 1 複製引號或括號內部文本。',
+		'add-custom-matcher': '添加自定義對象',
+		'delete-custom-matcher': '刪除',
+		'custom-matcher-name': '名稱',
+		'custom-matcher-pattern': '正則',
+		'custom-matcher-flags': '標誌',
+		'custom-matcher-capture-group': '捕獲組',
 	}
 };
 

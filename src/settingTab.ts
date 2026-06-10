@@ -7,8 +7,8 @@ import {
 } from "obsidian";
 import * as ObsidianModule from "obsidian";
 import EasyCopy from "./main";
-import { BuiltinCopyMatcherId, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from "./type";
-import { DEFAULT_BUILTIN_COPY_MATCHER_IDS, normalizeBuiltinMatcherOrder } from "./copyMatcher";
+import { BuiltinCopyMatcherId, CustomCopyMatcherSetting, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from "./type";
+import { DEFAULT_BUILTIN_COPY_MATCHER_IDS, getCustomMatcherOrderId, normalizeMatcherOrder } from "./copyMatcher";
 
 interface SettingsContainer {
 	addSetting(cb: (setting: Setting) => void): void;
@@ -23,6 +23,18 @@ const BUILTIN_MATCHER_LABEL_KEYS: Record<BuiltinCopyMatcherId, 'enable-bold' | '
 	'inline-latex': 'enable-inline-latex',
 	'wiki-link': 'enable-wikilink',
 };
+
+function createCustomMatcher(): CustomCopyMatcherSetting {
+	const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+	return {
+		id,
+		name: 'Double quotes',
+		pattern: '"([^"]+)"',
+		flags: 'g',
+		captureGroup: 1,
+		enabled: true,
+	};
+}
 
 function createSettingsGroup(containerEl: HTMLElement, heading?: string): SettingsContainer {
 	// Check if SettingGroup is available (API 1.11.0+)
@@ -356,7 +368,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 
 		// 只有当自定义复制对象选项开启时才显示具体的复制对象选项
 		if (this.plugin.settings.customizeTargets) {
-			this.plugin.settings.matcherOrder = normalizeBuiltinMatcherOrder(this.plugin.settings.matcherOrder);
+			this.plugin.settings.matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers);
 
 			targetGroup.addSetting(setting => setting
 				.setName(this.plugin.t('enable-inline-code'))
@@ -445,14 +457,17 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.addButton(button => button
 					.setButtonText(this.plugin.t('reset-order'))
 					.onClick(() => {
-						this.plugin.settings.matcherOrder = [...DEFAULT_BUILTIN_COPY_MATCHER_IDS];
+						this.plugin.settings.matcherOrder = normalizeMatcherOrder(DEFAULT_BUILTIN_COPY_MATCHER_IDS, this.plugin.settings.customMatchers);
 						void this.plugin.saveSettings();
 						this.display();
 					})));
 
 			this.plugin.settings.matcherOrder.forEach((matcherId, index) => {
+				const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+				const matcherName = customMatcher ? customMatcher.name : this.plugin.t(BUILTIN_MATCHER_LABEL_KEYS[matcherId as BuiltinCopyMatcherId]);
+
 				targetGroup.addSetting(setting => setting
-					.setName(this.plugin.t(BUILTIN_MATCHER_LABEL_KEYS[matcherId]))
+					.setName(matcherName)
 					.addButton(button => button
 						.setButtonText('↑')
 						.setTooltip(this.plugin.t('move-up'))
@@ -468,6 +483,74 @@ export class EasyCopySettingTab extends PluginSettingTab {
 							this.moveMatcher(matcherId, 1);
 						})));
 			});
+
+			targetGroup.addSetting(setting => setting
+				.setName(this.plugin.t('custom-matchers'))
+				.setDesc(this.plugin.t('custom-matchers-desc'))
+				.addButton(button => button
+					.setButtonText(this.plugin.t('add-custom-matcher'))
+					.onClick(() => {
+						const customMatcher = createCustomMatcher();
+						this.plugin.settings.customMatchers.push(customMatcher);
+						this.plugin.settings.matcherOrder = normalizeMatcherOrder([...this.plugin.settings.matcherOrder, getCustomMatcherOrderId(customMatcher)], this.plugin.settings.customMatchers);
+						void this.plugin.saveSettings();
+						this.display();
+					})));
+
+			for (const customMatcher of this.plugin.settings.customMatchers) {
+				targetGroup.addSetting(setting => setting
+					.setName(customMatcher.name || this.plugin.t('custom-matcher'))
+					.addToggle(toggle => toggle
+						.setValue(customMatcher.enabled)
+						.onChange(value => {
+							customMatcher.enabled = value;
+							void this.plugin.saveSettings();
+						}))
+					.addButton(button => button
+						.setButtonText(this.plugin.t('delete-custom-matcher'))
+						.onClick(() => {
+							this.deleteCustomMatcher(customMatcher.id);
+						})));
+
+				targetGroup.addSetting(setting => setting
+					.setName(this.plugin.t('custom-matcher-name'))
+					.addText(text => text
+						.setValue(customMatcher.name)
+						.onChange(value => {
+							customMatcher.name = value;
+							void this.plugin.saveSettings();
+						})));
+
+				targetGroup.addSetting(setting => setting
+					.setName(this.plugin.t('custom-matcher-pattern'))
+					.addText(text => text
+						.setPlaceholder('"([^"]+)"')
+						.setValue(customMatcher.pattern)
+						.onChange(value => {
+							customMatcher.pattern = value;
+							void this.plugin.saveSettings();
+						})));
+
+				targetGroup.addSetting(setting => setting
+					.setName(this.plugin.t('custom-matcher-flags'))
+					.addText(text => text
+						.setPlaceholder('g')
+						.setValue(customMatcher.flags)
+						.onChange(value => {
+							customMatcher.flags = value;
+							void this.plugin.saveSettings();
+						})));
+
+				targetGroup.addSetting(setting => setting
+					.setName(this.plugin.t('custom-matcher-capture-group'))
+					.addText(text => text
+						.setPlaceholder('1')
+						.setValue(String(customMatcher.captureGroup))
+						.onChange(value => {
+							customMatcher.captureGroup = Math.max(0, parseInt(value) || 0);
+							void this.plugin.saveSettings();
+						})));
+			}
 			
 		}
 
@@ -558,14 +641,21 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		}
 	}
 
-	private moveMatcher(matcherId: BuiltinCopyMatcherId, direction: -1 | 1): void {
-		const matcherOrder = normalizeBuiltinMatcherOrder(this.plugin.settings.matcherOrder);
+	private moveMatcher(matcherId: string, direction: -1 | 1): void {
+		const matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers);
 		const currentIndex = matcherOrder.indexOf(matcherId);
 		const nextIndex = currentIndex + direction;
 		if (nextIndex < 0 || nextIndex >= matcherOrder.length) return;
 
 		[matcherOrder[currentIndex], matcherOrder[nextIndex]] = [matcherOrder[nextIndex], matcherOrder[currentIndex]];
 		this.plugin.settings.matcherOrder = matcherOrder;
+		void this.plugin.saveSettings();
+		this.display();
+	}
+
+	private deleteCustomMatcher(id: string): void {
+		this.plugin.settings.customMatchers = this.plugin.settings.customMatchers.filter(matcher => matcher.id !== id);
+		this.plugin.settings.matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers);
 		void this.plugin.saveSettings();
 		this.display();
 	}
