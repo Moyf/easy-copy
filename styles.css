@@ -58,3 +58,13 @@ If your plugin does not need CSS, delete this file.
 .easy-copy-regex-error.is-visible {
   display: block;
 }
+
+.setting-editor-extra-setting-button {
+  display: inline-block;
+  vertical-align:middle;
+  cursor:help;
+
+  &:hover {
+    color: var(--color-accent);
+  }
+}

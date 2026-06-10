@@ -328,8 +328,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		const infoIcon = descFragment.createEl('span', {
 			attr: {
 				'aria-label': this.plugin.t('resolve-link-path-on-paste-tooltip'),
-				'class': 'clickable-icon setting-editor-extra-setting-button',
-				'style': 'display:inline; vertical-align:middle; cursor:help;',
+				'class': 'setting-editor-extra-setting-button'
 			},
 		});
 		setIcon(infoIcon, 'info');
