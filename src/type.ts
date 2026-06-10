@@ -55,6 +55,7 @@ export interface ContextData {
 export interface CustomCopyMatcherSetting {
     id: string;
     name: string;
+    note?: string;
     pattern: string;
     flags: string;
     captureGroup: number;

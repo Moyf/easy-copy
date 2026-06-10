@@ -161,7 +161,10 @@ export default class EasyCopy extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-		this.settings.customMatchers = this.settings.customMatchers ?? [];
+		this.settings.customMatchers = (this.settings.customMatchers ?? []).map(matcher => ({
+			note: '',
+			...matcher,
+		}));
 		this.settings.matcherOrder = normalizeMatcherOrder(this.settings.matcherOrder, this.settings.customMatchers);
 	}
 

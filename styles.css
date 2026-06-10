@@ -25,3 +25,28 @@ If your plugin does not need CSS, delete this file.
   margin-top: 0.5em;
   margin-bottom: 0.5em;
 }
+
+.easy-copy-matcher-row {
+  cursor: grab;
+}
+
+.easy-copy-matcher-row:active {
+  cursor: grabbing;
+}
+
+.easy-copy-matcher-config {
+  margin-left: 1.5em;
+  padding: 0.5em 0 0.75em 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.easy-copy-regex-error {
+  display: none;
+  color: var(--text-error);
+  font-size: var(--font-ui-smaller);
+  margin: 0.25em 0 0.5em 0;
+}
+
+.easy-copy-regex-error.is-visible {
+  display: block;
+}

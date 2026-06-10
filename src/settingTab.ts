@@ -14,7 +14,11 @@ interface SettingsContainer {
 	addSetting(cb: (setting: Setting) => void): void;
 }
 
-const BUILTIN_MATCHER_LABEL_KEYS: Record<BuiltinCopyMatcherId, 'enable-bold' | 'enable-italic' | 'enable-highlight' | 'enable-strikethrough' | 'enable-inline-code' | 'enable-inline-latex' | 'enable-wikilink'> = {
+type BuiltinMatcherLabelKey = 'enable-bold' | 'enable-italic' | 'enable-highlight' | 'enable-strikethrough' | 'enable-inline-code' | 'enable-inline-latex' | 'enable-wikilink';
+type BuiltinMatcherDescKey = 'enable-bold-desc' | 'enable-italic-desc' | 'enable-highlight-desc' | 'enable-strikethrough-desc' | 'enable-inline-code-desc' | 'enable-inline-latex-desc' | 'enable-wikilink-desc';
+type BuiltinMatcherSettingKey = 'enableBold' | 'enableItalic' | 'enableHighlight' | 'enableStrikethrough' | 'enableInlineCode' | 'enableInlineLatex' | 'enableWikiLink';
+
+const BUILTIN_MATCHER_LABEL_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherLabelKey> = {
 	'bold': 'enable-bold',
 	'italic': 'enable-italic',
 	'highlight': 'enable-highlight',
@@ -24,11 +28,32 @@ const BUILTIN_MATCHER_LABEL_KEYS: Record<BuiltinCopyMatcherId, 'enable-bold' | '
 	'wiki-link': 'enable-wikilink',
 };
 
+const BUILTIN_MATCHER_DESC_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherDescKey> = {
+	'bold': 'enable-bold-desc',
+	'italic': 'enable-italic-desc',
+	'highlight': 'enable-highlight-desc',
+	'strikethrough': 'enable-strikethrough-desc',
+	'inline-code': 'enable-inline-code-desc',
+	'inline-latex': 'enable-inline-latex-desc',
+	'wiki-link': 'enable-wikilink-desc',
+};
+
+const BUILTIN_MATCHER_SETTING_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherSettingKey> = {
+	'bold': 'enableBold',
+	'italic': 'enableItalic',
+	'highlight': 'enableHighlight',
+	'strikethrough': 'enableStrikethrough',
+	'inline-code': 'enableInlineCode',
+	'inline-latex': 'enableInlineLatex',
+	'wiki-link': 'enableWikiLink',
+};
+
 function createCustomMatcher(): CustomCopyMatcherSetting {
 	const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 	return {
 		id,
 		name: 'Double quotes',
+		note: 'Copy text inside double quotes.',
 		pattern: '"([^"]+)"',
 		flags: 'g',
 		captureGroup: 1,
@@ -85,12 +110,60 @@ function createSettingsGroup(containerEl: HTMLElement, heading?: string): Settin
 
 export class EasyCopySettingTab extends PluginSettingTab {
 	plugin: EasyCopy;
+	private expandedCustomMatcherId: string | null = null;
 
 	icon: string = 'copy-plus';
 
 	constructor(app: App, plugin: EasyCopy) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	private getMatcherName(matcherId: string): string | null {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) return customMatcher.name || this.plugin.t('custom-matcher');
+
+		const builtinKey = BUILTIN_MATCHER_LABEL_KEYS[matcherId as BuiltinCopyMatcherId];
+		return builtinKey ? this.plugin.t(builtinKey) : null;
+	}
+
+	private getMatcherDesc(matcherId: string): string {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) return customMatcher.note ?? '';
+
+		const builtinDescKey = BUILTIN_MATCHER_DESC_KEYS[matcherId as BuiltinCopyMatcherId];
+		return builtinDescKey ? this.plugin.t(builtinDescKey) : '';
+	}
+
+	private isMatcherEnabled(matcherId: string): boolean {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) return customMatcher.enabled;
+
+		const settingKey = BUILTIN_MATCHER_SETTING_KEYS[matcherId as BuiltinCopyMatcherId];
+		return settingKey ? Boolean(this.plugin.settings[settingKey]) : false;
+	}
+
+	private setMatcherEnabled(matcherId: string, enabled: boolean): void {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) {
+			customMatcher.enabled = enabled;
+			void this.plugin.saveSettings();
+			return;
+		}
+
+		const settingKey = BUILTIN_MATCHER_SETTING_KEYS[matcherId as BuiltinCopyMatcherId];
+		if (!settingKey) return;
+		this.plugin.settings[settingKey] = enabled;
+		void this.plugin.saveSettings();
+	}
+
+	private isRegexValid(pattern: string, flags: string): boolean {
+		try {
+			new RegExp(pattern, flags);
+			return true;
+		} catch {
+			return false;
+		}
 	}
 
 	display(): void {
@@ -366,192 +439,8 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					this.display();
 				})));
 
-		// 只有当自定义复制对象选项开启时才显示具体的复制对象选项
 		if (this.plugin.settings.customizeTargets) {
-			this.plugin.settings.matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers);
-
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('enable-inline-code'))
-				.setDesc(this.plugin.t('enable-inline-code-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableInlineCode)
-					.onChange( value => {
-						this.plugin.settings.enableInlineCode = value;
-						void this.plugin.saveSettings();
-					})));
-
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('enable-bold'))
-				.setDesc(this.plugin.t('enable-bold-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableBold)
-					.onChange( value => {
-						this.plugin.settings.enableBold = value;
-						void this.plugin.saveSettings();
-					})));
-
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('enable-highlight'))
-				.setDesc(this.plugin.t('enable-highlight-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableHighlight)
-					.onChange( value => {
-						this.plugin.settings.enableHighlight = value;
-						void this.plugin.saveSettings();
-					})));
-
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('enable-italic'))
-				.setDesc(this.plugin.t('enable-italic-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableItalic)
-					.onChange( value => {
-						this.plugin.settings.enableItalic = value;
-						void this.plugin.saveSettings();
-					})));
-            
-            targetGroup.addSetting(setting => setting
-                .setName(this.plugin.t('enable-strikethrough'))
-                .setDesc(this.plugin.t('enable-strikethrough-desc'))
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.enableStrikethrough)
-                    .onChange( value => {
-                        this.plugin.settings.enableStrikethrough = value;
-                        void this.plugin.saveSettings();
-                    })));
-            
-            targetGroup.addSetting(setting => setting
-                .setName(this.plugin.t('enable-inline-latex'))
-                .setDesc(this.plugin.t('enable-inline-latex-desc'))
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.enableInlineLatex)
-                    .onChange( value => {
-                        this.plugin.settings.enableInlineLatex = value;
-                        void this.plugin.saveSettings();
-                    })));
-            
-            targetGroup.addSetting(setting => setting
-                .setName(this.plugin.t('enable-link'))
-                .setDesc(this.plugin.t('enable-link-desc'))
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.enableLink)
-                    .onChange( value => {
-                        this.plugin.settings.enableLink = value;
-                        void this.plugin.saveSettings();
-                    })));
-
-            targetGroup.addSetting(setting => setting
-                .setName(this.plugin.t('enable-wikilink'))
-                .setDesc(this.plugin.t('enable-wikilink-desc'))
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.enableWikiLink ?? true)
-                    .onChange( value => {
-                        this.plugin.settings.enableWikiLink = value;
-                        void this.plugin.saveSettings();
-						this.display(); // 切换后刷新界面以显示/隐藏下方选项
-					})));
-
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('matcher-priority'))
-				.setDesc(this.plugin.t('matcher-priority-desc'))
-				.addButton(button => button
-					.setButtonText(this.plugin.t('reset-order'))
-					.onClick(() => {
-						this.plugin.settings.matcherOrder = normalizeMatcherOrder(DEFAULT_BUILTIN_COPY_MATCHER_IDS, this.plugin.settings.customMatchers);
-						void this.plugin.saveSettings();
-						this.display();
-					})));
-
-			this.plugin.settings.matcherOrder.forEach((matcherId, index) => {
-				const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
-				const matcherName = customMatcher ? customMatcher.name : this.plugin.t(BUILTIN_MATCHER_LABEL_KEYS[matcherId as BuiltinCopyMatcherId]);
-
-				targetGroup.addSetting(setting => setting
-					.setName(matcherName)
-					.addButton(button => button
-						.setButtonText('↑')
-						.setTooltip(this.plugin.t('move-up'))
-						.setDisabled(index === 0)
-						.onClick(() => {
-							this.moveMatcher(matcherId, -1);
-						}))
-					.addButton(button => button
-						.setButtonText('↓')
-						.setTooltip(this.plugin.t('move-down'))
-						.setDisabled(index === this.plugin.settings.matcherOrder.length - 1)
-						.onClick(() => {
-							this.moveMatcher(matcherId, 1);
-						})));
-			});
-
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('custom-matchers'))
-				.setDesc(this.plugin.t('custom-matchers-desc'))
-				.addButton(button => button
-					.setButtonText(this.plugin.t('add-custom-matcher'))
-					.onClick(() => {
-						const customMatcher = createCustomMatcher();
-						this.plugin.settings.customMatchers.push(customMatcher);
-						this.plugin.settings.matcherOrder = normalizeMatcherOrder([...this.plugin.settings.matcherOrder, getCustomMatcherOrderId(customMatcher)], this.plugin.settings.customMatchers);
-						void this.plugin.saveSettings();
-						this.display();
-					})));
-
-			for (const customMatcher of this.plugin.settings.customMatchers) {
-				targetGroup.addSetting(setting => setting
-					.setName(customMatcher.name || this.plugin.t('custom-matcher'))
-					.addToggle(toggle => toggle
-						.setValue(customMatcher.enabled)
-						.onChange(value => {
-							customMatcher.enabled = value;
-							void this.plugin.saveSettings();
-						}))
-					.addButton(button => button
-						.setButtonText(this.plugin.t('delete-custom-matcher'))
-						.onClick(() => {
-							this.deleteCustomMatcher(customMatcher.id);
-						})));
-
-				targetGroup.addSetting(setting => setting
-					.setName(this.plugin.t('custom-matcher-name'))
-					.addText(text => text
-						.setValue(customMatcher.name)
-						.onChange(value => {
-							customMatcher.name = value;
-							void this.plugin.saveSettings();
-						})));
-
-				targetGroup.addSetting(setting => setting
-					.setName(this.plugin.t('custom-matcher-pattern'))
-					.addText(text => text
-						.setPlaceholder('"([^"]+)"')
-						.setValue(customMatcher.pattern)
-						.onChange(value => {
-							customMatcher.pattern = value;
-							void this.plugin.saveSettings();
-						})));
-
-				targetGroup.addSetting(setting => setting
-					.setName(this.plugin.t('custom-matcher-flags'))
-					.addText(text => text
-						.setPlaceholder('g')
-						.setValue(customMatcher.flags)
-						.onChange(value => {
-							customMatcher.flags = value;
-							void this.plugin.saveSettings();
-						})));
-
-				targetGroup.addSetting(setting => setting
-					.setName(this.plugin.t('custom-matcher-capture-group'))
-					.addText(text => text
-						.setPlaceholder('1')
-						.setValue(String(customMatcher.captureGroup))
-						.onChange(value => {
-							customMatcher.captureGroup = Math.max(0, parseInt(value) || 0);
-							void this.plugin.saveSettings();
-						})));
-			}
-			
+			this.renderMatcherList(targetGroup);
 		}
 
 		targetGroup.addSetting(setting => setting
@@ -641,13 +530,180 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		}
 	}
 
-	private moveMatcher(matcherId: string, direction: -1 | 1): void {
-		const matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers);
-		const currentIndex = matcherOrder.indexOf(matcherId);
-		const nextIndex = currentIndex + direction;
-		if (nextIndex < 0 || nextIndex >= matcherOrder.length) return;
+	private renderMatcherList(targetGroup: SettingsContainer): void {
+		this.plugin.settings.matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers);
 
-		[matcherOrder[currentIndex], matcherOrder[nextIndex]] = [matcherOrder[nextIndex], matcherOrder[currentIndex]];
+		targetGroup.addSetting(setting => setting
+			.setName(this.plugin.t('custom-matchers'))
+			.setDesc(this.plugin.t('custom-matchers-desc'))
+			.addButton(button => button
+				.setButtonText(this.plugin.t('add-custom-matcher'))
+				.onClick(() => {
+					const customMatcher = createCustomMatcher();
+					this.plugin.settings.customMatchers.push(customMatcher);
+					this.plugin.settings.matcherOrder = normalizeMatcherOrder([...this.plugin.settings.matcherOrder, getCustomMatcherOrderId(customMatcher)], this.plugin.settings.customMatchers);
+					this.expandedCustomMatcherId = customMatcher.id;
+					void this.plugin.saveSettings();
+					this.display();
+				}))
+			.addButton(button => button
+				.setButtonText(this.plugin.t('reset-order'))
+				.onClick(() => {
+					this.plugin.settings.matcherOrder = normalizeMatcherOrder(DEFAULT_BUILTIN_COPY_MATCHER_IDS, this.plugin.settings.customMatchers);
+					void this.plugin.saveSettings();
+					this.display();
+				})));
+
+		for (const matcherId of this.plugin.settings.matcherOrder) {
+			this.addMatcherSetting(targetGroup, matcherId);
+		}
+	}
+
+	private addMatcherSetting(targetGroup: SettingsContainer, matcherId: string): void {
+		const matcherName = this.getMatcherName(matcherId);
+		if (!matcherName) return;
+
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		targetGroup.addSetting(setting => {
+			setting
+				.setName(matcherName)
+				.setDesc(this.getMatcherDesc(matcherId));
+
+			setting.settingEl.addClass('easy-copy-matcher-row');
+			setting.settingEl.setAttr('draggable', 'true');
+			setting.settingEl.dataset.matcherId = matcherId;
+			setting.settingEl.addEventListener('dragstart', event => {
+				event.dataTransfer?.setData('text/plain', matcherId);
+			});
+			setting.settingEl.addEventListener('dragover', event => {
+				event.preventDefault();
+			});
+			setting.settingEl.addEventListener('drop', event => {
+				event.preventDefault();
+				const sourceId = event.dataTransfer?.getData('text/plain');
+				if (sourceId) this.moveMatcherBefore(sourceId, matcherId);
+			});
+
+			setting.addExtraButton(button => button
+				.setIcon('grip-vertical')
+				.setTooltip(this.plugin.t('drag-copy-target')));
+
+			if (customMatcher) {
+				setting.addExtraButton(button => button
+					.setIcon('trash-2')
+					.setTooltip(this.plugin.t('delete-custom-matcher'))
+					.onClick(() => {
+						this.deleteCustomMatcher(customMatcher.id);
+					}));
+				setting.addExtraButton(button => button
+					.setIcon('settings')
+					.setTooltip(this.plugin.t('configure-custom-matcher'))
+					.onClick(() => {
+						this.expandedCustomMatcherId = this.expandedCustomMatcherId === customMatcher.id ? null : customMatcher.id;
+						this.display();
+					}));
+			}
+
+			setting.addToggle(toggle => toggle
+				.setValue(this.isMatcherEnabled(matcherId))
+				.onChange(value => {
+					this.setMatcherEnabled(matcherId, value);
+				}));
+
+			if (customMatcher && this.expandedCustomMatcherId === customMatcher.id) {
+				const configEl = activeDocument.createElement('div');
+				configEl.addClass('easy-copy-matcher-config');
+				setting.settingEl.insertAdjacentElement('afterend', configEl);
+				this.renderCustomMatcherConfig(configEl, customMatcher);
+			}
+		});
+	}
+
+	private renderCustomMatcherConfig(containerEl: HTMLElement, customMatcher: CustomCopyMatcherSetting): void {
+		new Setting(containerEl)
+			.setName(this.plugin.t('custom-matcher-name'))
+			.addText(text => text
+				.setValue(customMatcher.name)
+				.onChange(value => {
+					customMatcher.name = value;
+					this.updateMatcherRowText(getCustomMatcherOrderId(customMatcher), value || this.plugin.t('custom-matcher'), customMatcher.note ?? '');
+					void this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName(this.plugin.t('custom-matcher-note'))
+			.addText(text => text
+				.setValue(customMatcher.note ?? '')
+				.onChange(value => {
+					customMatcher.note = value;
+					this.updateMatcherRowText(getCustomMatcherOrderId(customMatcher), customMatcher.name || this.plugin.t('custom-matcher'), value);
+					void this.plugin.saveSettings();
+				}));
+
+		const regexErrorEl = containerEl.createDiv({ cls: 'easy-copy-regex-error' });
+		const updateRegexError = (value: string) => {
+			regexErrorEl.setText(value);
+			regexErrorEl.toggleClass('is-visible', Boolean(value));
+		};
+
+		new Setting(containerEl)
+			.setName(this.plugin.t('custom-matcher-pattern'))
+			.addText(text => text
+				.setPlaceholder('"([^"]+)"')
+				.setValue(customMatcher.pattern)
+				.onChange(value => {
+					if (!this.isRegexValid(value, customMatcher.flags)) {
+						updateRegexError(this.plugin.t('invalid-regex'));
+						return;
+					}
+					updateRegexError('');
+					customMatcher.pattern = value;
+					void this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName(this.plugin.t('custom-matcher-flags'))
+			.addText(text => text
+				.setPlaceholder('g')
+				.setValue(customMatcher.flags)
+				.onChange(value => {
+					if (!this.isRegexValid(customMatcher.pattern, value)) {
+						updateRegexError(this.plugin.t('invalid-regex'));
+						return;
+					}
+					updateRegexError('');
+					customMatcher.flags = value;
+					void this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName(this.plugin.t('custom-matcher-capture-group'))
+			.addText(text => text
+				.setPlaceholder('1')
+				.setValue(String(customMatcher.captureGroup))
+				.onChange(value => {
+					customMatcher.captureGroup = Math.max(0, parseInt(value) || 0);
+					void this.plugin.saveSettings();
+				}));
+	}
+
+	private updateMatcherRowText(matcherId: string, name: string, desc: string): void {
+		for (const row of Array.from(this.containerEl.querySelectorAll<HTMLElement>('.easy-copy-matcher-row'))) {
+			if (row.dataset.matcherId !== matcherId) continue;
+			row.querySelector('.setting-item-name')?.setText(name);
+			row.querySelector('.setting-item-description')?.setText(desc);
+		}
+	}
+
+	private moveMatcherBefore(sourceId: string, targetId: string): void {
+		if (sourceId === targetId) return;
+
+		const matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers)
+			.filter(id => id !== sourceId);
+		const targetIndex = matcherOrder.indexOf(targetId);
+		if (targetIndex < 0) return;
+
+		matcherOrder.splice(targetIndex, 0, sourceId);
 		this.plugin.settings.matcherOrder = matcherOrder;
 		void this.plugin.saveSettings();
 		this.display();
