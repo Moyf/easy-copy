@@ -34,6 +34,14 @@ If your plugin does not need CSS, delete this file.
   cursor: grabbing;
 }
 
+.easy-copy-matcher-row.is-dragging {
+  opacity: 0.55;
+}
+
+.easy-copy-matcher-row .mod-drag-handle {
+  cursor: grab;
+}
+
 .easy-copy-matcher-config {
   margin-left: 1.5em;
   padding: 0.5em 0 0.75em 0;

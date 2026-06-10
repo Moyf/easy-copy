@@ -25,6 +25,7 @@ describe('normalizeMatcherOrder', () => {
 			'highlight',
 			'strikethrough',
 			'inline-latex',
+			'link',
 			'wiki-link',
 			getCustomMatcherOrderId(customMatcher),
 		]);

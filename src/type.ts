@@ -42,6 +42,7 @@ export type BuiltinCopyMatcherId =
     | 'strikethrough'
     | 'inline-code'
     | 'inline-latex'
+    | 'link'
     | 'wiki-link';
 
 export interface ContextData {
@@ -122,7 +123,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableInlineLatex: true,
     enableLink: true,
     enableWikiLink: true,
-    matcherOrder: ['bold', 'italic', 'highlight', 'strikethrough', 'inline-code', 'inline-latex', 'wiki-link'],
+    matcherOrder: ['bold', 'italic', 'highlight', 'strikethrough', 'inline-code', 'inline-latex', 'link', 'wiki-link'],
     customMatchers: [],
     keepWikiBrackets: true,
     autoEmbedBlockLink: false,

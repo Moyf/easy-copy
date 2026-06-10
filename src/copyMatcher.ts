@@ -7,14 +7,15 @@ export const DEFAULT_BUILTIN_COPY_MATCHER_IDS: BuiltinCopyMatcherId[] = [
 	'strikethrough',
 	'inline-code',
 	'inline-latex',
+	'link',
 	'wiki-link',
 ];
 
 export interface CopyMatcher {
 	id: string;
 	type: ContextType;
-	regex: RegExp;
 	enabled: boolean;
+	regex: RegExp;
 	captureGroup?: number;
 	name?: string;
 }
@@ -133,7 +134,9 @@ export function buildBuiltinCopyMatchers(settings: EasyCopySettings, isIosApp: b
 	];
 
 	const matcherById = new Map(matchers.map(matcher => [matcher.id, matcher]));
-	return normalizeBuiltinMatcherOrder(settings.matcherOrder).map(id => matcherById.get(id)!);
+	return normalizeBuiltinMatcherOrder(settings.matcherOrder)
+		.map(id => matcherById.get(id))
+		.filter((matcher): matcher is CopyMatcher => Boolean(matcher));
 }
 
 export function buildCopyMatchers(settings: EasyCopySettings, isIosApp: boolean): CopyMatcher[] {

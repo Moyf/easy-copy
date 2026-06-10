@@ -420,11 +420,27 @@ export default class EasyCopy extends Plugin {
 		const afterCursor = curLine.slice(curCh); // 光标后的内容
 
 
-		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID > 双链
-		const matchers = buildCopyMatchers(this.settings, Platform.isIosApp);
+		// 匹配优先级由设置中的 matcherOrder 决定；regex matcher 和特殊 detector 共用同一排序
+		const matcherById = new Map(buildCopyMatchers(this.settings, Platform.isIosApp).map(matcher => [matcher.id, matcher]));
+		const orderedTargetIds = normalizeMatcherOrder(this.settings.matcherOrder, this.settings.customMatchers);
 	
-		for (const matcher of matchers) {
-			if (!matcher.enabled) continue; // 如果当前类型未启用，则跳过
+		for (const targetId of orderedTargetIds) {
+			if (targetId === 'link') {
+				if (this.settings.customizeTargets && !this.settings.enableLink) continue;
+				const linkInfo = this.isCursorInLink(beforeCursor, afterCursor);
+				if (linkInfo) {
+					return {
+						type: linkInfo.type,
+						curLine,
+						match: linkInfo.content,
+						range: linkInfo.range,
+					};
+				}
+				continue;
+			}
+
+			const matcher = matcherById.get(targetId);
+			if (!matcher?.enabled) continue; // 如果当前类型未启用，则跳过
 			const matchInfo = getMatchInfo(beforeCursor + afterCursor, beforeCursor.length, matcher.regex, matcher.captureGroup);
 			if (matchInfo) {
 				return {
@@ -433,19 +449,6 @@ export default class EasyCopy extends Plugin {
 					match: matchInfo.content, // 返回内容，不包括语法
 					range: matchInfo.range,
 					matcherName: matcher.name,
-				};
-			}
-		}
-
-		// 检测链接
-		if (!this.settings.customizeTargets || this.settings.enableLink) {
-			const linkInfo = this.isCursorInLink(beforeCursor, afterCursor);
-			if (linkInfo) {
-				return {
-					type: linkInfo.type,
-					curLine,
-					match: linkInfo.content,
-					range: linkInfo.range,
 				};
 			}
 		}
@@ -605,7 +608,7 @@ export default class EasyCopy extends Plugin {
 			case ContextType.CUSTOM:
 				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
-					new Notice(`${contextType.matcherName ?? this.t('custom-matcher')} ${this.t('custom-matcher-copied')}`);
+					new Notice(`${this.t('custom-prefix')}${contextType.matcherName ?? this.t('custom-matcher')}${this.t('custom-matcher-copied')}`);
 				}
 				return;
 			

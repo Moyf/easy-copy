@@ -14,9 +14,9 @@ interface SettingsContainer {
 	addSetting(cb: (setting: Setting) => void): void;
 }
 
-type BuiltinMatcherLabelKey = 'enable-bold' | 'enable-italic' | 'enable-highlight' | 'enable-strikethrough' | 'enable-inline-code' | 'enable-inline-latex' | 'enable-wikilink';
-type BuiltinMatcherDescKey = 'enable-bold-desc' | 'enable-italic-desc' | 'enable-highlight-desc' | 'enable-strikethrough-desc' | 'enable-inline-code-desc' | 'enable-inline-latex-desc' | 'enable-wikilink-desc';
-type BuiltinMatcherSettingKey = 'enableBold' | 'enableItalic' | 'enableHighlight' | 'enableStrikethrough' | 'enableInlineCode' | 'enableInlineLatex' | 'enableWikiLink';
+type BuiltinMatcherLabelKey = 'enable-bold' | 'enable-italic' | 'enable-highlight' | 'enable-strikethrough' | 'enable-inline-code' | 'enable-inline-latex' | 'enable-link' | 'enable-wikilink';
+type BuiltinMatcherDescKey = 'enable-bold-desc' | 'enable-italic-desc' | 'enable-highlight-desc' | 'enable-strikethrough-desc' | 'enable-inline-code-desc' | 'enable-inline-latex-desc' | 'enable-link-desc' | 'enable-wikilink-desc';
+type BuiltinMatcherSettingKey = 'enableBold' | 'enableItalic' | 'enableHighlight' | 'enableStrikethrough' | 'enableInlineCode' | 'enableInlineLatex' | 'enableLink' | 'enableWikiLink';
 
 const BUILTIN_MATCHER_LABEL_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherLabelKey> = {
 	'bold': 'enable-bold',
@@ -25,6 +25,7 @@ const BUILTIN_MATCHER_LABEL_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherLab
 	'strikethrough': 'enable-strikethrough',
 	'inline-code': 'enable-inline-code',
 	'inline-latex': 'enable-inline-latex',
+	'link': 'enable-link',
 	'wiki-link': 'enable-wikilink',
 };
 
@@ -35,6 +36,7 @@ const BUILTIN_MATCHER_DESC_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherDesc
 	'strikethrough': 'enable-strikethrough-desc',
 	'inline-code': 'enable-inline-code-desc',
 	'inline-latex': 'enable-inline-latex-desc',
+	'link': 'enable-link-desc',
 	'wiki-link': 'enable-wikilink-desc',
 };
 
@@ -45,6 +47,7 @@ const BUILTIN_MATCHER_SETTING_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherS
 	'strikethrough': 'enableStrikethrough',
 	'inline-code': 'enableInlineCode',
 	'inline-latex': 'enableInlineLatex',
+	'link': 'enableLink',
 	'wiki-link': 'enableWikiLink',
 };
 
@@ -112,6 +115,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 	plugin: EasyCopy;
 	private expandedCustomMatcherId: string | null = null;
 	private expandedCustomMatcherEl: HTMLElement | null = null;
+	private draggedMatcherId: string | null = null;
 
 	icon: string = 'copy-plus';
 
@@ -159,6 +163,14 @@ export class EasyCopySettingTab extends PluginSettingTab {
 	}
 
 	private toggleCustomMatcherConfig(settingEl: HTMLElement, customMatcher: CustomCopyMatcherSetting): void {
+		const existingConfigEl = this.containerEl.querySelector<HTMLElement>(`.easy-copy-matcher-config[data-matcher-id="${customMatcher.id}"]`);
+		if (existingConfigEl) {
+			existingConfigEl.remove();
+			if (this.expandedCustomMatcherEl === existingConfigEl) this.expandedCustomMatcherEl = null;
+			this.expandedCustomMatcherId = null;
+			return;
+		}
+
 		if (this.expandedCustomMatcherId === customMatcher.id && this.expandedCustomMatcherEl) {
 			this.expandedCustomMatcherEl.remove();
 			this.expandedCustomMatcherEl = null;
@@ -169,10 +181,49 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		this.expandedCustomMatcherEl?.remove();
 		const configEl = activeDocument.createElement('div');
 		configEl.addClass('easy-copy-matcher-config');
+		configEl.dataset.matcherId = customMatcher.id;
 		settingEl.insertAdjacentElement('afterend', configEl);
 		this.renderCustomMatcherConfig(configEl, customMatcher);
 		this.expandedCustomMatcherEl = configEl;
 		this.expandedCustomMatcherId = customMatcher.id;
+	}
+
+	private persistMatcherOrderFromDom(): void {
+		const matcherOrder = Array.from(this.containerEl.querySelectorAll<HTMLElement>('.easy-copy-matcher-row'))
+			.map(row => row.dataset.matcherId)
+			.filter((id): id is string => Boolean(id));
+
+		this.plugin.settings.matcherOrder = normalizeMatcherOrder(matcherOrder, this.plugin.settings.customMatchers);
+		void this.plugin.saveSettings();
+	}
+
+	private closeExpandedCustomMatcherConfig(): void {
+		this.expandedCustomMatcherEl?.remove();
+		this.expandedCustomMatcherEl = null;
+		this.expandedCustomMatcherId = null;
+	}
+
+	private reorderMatcherRows(containerEl: HTMLElement): void {
+		this.closeExpandedCustomMatcherConfig();
+		for (const matcherId of this.plugin.settings.matcherOrder) {
+			const rowEl = containerEl.querySelector<HTMLElement>(`.easy-copy-matcher-row[data-matcher-id="${matcherId}"]`);
+			if (rowEl) containerEl.appendChild(rowEl);
+		}
+	}
+
+	private moveDraggedMatcherPreview(targetEl: HTMLElement, targetMatcherId: string, pointerY: number): void {
+		const sourceMatcherId = this.draggedMatcherId;
+		if (!sourceMatcherId || sourceMatcherId === targetMatcherId) return;
+
+		const sourceEl = this.containerEl.querySelector<HTMLElement>(`.easy-copy-matcher-row[data-matcher-id="${sourceMatcherId}"]`);
+		if (!sourceEl) return;
+
+		const targetRect = targetEl.getBoundingClientRect();
+		const placeAfter = pointerY > targetRect.top + targetRect.height / 2;
+		const referenceEl = placeAfter ? targetEl.nextElementSibling : targetEl;
+		if (referenceEl === sourceEl) return;
+
+		targetEl.parentElement?.insertBefore(sourceEl, referenceEl);
 	}
 
 	private isRegexValid(pattern: string, flags: string): boolean {
@@ -182,6 +233,35 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		} catch {
 			return false;
 		}
+	}
+
+	private focusNextConfigInput(inputEl: HTMLInputElement, direction: 1 | -1): void {
+		const configEl = inputEl.closest('.easy-copy-matcher-config');
+		if (!configEl) return;
+
+		const inputs = Array.from(configEl.querySelectorAll<HTMLInputElement>('input'));
+		const currentIndex = inputs.indexOf(inputEl);
+		const nextInput = inputs[currentIndex + direction];
+		if (!nextInput) return;
+
+		nextInput.focus();
+		nextInput.select();
+	}
+
+	private enableConfigInputTabNavigation(inputEl: HTMLInputElement): void {
+		inputEl.addEventListener('keydown', event => {
+			if (event.key !== 'Tab') return;
+
+			const direction = event.shiftKey ? -1 : 1;
+			const configEl = inputEl.closest('.easy-copy-matcher-config');
+			const inputs = configEl ? Array.from(configEl.querySelectorAll<HTMLInputElement>('input')) : [];
+			const currentIndex = inputs.indexOf(inputEl);
+			const nextInput = inputs[currentIndex + direction];
+			if (!nextInput) return;
+
+			event.preventDefault();
+			this.focusNextConfigInput(inputEl, direction);
+		});
 	}
 
 	display(): void {
@@ -551,6 +631,19 @@ export class EasyCopySettingTab extends PluginSettingTab {
 
 	private renderMatcherList(targetGroup: SettingsContainer): void {
 		this.plugin.settings.matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers);
+		let listContainerEl: HTMLElement | null = null;
+
+		targetGroup.addSetting(setting => setting
+			.setName(this.plugin.t('matcher-priority'))
+			.setDesc(this.plugin.t('matcher-priority-desc'))
+			.addButton(button => button
+				.setButtonText(this.plugin.t('reset-order'))
+				.onClick(() => {
+					if (!listContainerEl) return;
+					this.plugin.settings.matcherOrder = normalizeMatcherOrder(DEFAULT_BUILTIN_COPY_MATCHER_IDS, this.plugin.settings.customMatchers);
+					void this.plugin.saveSettings();
+					this.reorderMatcherRows(listContainerEl);
+				})));
 
 		targetGroup.addSetting(setting => setting
 			.setName(this.plugin.t('custom-matchers'))
@@ -558,61 +651,79 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			.addButton(button => button
 				.setButtonText(this.plugin.t('add-custom-matcher'))
 				.onClick(() => {
+					if (!listContainerEl) return;
 					const customMatcher = createCustomMatcher();
 					this.plugin.settings.customMatchers.push(customMatcher);
-					this.plugin.settings.matcherOrder = normalizeMatcherOrder([...this.plugin.settings.matcherOrder, getCustomMatcherOrderId(customMatcher)], this.plugin.settings.customMatchers);
-					this.expandedCustomMatcherId = customMatcher.id;
-					void this.plugin.saveSettings();
-					this.display();
-				}))
-			.addButton(button => button
-				.setButtonText(this.plugin.t('reset-order'))
-				.onClick(() => {
-					this.plugin.settings.matcherOrder = normalizeMatcherOrder(DEFAULT_BUILTIN_COPY_MATCHER_IDS, this.plugin.settings.customMatchers);
-					void this.plugin.saveSettings();
-					this.display();
+				this.plugin.settings.matcherOrder = normalizeMatcherOrder([...this.plugin.settings.matcherOrder, getCustomMatcherOrderId(customMatcher)], this.plugin.settings.customMatchers);
+				void this.plugin.saveSettings();
+					const settingEl = this.addMatcherSetting(listContainerEl, getCustomMatcherOrderId(customMatcher));
+					if (settingEl) this.toggleCustomMatcherConfig(settingEl, customMatcher);
 				})));
 
+		listContainerEl = activeDocument.createElement('div');
+		listContainerEl.addClass('easy-copy-matcher-list');
+		this.containerEl.querySelector('.easy-copy-matcher-list')?.remove();
+		const lastTargetSetting = this.containerEl.querySelectorAll('.setting-item');
+		lastTargetSetting[lastTargetSetting.length - 1]?.insertAdjacentElement('afterend', listContainerEl);
+
 		for (const matcherId of this.plugin.settings.matcherOrder) {
-			this.addMatcherSetting(targetGroup, matcherId);
+			this.addMatcherSetting(listContainerEl, matcherId);
 		}
 	}
 
-	private addMatcherSetting(targetGroup: SettingsContainer, matcherId: string): void {
+	private addMatcherSetting(containerEl: HTMLElement, matcherId: string): HTMLElement | null {
 		const matcherName = this.getMatcherName(matcherId);
-		if (!matcherName) return;
+		if (!matcherName) return null;
 
 		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
-		targetGroup.addSetting(setting => {
+		let settingEl: HTMLElement | null = null;
+		new Setting(containerEl).then(setting => {
+			settingEl = setting.settingEl;
 			setting
 				.setName(matcherName)
 				.setDesc(this.getMatcherDesc(matcherId));
 
 			setting.settingEl.addClass('easy-copy-matcher-row');
+			const dragHandleEl = activeDocument.createElement('div');
+			dragHandleEl.addClass('clickable-icon');
+			dragHandleEl.addClass('extra-setting-button');
+			dragHandleEl.addClass('mod-drag-handle');
+			dragHandleEl.setAttr('aria-label', this.plugin.t('drag-copy-target'));
+			dragHandleEl.setAttr('tabindex', '-1');
+			setIcon(dragHandleEl, 'menu');
+			setting.settingEl.insertBefore(dragHandleEl, setting.infoEl);
+
 			setting.settingEl.setAttr('draggable', 'true');
 			setting.settingEl.dataset.matcherId = matcherId;
 			setting.settingEl.addEventListener('dragstart', event => {
+				this.expandedCustomMatcherEl?.remove();
+				this.expandedCustomMatcherEl = null;
+				this.expandedCustomMatcherId = null;
+				this.draggedMatcherId = matcherId;
+				setting.settingEl.addClass('is-dragging');
 				event.dataTransfer?.setData('text/plain', matcherId);
+				if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
 			});
 			setting.settingEl.addEventListener('dragover', event => {
 				event.preventDefault();
+				this.moveDraggedMatcherPreview(setting.settingEl, matcherId, event.clientY);
 			});
 			setting.settingEl.addEventListener('drop', event => {
 				event.preventDefault();
-				const sourceId = event.dataTransfer?.getData('text/plain');
-				if (sourceId) this.moveMatcherBefore(sourceId, matcherId);
+				this.persistMatcherOrderFromDom();
 			});
-
-			setting.addExtraButton(button => button
-				.setIcon('grip-vertical')
-				.setTooltip(this.plugin.t('drag-copy-target')));
+			setting.settingEl.addEventListener('dragend', () => {
+				setting.settingEl.removeClass('is-dragging');
+				this.draggedMatcherId = null;
+				this.persistMatcherOrderFromDom();
+			});
 
 			if (customMatcher) {
 				setting.addExtraButton(button => button
 					.setIcon('trash-2')
 					.setTooltip(this.plugin.t('delete-custom-matcher'))
 					.onClick(() => {
-						this.deleteCustomMatcher(customMatcher.id);
+						this.deleteCustomMatcher(customMatcher.id, setting.settingEl);
 					}));
 				setting.addExtraButton(button => button
 					.setIcon('settings')
@@ -631,43 +742,53 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			if (customMatcher && this.expandedCustomMatcherId === customMatcher.id) {
 				const configEl = activeDocument.createElement('div');
 				configEl.addClass('easy-copy-matcher-config');
+				configEl.dataset.matcherId = customMatcher.id;
 				setting.settingEl.insertAdjacentElement('afterend', configEl);
 				this.renderCustomMatcherConfig(configEl, customMatcher);
 			}
 		});
+		return settingEl;
 	}
 
 	private renderCustomMatcherConfig(containerEl: HTMLElement, customMatcher: CustomCopyMatcherSetting): void {
 		new Setting(containerEl)
 			.setName(this.plugin.t('custom-matcher-name'))
-			.addText(text => text
-				.setValue(customMatcher.name)
-				.onChange(value => {
+			.setDesc(this.plugin.t('custom-matcher-name-desc'))
+			.addText(text => {
+				this.enableConfigInputTabNavigation(text.inputEl);
+				text.setValue(customMatcher.name)
+					.onChange(value => {
 					customMatcher.name = value;
 					this.updateMatcherRowText(getCustomMatcherOrderId(customMatcher), value || this.plugin.t('custom-matcher'), customMatcher.note ?? '');
 					void this.plugin.saveSettings();
-				}));
+				});
+			});
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('custom-matcher-note'))
-			.addText(text => text
-				.setValue(customMatcher.note ?? '')
-				.onChange(value => {
+			.setDesc(this.plugin.t('custom-matcher-note-desc'))
+			.addText(text => {
+				this.enableConfigInputTabNavigation(text.inputEl);
+				text.setValue(customMatcher.note ?? '')
+					.onChange(value => {
 					customMatcher.note = value;
 					this.updateMatcherRowText(getCustomMatcherOrderId(customMatcher), customMatcher.name || this.plugin.t('custom-matcher'), value);
 					void this.plugin.saveSettings();
-				}));
+				});
+			});
 
-		const regexErrorEl = containerEl.createDiv({ cls: 'easy-copy-regex-error' });
+		const patternSetting = new Setting(containerEl)
+			.setName(this.plugin.t('custom-matcher-pattern'))
+			.setDesc(this.plugin.t('custom-matcher-pattern-desc'));
+		const regexErrorEl = patternSetting.infoEl.createDiv({ cls: 'easy-copy-regex-error' });
 		const updateRegexError = (value: string) => {
 			regexErrorEl.setText(value);
 			regexErrorEl.toggleClass('is-visible', Boolean(value));
 		};
 
-		new Setting(containerEl)
-			.setName(this.plugin.t('custom-matcher-pattern'))
-			.addText(text => text
-				.setPlaceholder('"([^"]+)"')
+		patternSetting.addText(text => {
+			this.enableConfigInputTabNavigation(text.inputEl);
+			text.setPlaceholder('"([^"]+)"')
 				.setValue(customMatcher.pattern)
 				.onChange(value => {
 					if (!this.isRegexValid(value, customMatcher.flags)) {
@@ -677,14 +798,17 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					updateRegexError('');
 					customMatcher.pattern = value;
 					void this.plugin.saveSettings();
-				}));
+				});
+		});
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('custom-matcher-flags'))
-			.addText(text => text
-				.setPlaceholder('g')
-				.setValue(customMatcher.flags)
-				.onChange(value => {
+			.setDesc(this.plugin.t('custom-matcher-flags-desc'))
+			.addText(text => {
+				this.enableConfigInputTabNavigation(text.inputEl);
+				text.setPlaceholder('g')
+					.setValue(customMatcher.flags)
+					.onChange(value => {
 					if (!this.isRegexValid(customMatcher.pattern, value)) {
 						updateRegexError(this.plugin.t('invalid-regex'));
 						return;
@@ -692,17 +816,21 @@ export class EasyCopySettingTab extends PluginSettingTab {
 					updateRegexError('');
 					customMatcher.flags = value;
 					void this.plugin.saveSettings();
-				}));
+				});
+			});
 
 		new Setting(containerEl)
 			.setName(this.plugin.t('custom-matcher-capture-group'))
-			.addText(text => text
-				.setPlaceholder('1')
-				.setValue(String(customMatcher.captureGroup))
-				.onChange(value => {
+			.setDesc(this.plugin.t('custom-matcher-capture-group-desc'))
+			.addText(text => {
+				this.enableConfigInputTabNavigation(text.inputEl);
+				text.setPlaceholder('1')
+					.setValue(String(customMatcher.captureGroup))
+					.onChange(value => {
 					customMatcher.captureGroup = Math.max(0, parseInt(value) || 0);
 					void this.plugin.saveSettings();
-				}));
+				});
+			});
 	}
 
 	private updateMatcherRowText(matcherId: string, name: string, desc: string): void {
@@ -713,24 +841,11 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		}
 	}
 
-	private moveMatcherBefore(sourceId: string, targetId: string): void {
-		if (sourceId === targetId) return;
-
-		const matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers)
-			.filter(id => id !== sourceId);
-		const targetIndex = matcherOrder.indexOf(targetId);
-		if (targetIndex < 0) return;
-
-		matcherOrder.splice(targetIndex, 0, sourceId);
-		this.plugin.settings.matcherOrder = matcherOrder;
-		void this.plugin.saveSettings();
-		this.display();
-	}
-
-	private deleteCustomMatcher(id: string): void {
+	private deleteCustomMatcher(id: string, rowEl?: HTMLElement): void {
 		this.plugin.settings.customMatchers = this.plugin.settings.customMatchers.filter(matcher => matcher.id !== id);
 		this.plugin.settings.matcherOrder = normalizeMatcherOrder(this.plugin.settings.matcherOrder, this.plugin.settings.customMatchers);
+		if (this.expandedCustomMatcherId === id) this.closeExpandedCustomMatcherConfig();
+		rowEl?.remove();
 		void this.plugin.saveSettings();
-		this.display();
 	}
 }
