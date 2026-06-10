@@ -49,7 +49,8 @@ export type TranslationKey =
 	| 'error-block-id-empty' | 'error-block-id-invalid'
 	| 'enable-display-name-regex' | 'enable-display-name-regex-desc'
 	| 'display-name-regex-from' | 'display-name-regex-from-desc'
-	| 'display-name-regex-to' | 'display-name-regex-to-desc';
+	| 'display-name-regex-to' | 'display-name-regex-to-desc'
+	| 'matcher-priority' | 'matcher-priority-desc' | 'move-up' | 'move-down' | 'reset-order';
 
 // 本地化翻译字典
 export const translations: Record<Language, Record<TranslationKey, string>> = {
@@ -172,6 +173,11 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'display-name-regex-from-desc': 'Regular expression pattern to match in the display text (e.g. ^\\d+\\.\\s* to remove leading numbers)',
 		'display-name-regex-to': 'Replace with',
 		'display-name-regex-to-desc': 'Replacement string, supports capture groups like $1, $2 (e.g. $1 to keep only the first captured group)',
+		'matcher-priority': 'Copy target priority',
+		'matcher-priority-desc': 'When multiple targets match the cursor, targets higher in this list are copied first.',
+		'move-up': 'Move up',
+		'move-down': 'Move down',
+		'reset-order': 'Reset order',
 	},
 	[Language.ZH]: {
 		// 复制 Block ID
@@ -290,6 +296,11 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'display-name-regex-from-desc': '用于匹配显示文本的正则表达式（如 ^\\d+\\.\\s* 可去除开头的序号）',
 		'display-name-regex-to': '替换为',
 		'display-name-regex-to-desc': '替换字符串，支持捕获组引用如 $1、$2（如 $1 只保留第一个捕获组的内容）',
+		'matcher-priority': '复制对象优先级',
+		'matcher-priority-desc': '当多种复制对象同时匹配光标位置时，列表中更靠上的对象会优先生效。',
+		'move-up': '上移',
+		'move-down': '下移',
+		'reset-order': '重置顺序',
 	},
 	[Language.ZH_TW]: {
 		// 复制 Block ID
@@ -409,6 +420,11 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'display-name-regex-from-desc': '用於匹配顯示文本的正規表示式（如 ^\\d+\\.\\s* 可去除開頭的序號）',
 		'display-name-regex-to': '替換為',
 		'display-name-regex-to-desc': '替換字符串，支持捕獲組引用如 $1、$2',
+		'matcher-priority': '複製對象優先級',
+		'matcher-priority-desc': '當多種複製對象同時匹配游標位置時，列表中更靠上的對象會優先生效。',
+		'move-up': '上移',
+		'move-down': '下移',
+		'reset-order': '重置順序',
 	}
 };
 

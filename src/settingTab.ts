@@ -7,11 +7,22 @@ import {
 } from "obsidian";
 import * as ObsidianModule from "obsidian";
 import EasyCopy from "./main";
-import { LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from "./type";
+import { BuiltinCopyMatcherId, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from "./type";
+import { DEFAULT_BUILTIN_COPY_MATCHER_IDS, normalizeBuiltinMatcherOrder } from "./copyMatcher";
 
 interface SettingsContainer {
 	addSetting(cb: (setting: Setting) => void): void;
 }
+
+const BUILTIN_MATCHER_LABEL_KEYS: Record<BuiltinCopyMatcherId, 'enable-bold' | 'enable-italic' | 'enable-highlight' | 'enable-strikethrough' | 'enable-inline-code' | 'enable-inline-latex' | 'enable-wikilink'> = {
+	'bold': 'enable-bold',
+	'italic': 'enable-italic',
+	'highlight': 'enable-highlight',
+	'strikethrough': 'enable-strikethrough',
+	'inline-code': 'enable-inline-code',
+	'inline-latex': 'enable-inline-latex',
+	'wiki-link': 'enable-wikilink',
+};
 
 function createSettingsGroup(containerEl: HTMLElement, heading?: string): SettingsContainer {
 	// Check if SettingGroup is available (API 1.11.0+)
@@ -345,6 +356,8 @@ export class EasyCopySettingTab extends PluginSettingTab {
 
 		// 只有当自定义复制对象选项开启时才显示具体的复制对象选项
 		if (this.plugin.settings.customizeTargets) {
+			this.plugin.settings.matcherOrder = normalizeBuiltinMatcherOrder(this.plugin.settings.matcherOrder);
+
 			targetGroup.addSetting(setting => setting
 				.setName(this.plugin.t('enable-inline-code'))
 				.setDesc(this.plugin.t('enable-inline-code-desc'))
@@ -424,8 +437,38 @@ export class EasyCopySettingTab extends PluginSettingTab {
                         this.plugin.settings.enableWikiLink = value;
                         void this.plugin.saveSettings();
 						this.display(); // 切换后刷新界面以显示/隐藏下方选项
-                    })));
-            
+					})));
+
+			targetGroup.addSetting(setting => setting
+				.setName(this.plugin.t('matcher-priority'))
+				.setDesc(this.plugin.t('matcher-priority-desc'))
+				.addButton(button => button
+					.setButtonText(this.plugin.t('reset-order'))
+					.onClick(() => {
+						this.plugin.settings.matcherOrder = [...DEFAULT_BUILTIN_COPY_MATCHER_IDS];
+						void this.plugin.saveSettings();
+						this.display();
+					})));
+
+			this.plugin.settings.matcherOrder.forEach((matcherId, index) => {
+				targetGroup.addSetting(setting => setting
+					.setName(this.plugin.t(BUILTIN_MATCHER_LABEL_KEYS[matcherId]))
+					.addButton(button => button
+						.setButtonText('↑')
+						.setTooltip(this.plugin.t('move-up'))
+						.setDisabled(index === 0)
+						.onClick(() => {
+							this.moveMatcher(matcherId, -1);
+						}))
+					.addButton(button => button
+						.setButtonText('↓')
+						.setTooltip(this.plugin.t('move-down'))
+						.setDisabled(index === this.plugin.settings.matcherOrder.length - 1)
+						.onClick(() => {
+							this.moveMatcher(matcherId, 1);
+						})));
+			});
+			
 		}
 
 		targetGroup.addSetting(setting => setting
@@ -513,5 +556,17 @@ export class EasyCopySettingTab extends PluginSettingTab {
 						void this.plugin.saveSettings();
 					})));
 		}
+	}
+
+	private moveMatcher(matcherId: BuiltinCopyMatcherId, direction: -1 | 1): void {
+		const matcherOrder = normalizeBuiltinMatcherOrder(this.plugin.settings.matcherOrder);
+		const currentIndex = matcherOrder.indexOf(matcherId);
+		const nextIndex = currentIndex + direction;
+		if (nextIndex < 0 || nextIndex >= matcherOrder.length) return;
+
+		[matcherOrder[currentIndex], matcherOrder[nextIndex]] = [matcherOrder[nextIndex], matcherOrder[currentIndex]];
+		this.plugin.settings.matcherOrder = matcherOrder;
+		void this.plugin.saveSettings();
+		this.display();
 	}
 }

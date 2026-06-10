@@ -4,7 +4,7 @@ import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkForma
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { detectCodeBlockFromLines } from './codeBlockDetect';
-import { buildBuiltinCopyMatchers } from './copyMatcher';
+import { buildBuiltinCopyMatchers, normalizeBuiltinMatcherOrder } from './copyMatcher';
 import { buildHeadingLink, buildBlockLink, buildFileLink, buildExplicitPasteLink } from './linkBuilder';
 import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
 import { decidePasteResolution, shouldOmitAliasForSameFile, shouldRegisterPasteHandler } from './pasteResolution';
@@ -161,6 +161,7 @@ export default class EasyCopy extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings.matcherOrder = normalizeBuiltinMatcherOrder(this.settings.matcherOrder);
 	}
 
 	async saveSettings() {

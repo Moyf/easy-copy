@@ -34,6 +34,15 @@ export enum ContextType {
     CODEBLOCK = 'code-block', // 光标在代码块内
 }
 
+export type BuiltinCopyMatcherId =
+    | 'bold'
+    | 'italic'
+    | 'highlight'
+    | 'strikethrough'
+    | 'inline-code'
+    | 'inline-latex'
+    | 'wiki-link';
+
 export interface ContextData {
     type: ContextType;
     curLine: string;
@@ -62,6 +71,7 @@ export interface EasyCopySettings {
     enableInlineLatex: boolean;
     enableLink: boolean;
     enableWikiLink: boolean; // 是否启用 Wiki 链接复制
+    matcherOrder: BuiltinCopyMatcherId[]; // 复制对象匹配优先级
     keepWikiBrackets: boolean; // 复制 wiki-link 时保留 [[ ]]
     autoEmbedBlockLink: boolean; // 复制块链接时自动添加 !（嵌入块）
     enableCalloutCopy: boolean; // 是否启用复制 Callout 内文本
@@ -99,6 +109,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableInlineLatex: true,
     enableLink: true,
     enableWikiLink: true,
+    matcherOrder: ['bold', 'italic', 'highlight', 'strikethrough', 'inline-code', 'inline-latex', 'wiki-link'],
     keepWikiBrackets: true,
     autoEmbedBlockLink: false,
     enableCalloutCopy: true,

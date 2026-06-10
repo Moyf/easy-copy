@@ -1,19 +1,37 @@
-import { ContextType, EasyCopySettings } from './type';
+import { BuiltinCopyMatcherId, ContextType, EasyCopySettings } from './type';
 
-export type BuiltinCopyMatcherId =
-	| 'bold'
-	| 'italic'
-	| 'highlight'
-	| 'strikethrough'
-	| 'inline-code'
-	| 'inline-latex'
-	| 'wiki-link';
+export const DEFAULT_BUILTIN_COPY_MATCHER_IDS: BuiltinCopyMatcherId[] = [
+	'bold',
+	'italic',
+	'highlight',
+	'strikethrough',
+	'inline-code',
+	'inline-latex',
+	'wiki-link',
+];
 
 export interface CopyMatcher {
 	id: BuiltinCopyMatcherId;
 	type: ContextType;
 	regex: RegExp;
 	enabled: boolean;
+}
+
+export function normalizeBuiltinMatcherOrder(order: readonly string[] | undefined): BuiltinCopyMatcherId[] {
+	const knownIds = new Set<string>(DEFAULT_BUILTIN_COPY_MATCHER_IDS);
+	const orderedIds: BuiltinCopyMatcherId[] = [];
+
+	for (const id of order ?? []) {
+		if (knownIds.has(id) && !orderedIds.includes(id as BuiltinCopyMatcherId)) {
+			orderedIds.push(id as BuiltinCopyMatcherId);
+		}
+	}
+
+	for (const id of DEFAULT_BUILTIN_COPY_MATCHER_IDS) {
+		if (!orderedIds.includes(id)) orderedIds.push(id);
+	}
+
+	return orderedIds;
 }
 
 export function buildBuiltinCopyMatchers(settings: EasyCopySettings, isIosApp: boolean): CopyMatcher[] {
@@ -25,7 +43,7 @@ export function buildBuiltinCopyMatchers(settings: EasyCopySettings, isIosApp: b
 
 	const boldRegex = /(?:\*\*([^*]+)\*\*|__([^_]+)__)/g;
 
-	return [
+	const matchers: CopyMatcher[] = [
 		{ id: 'bold', type: ContextType.BOLD, regex: boldRegex, enabled: !settings.customizeTargets || settings.enableBold },
 		{ id: 'italic', type: ContextType.ITALIC, regex: italicRegex, enabled: !settings.customizeTargets || settings.enableItalic },
 		{ id: 'highlight', type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g, enabled: !settings.customizeTargets || settings.enableHighlight },
@@ -34,4 +52,7 @@ export function buildBuiltinCopyMatchers(settings: EasyCopySettings, isIosApp: b
 		{ id: 'inline-latex', type: ContextType.INLINELATEX, regex: /\$([^$]+)\$/g, enabled: !settings.customizeTargets || settings.enableInlineLatex },
 		{ id: 'wiki-link', type: ContextType.WIKILINK, regex: /\[\[([^\]]+)\]\]/g, enabled: !settings.customizeTargets || settings.enableWikiLink },
 	];
+
+	const matcherById = new Map(matchers.map(matcher => [matcher.id, matcher]));
+	return normalizeBuiltinMatcherOrder(settings.matcherOrder).map(id => matcherById.get(id)!);
 }
