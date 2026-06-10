@@ -4,6 +4,7 @@ import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkForma
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { detectCodeBlockFromLines } from './codeBlockDetect';
+import { buildBuiltinCopyMatchers } from './copyMatcher';
 import { buildHeadingLink, buildBlockLink, buildFileLink, buildExplicitPasteLink } from './linkBuilder';
 import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
 import { decidePasteResolution, shouldOmitAliasForSameFile, shouldRegisterPasteHandler } from './pasteResolution';
@@ -414,28 +415,11 @@ export default class EasyCopy extends Plugin {
 		const afterCursor = curLine.slice(curCh); // 光标后的内容
 
 
-		// iOS 16.4 之前不支持后视（Lookbehinds），但支持前视（Lookaheads）
-		// 所以针对 iOS 平台使用只带前视的正则表达式，其他平台使用完整版本
-		const italicRegex = Platform.isIosApp ? 
-			/(?:\*([^*]+)\*(?!\*)|_([^_]+)_(?!_))/g :  // iOS 版本：支持 * 和 _ 格式，只使用前视
-			/(?:(?<!\*)\*([^*]+)\*(?!\*)|(?<!_)_([^_]+)_(?!_))/g;  // 其他平台：支持 * 和 _ 格式，使用前视和后视
-		
-		const boldRegex = /(?:\*\*([^*]+)\*\*|__([^_]+)__)/g;  // 粗体：支持 ** 和 __ 格式
-		
 		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID > 双链
-		const matchers = [
-			{ type: ContextType.BOLD, regex: boldRegex , enable: !this.settings.customizeTargets || this.settings.enableBold},
-			// 使用前后断言确保不被包裹在更长的语法中，同时支持 * 和 _ 两种格式
-			{ type: ContextType.ITALIC, regex: italicRegex , enable: !this.settings.customizeTargets || this.settings.enableItalic},
-			{ type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g , enable: !this.settings.customizeTargets || this.settings.enableHighlight},
-			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: !this.settings.customizeTargets || this.settings.enableStrikethrough},
-			{ type: ContextType.INLINECODE, regex: /`([^`]+)`/g , enable: !this.settings.customizeTargets || this.settings.enableInlineCode},
-			{ type: ContextType.INLINELATEX, regex: /\$([^$]+)\$/g , enable: !this.settings.customizeTargets || this.settings.enableInlineLatex},
-			{ type: ContextType.WIKILINK, regex: /\[\[([^\]]+)\]\]/g, enable: !this.settings.customizeTargets || this.settings.enableWikiLink },
-		];
+		const matchers = buildBuiltinCopyMatchers(this.settings, Platform.isIosApp);
 	
 		for (const matcher of matchers) {
-			if (!matcher.enable) continue; // 如果当前类型未启用，则跳过
+			if (!matcher.enabled) continue; // 如果当前类型未启用，则跳过
 			const matchInfo = this.getMatchInfo(beforeCursor, afterCursor, matcher.regex);
 			if (matchInfo) {
 				return {
