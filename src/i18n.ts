@@ -57,6 +57,8 @@ export type TranslationKey =
 	| 'custom-matcher-pattern' | 'custom-matcher-pattern-desc'
 	| 'custom-matcher-flags' | 'custom-matcher-flags-desc'
 	| 'custom-matcher-capture-group' | 'custom-matcher-capture-group-desc'
+	| 'custom-matcher-default-name' | 'custom-matcher-default-note'
+	| 'custom-matcher-pattern-tooltip' | 'custom-matcher-ai-prompt' | 'custom-matcher-ai-prompt-copied'
 	| 'configure-custom-matcher' | 'drag-copy-target' | 'invalid-regex';
 
 // 本地化翻译字典
@@ -97,6 +99,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'custom-prefix': '(Custom) ',
 		'custom-matcher': 'Custom matcher',
 		'custom-matcher-copied': ' copied!',
+		'custom-matcher-ai-prompt-copied': 'AI prompt copied!',
 		'note-link-simplified': 'Link simplified (filename matches heading)',
 		
 		// 设置界面
@@ -202,6 +205,12 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'custom-matcher-flags-desc': 'Regular expression flags, such as g or i. The g flag is added automatically when matching.',
 		'custom-matcher-capture-group': 'Capture group',
 		'custom-matcher-capture-group-desc': 'Capture group index to copy. Use 1 to copy the first parenthesized group; use 0 to copy the full match.',
+		'custom-matcher-default-name': 'Double quotes',
+		'custom-matcher-default-note': 'Copy text inside Chinese or English double quotes.',
+		'custom-matcher-pattern-tooltip': 'The plugin searches the current line for a capture group matched by the regular expression and copies it. If you do not know what this is, click the icon to copy a prompt and ask AI to generate one for you.',
+		'custom-matcher-ai-prompt': `I need a regular expression for matching specific content.
+For example, [“"]([^"]+)["”] matches content inside Chinese or English double quotes and captures only the first group.
+I want to extract:`,
 		'configure-custom-matcher': 'Configure',
 		'drag-copy-target': 'Drag to reorder',
 		'invalid-regex': 'Invalid regular expression; changes were not saved.',
@@ -241,6 +250,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'custom-prefix': '（自定义）',
 		'custom-matcher': '自定义规则',
 		'custom-matcher-copied': '已复制！',
+		'custom-matcher-ai-prompt-copied': 'AI 提示词已复制！',
 		'note-link-simplified': '链接已简化（文件名与标题相匹配）',
 		
 		// 设置界面
@@ -345,6 +355,12 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'custom-matcher-flags-desc': '正则表达式标志，例如 g 或 i。匹配时会自动添加 g 标志。',
 		'custom-matcher-capture-group': '捕获组',
 		'custom-matcher-capture-group-desc': '要复制的捕获组序号。1 表示第一个括号捕获组，0 表示完整匹配内容。',
+		'custom-matcher-default-name': '双引号',
+		'custom-matcher-default-note': '复制中文或英文双引号内的文本。',
+		'custom-matcher-pattern-tooltip': '插件会在当前行查找正则表达式匹配的捕获组并进行复制。如果你不了解这是什么，可以点击图标复制提示词，让 AI 帮你生成。',
+		'custom-matcher-ai-prompt': `我需要一个正则表达式，用于匹配特定的内容。
+例如，[“"]([^"]+)["”] 代表匹配中英文双引号内的内容，仅捕获第一个组。
+我希望提取的是：`,
 		'configure-custom-matcher': '配置',
 		'drag-copy-target': '拖动排序',
 		'invalid-regex': '无效的正则表达式，修改未保存。',
@@ -393,6 +409,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'custom-prefix': '（自定義）',
 		'custom-matcher': '自定義規則',
 		'custom-matcher-copied': '已複製！',
+		'custom-matcher-ai-prompt-copied': 'AI 提示詞已複製！',
 		'note-link-simplified': '連結已簡化（檔案名與標題相匹配）',
 		
 		// 設置界面
@@ -489,6 +506,12 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'custom-matcher-flags-desc': '正則表示式標誌，例如 g 或 i。匹配時會自動添加 g 標誌。',
 		'custom-matcher-capture-group': '捕獲組',
 		'custom-matcher-capture-group-desc': '要複製的捕獲組序號。1 表示第一個括號捕獲組，0 表示完整匹配內容。',
+		'custom-matcher-default-name': '雙引號',
+		'custom-matcher-default-note': '複製中文或英文雙引號內的文字。',
+		'custom-matcher-pattern-tooltip': '外掛會在目前行查找正則表示式匹配的捕獲組並進行複製。如果你不了解這是什麼，可以點擊圖示複製提示詞，讓 AI 幫你生成。',
+		'custom-matcher-ai-prompt': `我需要一個正則表示式，用於匹配特定的內容。
+例如，[“"]([^"]+)["”] 代表匹配中英文雙引號內的內容，僅捕獲第一個組。
+我希望提取的是：`,
 		'configure-custom-matcher': '配置',
 		'drag-copy-target': '拖動排序',
 		'invalid-regex': '無效的正則表示式，修改未保存。',

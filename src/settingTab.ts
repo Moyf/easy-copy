@@ -1,10 +1,12 @@
 import { 
 	App, 
+	Notice,
 	PluginSettingTab, 
 	Setting,
 	requireApiVersion,
 	setIcon,
 } from "obsidian";
+import { TranslationKey } from "./i18n";
 import * as ObsidianModule from "obsidian";
 import EasyCopy from "./main";
 import { BuiltinCopyMatcherId, CustomCopyMatcherSetting, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from "./type";
@@ -51,13 +53,13 @@ const BUILTIN_MATCHER_SETTING_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherS
 	'wiki-link': 'enableWikiLink',
 };
 
-function createCustomMatcher(): CustomCopyMatcherSetting {
+function createCustomMatcher(t: (key: TranslationKey) => string): CustomCopyMatcherSetting {
 	const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 	return {
 		id,
-		name: 'Double quotes',
-		note: 'Copy text inside double quotes.',
-		pattern: '"([^"]+)"',
+		name: t('custom-matcher-default-name'),
+		note: t('custom-matcher-default-note'),
+		pattern: '[“"]([^"]+)["”]',
 		flags: 'g',
 		captureGroup: 1,
 		enabled: true,
@@ -126,7 +128,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 
 	private getMatcherName(matcherId: string): string | null {
 		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
-		if (customMatcher) return customMatcher.name || this.plugin.t('custom-matcher');
+		if (customMatcher) return customMatcher.name || this.plugin.t('custom-matcher-default-name');
 
 		const builtinKey = BUILTIN_MATCHER_LABEL_KEYS[matcherId as BuiltinCopyMatcherId];
 		return builtinKey ? this.plugin.t(builtinKey) : null;
@@ -651,7 +653,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				.setButtonText(this.plugin.t('add-custom-matcher'))
 				.onClick(() => {
 					if (!listContainerEl) return;
-					const customMatcher = createCustomMatcher();
+					const customMatcher = createCustomMatcher(key => this.plugin.t(key));
 					this.plugin.settings.customMatchers.push(customMatcher);
 				this.plugin.settings.matcherOrder = normalizeMatcherOrder([...this.plugin.settings.matcherOrder, getCustomMatcherOrderId(customMatcher)], this.plugin.settings.customMatchers);
 				void this.plugin.saveSettings();
@@ -757,10 +759,10 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				this.enableConfigInputTabNavigation(text.inputEl);
 				text.setValue(customMatcher.name)
 					.onChange(value => {
-					customMatcher.name = value;
-					this.updateMatcherRowText(getCustomMatcherOrderId(customMatcher), value || this.plugin.t('custom-matcher'), customMatcher.note ?? '');
-					void this.plugin.saveSettings();
-				});
+						customMatcher.name = value;
+						this.updateMatcherRowText(getCustomMatcherOrderId(customMatcher), value || this.plugin.t('custom-matcher-default-name'), customMatcher.note ?? '');
+						void this.plugin.saveSettings();
+					});
 			});
 
 		new Setting(containerEl)
@@ -770,15 +772,29 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				this.enableConfigInputTabNavigation(text.inputEl);
 				text.setValue(customMatcher.note ?? '')
 					.onChange(value => {
-					customMatcher.note = value;
-					this.updateMatcherRowText(getCustomMatcherOrderId(customMatcher), customMatcher.name || this.plugin.t('custom-matcher'), value);
-					void this.plugin.saveSettings();
-				});
+						customMatcher.note = value;
+						this.updateMatcherRowText(getCustomMatcherOrderId(customMatcher), customMatcher.name || this.plugin.t('custom-matcher-default-name'), value);
+						void this.plugin.saveSettings();
+					});
 			});
+
+		const patternDesc = activeDocument.createDocumentFragment();
+		patternDesc.append(this.plugin.t('custom-matcher-pattern-desc') + ' ');
+		const patternInfoIcon = patternDesc.createEl('span', {
+			attr: {
+				'aria-label': this.plugin.t('custom-matcher-pattern-tooltip'),
+				'class': 'setting-editor-extra-setting-button',
+			},
+		});
+		setIcon(patternInfoIcon, 'info');
+		patternInfoIcon.addEventListener('click', async () => {
+			await navigator.clipboard.writeText(this.plugin.t('custom-matcher-ai-prompt'));
+			new Notice(this.plugin.t('custom-matcher-ai-prompt-copied'));
+		});
 
 		const patternSetting = new Setting(containerEl)
 			.setName(this.plugin.t('custom-matcher-pattern'))
-			.setDesc(this.plugin.t('custom-matcher-pattern-desc'));
+			.setDesc(patternDesc);
 		const regexErrorEl = patternSetting.infoEl.createDiv({ cls: 'easy-copy-regex-error' });
 		const updateRegexError = (value: string) => {
 			regexErrorEl.setText(value);
@@ -787,7 +803,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 
 		patternSetting.addText(text => {
 			this.enableConfigInputTabNavigation(text.inputEl);
-			text.setPlaceholder('"([^"]+)"')
+			text.setPlaceholder('[“"]([^"]+)["”]')
 				.setValue(customMatcher.pattern)
 				.onChange(value => {
 					if (!this.isRegexValid(value, customMatcher.flags)) {
