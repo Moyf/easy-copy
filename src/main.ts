@@ -328,10 +328,19 @@ export default class EasyCopy extends Plugin {
 	}
 
 	/**
-	 * 取出光标所在 block 的完整文本：向上走到 block 的第一行（列表项的
-	 * `- ` 行或段落开头），向下延伸到所有软换行的后续行；每行去掉行尾的
+	 * 列表项的起始行（`- ` / `* ` / `+ ` / `1. ` / `1) `），即一个新 block 的开头。
+	 * 入参应已 trim。
+	 */
+	private isListItemStart(trimmedLine: string): boolean {
+		return /^(?:[-*+]|\d+[.)])\s/.test(trimmedLine);
+	}
+
+	/**
+	 * 取出光标所在 block 的完整文本：向上走到 block 的第一行（列表项行
+	 * 或段落开头），向下延伸到所有软换行的后续行；每行去掉行尾的
 	 * 块 ID 后用换行拼接。显示文本由 extractBlockDisplayText 合并为一行
 	 * （换行 → 空格），这样多行块的链接别名不再被截断成单独一行。
+	 * 每个列表项（含有序列表）都是独立的 block，所以列表项行是边界。
 	 * 表格/代码块/数学块等非纯文本块返回空字符串——调用方会回退到
 	 * 块 ID 作为显示文本（与旧版对这类块的兜底行为一致）。
 	 */
@@ -339,7 +348,7 @@ export default class EasyCopy extends Plugin {
 		let start = cursorLine;
 		while (start > 0) {
 			const line = editor.getLine(start).trim();
-			if (line === '' || line.startsWith('- ') || line.startsWith('#')) {
+			if (line === '' || this.isListItemStart(line) || line.startsWith('#')) {
 				break; // 本行自己就是 block 的开头
 			}
 			const prev = editor.getLine(start - 1).trim();
@@ -349,7 +358,11 @@ export default class EasyCopy extends Plugin {
 			start--;
 		}
 		let end = start;
-		while (end < editor.lineCount() - 1 && this.isContinuousText(editor.getLine(end + 1))) {
+		while (
+			end < editor.lineCount() - 1 &&
+			this.isContinuousText(editor.getLine(end + 1)) &&
+			!this.isListItemStart(editor.getLine(end + 1).trim())
+		) {
 			end++;
 		}
 		const lines: string[] = [];
