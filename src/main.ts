@@ -368,7 +368,10 @@ export default class EasyCopy extends Plugin {
 			start--;
 		}
 		let end = start;
+		// 标题自成一个（单行）block，不向下延伸
+		const startIsHeading = editor.getLine(start).trim().startsWith('#');
 		while (
+			!startIsHeading &&
 			end < editor.lineCount() - 1 &&
 			this.isContinuousText(editor.getLine(end + 1)) &&
 			!this.isListItemStart(editor.getLine(end + 1).trim())
