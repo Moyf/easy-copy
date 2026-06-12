@@ -790,6 +790,13 @@ describe('extractBlockDisplayText', () => {
 			const result = extractBlockDisplayText('value is 2^10 here', 'fallback', 99, 99);
 			expect(result).toBe('value is 2^10 here');
 		});
+
+		it('strips pipes that would break the wiki link alias', () => {
+			const result = extractBlockDisplayText('| col1 | col2 |', 'fallback', 99, 99);
+			expect(result).not.toContain('|');
+			expect(result).toContain('col1');
+			expect(result).toContain('col2');
+		});
 	});
 
 	describe('English text', () => {

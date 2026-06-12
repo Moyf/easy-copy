@@ -332,6 +332,8 @@ export default class EasyCopy extends Plugin {
 	 * `- ` 行或段落开头），向下延伸到所有软换行的后续行；每行去掉行尾的
 	 * 块 ID 后用换行拼接。显示文本由 extractBlockDisplayText 合并为一行
 	 * （换行 → 空格），这样多行块的链接别名不再被截断成单独一行。
+	 * 表格/代码块/数学块等非纯文本块返回空字符串——调用方会回退到
+	 * 块 ID 作为显示文本（与旧版对这类块的兜底行为一致）。
 	 */
 	private getBlockText(editor: Editor, cursorLine: number): string {
 		let start = cursorLine;
@@ -352,7 +354,12 @@ export default class EasyCopy extends Plugin {
 		}
 		const lines: string[] = [];
 		for (let i = start; i <= end; i++) {
-			lines.push(editor.getLine(i).replace(/\s*\^[a-zA-Z0-9_-]+\s*$/, ''));
+			const line = editor.getLine(i);
+			const trimmed = line.trim();
+			if (trimmed.startsWith('|') || trimmed.startsWith('```') || trimmed.startsWith('$$')) {
+				return '';
+			}
+			lines.push(line.replace(/\s*\^[a-zA-Z0-9_-]+\s*$/, ''));
 		}
 		return lines.join('\n');
 	}
@@ -630,8 +637,12 @@ export default class EasyCopy extends Plugin {
 
 		switch (contextType.type) {
 			case ContextType.BLOCKID:
-				// 传整个 block 的文本（而不是单独一行），多行块的别名才完整
-				this.copyBlockLink(contextType.match!, filename, true, this.getBlockText(editor, editor.getCursor().line));
+				// 显示文本来源：设置开启时取整个 block 的文本（多行块的别名才完整），
+				// 否则保持旧行为，仅用检测到块 ID 的那一行
+				this.copyBlockLink(contextType.match!, filename, true,
+					this.settings.blockDisplayFullBlock
+						? this.getBlockText(editor, editor.getCursor().line)
+						: contextType.curLine);
 				return;
 			case ContextType.BOLD:
 				void navigator.clipboard.writeText(contextType.match!);
@@ -895,9 +906,12 @@ export default class EasyCopy extends Plugin {
 
 		// —— 新逻辑：定位 block（段落）末尾 ——
 		const cursor = editor.getCursor();
-		const { end } = this.detectBlockRange(editor, cursor.line);
-		// 在插入块 ID 之前取整个 block 的文本作为显示文本（多行 → 一行）
-		const blockText = this.getBlockText(editor, cursor.line);
+		const { start, end } = this.detectBlockRange(editor, cursor.line);
+		// 在插入块 ID 之前取显示文本来源：设置开启时取整个 block 的文本
+		// （多行 → 一行），否则保持旧行为，仅用 block 的第一行
+		const blockText = this.settings.blockDisplayFullBlock
+			? this.getBlockText(editor, cursor.line)
+			: editor.getLine(start);
 		const lastLine = editor.getLine(end);
 
 		// 检查 block 最后一行末是否已有块ID

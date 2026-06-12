@@ -198,7 +198,8 @@ export function extractBlockDisplayText(
 			.replace(/^- /, ''))
 		.filter((line) => line.length > 0)
 		.join(' ');
-	text = text.replace(/=|\*|\[|\]|\(|\)|`|>\s+/g, '');
+	// | 会截断 wiki 链接的别名（也可能撑破表格），所以和其他语法字符一起去掉
+	text = text.replace(/=|\*|\[|\]|\(|\)|`|\||>\s+/g, '');
 
 	if (!text) return blockId;
 
