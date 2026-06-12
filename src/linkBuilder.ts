@@ -192,7 +192,8 @@ export function extractBlockDisplayText(
 	let text = blockText
 		.split('\n')
 		.map((line) => line
-			.replace(/\s*\^[a-zA-Z0-9_-]+\s*$/, '')
+			// 块 ID 前必须有空白（或独占一行）才是真正的 ID——行尾的 2^10 这类不算
+			.replace(/(?:^|\s+)\^[a-zA-Z0-9_-]+\s*$/, '')
 			.trim()
 			.replace(/^- \[.\]\s+/, '')
 			.replace(/^- /, ''))

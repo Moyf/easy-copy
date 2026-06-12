@@ -791,6 +791,11 @@ describe('extractBlockDisplayText', () => {
 			expect(result).toBe('value is 2^10 here');
 		});
 
+		it('keeps an end-of-line caret expression intact (block ids need a separator)', () => {
+			const result = extractBlockDisplayText('first line ^abc123\n  the result is 2^10', 'fallback', 99, 99);
+			expect(result).toBe('first line the result is 2^10');
+		});
+
 		it('strips pipes that would break the wiki link alias', () => {
 			const result = extractBlockDisplayText('| col1 | col2 |', 'fallback', 99, 99);
 			expect(result).not.toContain('|');

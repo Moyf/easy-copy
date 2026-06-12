@@ -345,6 +345,16 @@ export default class EasyCopy extends Plugin {
 	 * 块 ID 作为显示文本（与旧版对这类块的兜底行为一致）。
 	 */
 	private getBlockText(editor: Editor, cursorLine: number): string {
+		// 独立成行的块 ID（与内容隔一个空行）属于上面那个 block——
+		// 先跳回上面的 block 再展开，别名才能取到真正的块内容
+		if (
+			cursorLine >= 2 &&
+			/^\^[a-zA-Z0-9_-]+$/.test(editor.getLine(cursorLine).trim()) &&
+			editor.getLine(cursorLine - 1).trim() === '' &&
+			editor.getLine(cursorLine - 2).trim() !== ''
+		) {
+			cursorLine -= 2;
+		}
 		let start = cursorLine;
 		while (start > 0) {
 			const line = editor.getLine(start).trim();
@@ -372,7 +382,9 @@ export default class EasyCopy extends Plugin {
 			if (trimmed.startsWith('|') || trimmed.startsWith('```') || trimmed.startsWith('$$')) {
 				return '';
 			}
-			lines.push(line.replace(/\s*\^[a-zA-Z0-9_-]+\s*$/, ''));
+			// 块 ID 前必须有空白（或独占一行）才是真正的 ID——
+			// 行尾的 2^10 这类插入语不能被当作块 ID 去掉
+			lines.push(line.replace(/(?:^|\s+)\^[a-zA-Z0-9_-]+\s*$/, ''));
 		}
 		return lines.join('\n');
 	}
