@@ -11,7 +11,7 @@ describe('buildBlockCopyMetadata', () => {
 		sourceFilePath: 'notes/note.md',
 		blockId: 'abc123',
 		useBrief: false,
-		firstLine: '',
+		blockText: '',
 		autoBlockDisplayText: true,
 		autoEmbedBlockLink: false,
 		blockDisplayWordLimit: 5,
@@ -34,11 +34,11 @@ describe('buildBlockCopyMetadata', () => {
 		expect(meta.alias).toBe('abc123');
 	});
 
-	it('uses extracted display text when useBrief + firstLine are set', () => {
+	it('uses extracted display text when useBrief + blockText are set', () => {
 		const meta = buildBlockCopyMetadata({
 			...base,
 			useBrief: true,
-			firstLine: 'The quick brown fox jumps over the lazy dog',
+			blockText: 'The quick brown fox jumps over the lazy dog',
 			blockDisplayWordLimit: 4,
 		});
 		// extractBlockDisplayText 会截断到单词数上限
@@ -46,8 +46,8 @@ describe('buildBlockCopyMetadata', () => {
 		expect(meta.alias.length).toBeGreaterThan(0);
 	});
 
-	it('keeps blockId alias when useBrief is true but firstLine is empty', () => {
-		const meta = buildBlockCopyMetadata({ ...base, useBrief: true, firstLine: '' });
+	it('keeps blockId alias when useBrief is true but blockText is empty', () => {
+		const meta = buildBlockCopyMetadata({ ...base, useBrief: true, blockText: '' });
 		expect(meta.alias).toBe('abc123');
 	});
 
@@ -60,7 +60,7 @@ describe('buildBlockCopyMetadata', () => {
 		const meta = buildBlockCopyMetadata({
 			...base,
 			useBrief: true,
-			firstLine: 'Some long first line of content here',
+			blockText: 'Some long first line of content here',
 			autoBlockDisplayText: false,
 		});
 		expect(meta.alias).toBe('');

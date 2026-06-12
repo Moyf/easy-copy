@@ -181,15 +181,24 @@ export function buildHeadingLink(options: BuildHeadingLinkOptions): BuildHeading
 // --- 块显示文本 ---
 
 export function extractBlockDisplayText(
-	firstLine: string,
+	blockText: string,
 	blockId: string,
 	wordLimit: number,
 	charLimit: number,
 ): string {
-	let text = firstLine;
-	// 先去掉结尾的 ^ 及其后面的内容（如果有的话）
-	text = text.replace(/\^.*\s*$/, '');
-	text = text.trim().replace(/- \[.\]\s+/, '').replace('- ', '').replace(/=|\*|\[|\]|\(|\)|`|>\s+/g, '');
+	// 逐行清理：去掉行尾的块 ID 和列表/任务前缀，再把多行块合并为一行。
+	// 软换行的多行内容属于同一个 block（块 ID 在最后一行末尾），
+	// 所以显示文本要包含整个块，换行替换为空格。
+	let text = blockText
+		.split('\n')
+		.map((line) => line
+			.replace(/\s*\^[a-zA-Z0-9_-]+\s*$/, '')
+			.trim()
+			.replace(/^- \[.\]\s+/, '')
+			.replace(/^- /, ''))
+		.filter((line) => line.length > 0)
+		.join(' ');
+	text = text.replace(/=|\*|\[|\]|\(|\)|`|>\s+/g, '');
 
 	if (!text) return blockId;
 
@@ -227,7 +236,8 @@ export interface BuildBlockLinkOptions {
 	blockId: string;
 	filename: string;
 	useBrief: boolean;
-	firstLine: string;
+	/** 块的完整文本（可多行，行尾块 ID 会被清理） */
+	blockText: string;
 	linkFormat: LinkFormat;
 	autoBlockDisplayText: boolean;
 	autoEmbedBlockLink: boolean;
@@ -237,14 +247,14 @@ export interface BuildBlockLinkOptions {
 
 export function buildBlockLink(options: BuildBlockLinkOptions): string {
 	const {
-		blockId, filename, useBrief, firstLine,
+		blockId, filename, useBrief, blockText,
 		linkFormat, autoBlockDisplayText, autoEmbedBlockLink,
 		blockDisplayWordLimit, blockDisplayCharLimit,
 	} = options;
 
 	let displayText = blockId;
-	if (useBrief && firstLine) {
-		displayText = extractBlockDisplayText(firstLine, blockId, blockDisplayWordLimit, blockDisplayCharLimit);
+	if (useBrief && blockText) {
+		displayText = extractBlockDisplayText(blockText, blockId, blockDisplayWordLimit, blockDisplayCharLimit);
 	}
 
 	let link: string;

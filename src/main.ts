@@ -327,6 +327,36 @@ export default class EasyCopy extends Plugin {
 		return { start, end };
 	}
 
+	/**
+	 * 取出光标所在 block 的完整文本：向上走到 block 的第一行（列表项的
+	 * `- ` 行或段落开头），向下延伸到所有软换行的后续行；每行去掉行尾的
+	 * 块 ID 后用换行拼接。显示文本由 extractBlockDisplayText 合并为一行
+	 * （换行 → 空格），这样多行块的链接别名不再被截断成单独一行。
+	 */
+	private getBlockText(editor: Editor, cursorLine: number): string {
+		let start = cursorLine;
+		while (start > 0) {
+			const line = editor.getLine(start).trim();
+			if (line === '' || line.startsWith('- ') || line.startsWith('#')) {
+				break; // 本行自己就是 block 的开头
+			}
+			const prev = editor.getLine(start - 1).trim();
+			if (prev === '' || prev.startsWith('#')) {
+				break; // 上一行是空行或标题：本行是段落开头
+			}
+			start--;
+		}
+		let end = start;
+		while (end < editor.lineCount() - 1 && this.isContinuousText(editor.getLine(end + 1))) {
+			end++;
+		}
+		const lines: string[] = [];
+		for (let i = start; i <= end; i++) {
+			lines.push(editor.getLine(i).replace(/\s*\^[a-zA-Z0-9_-]+\s*$/, ''));
+		}
+		return lines.join('\n');
+	}
+
 	/*
 	 * 从给定的块里查找 Block ID（最多延伸至下一个空行+下第二行）
 	*/
@@ -600,7 +630,8 @@ export default class EasyCopy extends Plugin {
 
 		switch (contextType.type) {
 			case ContextType.BLOCKID:
-				this.copyBlockLink(contextType.match!, filename, true, contextType.curLine);
+				// 传整个 block 的文本（而不是单独一行），多行块的别名才完整
+				this.copyBlockLink(contextType.match!, filename, true, this.getBlockText(editor, editor.getCursor().line));
 				return;
 			case ContextType.BOLD:
 				void navigator.clipboard.writeText(contextType.match!);
@@ -697,12 +728,12 @@ export default class EasyCopy extends Plugin {
 	/**
 	 * 复制块链接
 	 */
-	private copyBlockLink(content: string, filename: string, useBrief: boolean, firstLine=''): void {
+	private copyBlockLink(content: string, filename: string, useBrief: boolean, blockText=''): void {
 		const blockIdLink = buildBlockLink({
 			blockId: content,
 			filename,
 			useBrief,
-			firstLine,
+			blockText,
 			linkFormat: this.getEffectiveLinkFormat(),
 			autoBlockDisplayText: this.settings.autoBlockDisplayText,
 			autoEmbedBlockLink: this.settings.autoEmbedBlockLink,
@@ -720,7 +751,7 @@ export default class EasyCopy extends Plugin {
 				sourceFilePath: blockFile.path,
 				blockId: content,
 				useBrief,
-				firstLine,
+				blockText,
 				autoBlockDisplayText: this.settings.autoBlockDisplayText,
 				autoEmbedBlockLink: this.settings.autoEmbedBlockLink,
 				blockDisplayWordLimit: this.settings.blockDisplayWordLimit,
@@ -864,8 +895,9 @@ export default class EasyCopy extends Plugin {
 
 		// —— 新逻辑：定位 block（段落）末尾 ——
 		const cursor = editor.getCursor();
-		const { start, end } = this.detectBlockRange(editor, cursor.line);
-		const firstLine = editor.getLine(start);
+		const { end } = this.detectBlockRange(editor, cursor.line);
+		// 在插入块 ID 之前取整个 block 的文本作为显示文本（多行 → 一行）
+		const blockText = this.getBlockText(editor, cursor.line);
 		const lastLine = editor.getLine(end);
 
 		// 检查 block 最后一行末是否已有块ID
@@ -904,7 +936,7 @@ export default class EasyCopy extends Plugin {
 			const useBrief = !isManual;
 
 			// （生成之后）复制块ID链接
-			this.copyBlockLink(blockId, filename, useBrief, firstLine);
+			this.copyBlockLink(blockId, filename, useBrief, blockText);
 		}
 	}
 

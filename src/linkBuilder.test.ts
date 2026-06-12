@@ -765,6 +765,33 @@ describe('extractBlockDisplayText', () => {
 		});
 	});
 
+	describe('multi-line blocks', () => {
+		it('joins soft-wrapped continuation lines with spaces', () => {
+			const result = extractBlockDisplayText('- Evolutionary values\n  zeroth existence', 'fallback', 99, 99);
+			expect(result).toBe('Evolutionary values zeroth existence');
+		});
+
+		it('strips a trailing block id from any line of the block', () => {
+			const result = extractBlockDisplayText('- first part ^abc123\n  second part ^def-456', 'fallback', 99, 99);
+			expect(result).toBe('first part second part');
+		});
+
+		it('drops blank lines when joining', () => {
+			const result = extractBlockDisplayText('first paragraph\n\n  second paragraph', 'fallback', 99, 99);
+			expect(result).toBe('first paragraph second paragraph');
+		});
+
+		it('still applies the word limit to the joined text', () => {
+			const result = extractBlockDisplayText('one two\n  three four five', 'fallback', 3, 5);
+			expect(result).toBe('one two three');
+		});
+
+		it('keeps a mid-line caret intact', () => {
+			const result = extractBlockDisplayText('value is 2^10 here', 'fallback', 99, 99);
+			expect(result).toBe('value is 2^10 here');
+		});
+	});
+
 	describe('English text', () => {
 		it('extracts first 3 words by default', () => {
 			const result = extractBlockDisplayText('The quick brown fox jumps', 'fallback', 3, 5);
@@ -892,7 +919,7 @@ describe('buildBlockLink', () => {
 	const defaults = {
 		filename: 'MyNote',
 		useBrief: true,
-		firstLine: 'The quick brown fox',
+		blockText: 'The quick brown fox',
 		linkFormat: LinkFormat.WIKILINK,
 		autoBlockDisplayText: true,
 		autoEmbedBlockLink: false,
@@ -957,11 +984,11 @@ describe('buildBlockLink', () => {
 		});
 	});
 
-	it('uses blockId as display when firstLine is empty', () => {
+	it('uses blockId as display when blockText is empty', () => {
 		const result = buildBlockLink({
 			...defaults,
 			blockId: 'abc123',
-			firstLine: '',
+			blockText: '',
 		});
 		expect(result).toBe('[[MyNote#^abc123|abc123]]');
 	});
