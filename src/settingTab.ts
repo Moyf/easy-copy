@@ -304,6 +304,17 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		// 新增：块显示文本限制设置，仅在启用 autoBlockDisplayText 时显示
 		if (this.plugin.settings.autoBlockDisplayText) {
 			blockIdGroup.addSetting(setting => setting
+				.setName(this.plugin.t('block-display-full-block'))
+				.setDesc(this.plugin.t('block-display-full-block-desc'))
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.blockDisplayFullBlock)
+					.onChange( value => {
+						this.plugin.settings.blockDisplayFullBlock = value;
+						void this.plugin.saveSettings();
+					})
+				));
+
+			blockIdGroup.addSetting(setting => setting
 				.setName(this.plugin.t('block-display-word-limit'))
 				.setDesc(this.plugin.t('block-display-word-limit-desc'))
 				.addText(text => text
