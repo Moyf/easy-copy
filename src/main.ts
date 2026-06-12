@@ -384,6 +384,7 @@ export default class EasyCopy extends Plugin {
 		const cursor = editor.getCursor();
 		const { end } = this.detectBlockRange(editor, cursor.line);
 		let lastLine = editor.getLine(end);
+		let lastLineNo = end;
 
 		// 检查下两行是否为单独的块ID行
 		if (end <= editor.lineCount() - 2) {
@@ -393,6 +394,7 @@ export default class EasyCopy extends Plugin {
 				// 判断该行是否为合法的 block ID 行：前面可有空格，必须以 ^ 开头，后面只能是 block id，不允许有其他字符或空格
 				if (/^\s*\^[a-zA-Z0-9_-]+$/.test(possibleBlockIdLine)) {
 					lastLine = possibleBlockIdLine;
+					lastLineNo = end + 2;
 				}
 			}
 		}
@@ -403,6 +405,7 @@ export default class EasyCopy extends Plugin {
 			return {
 				type: ContextType.BLOCKID,
 				curLine: lastLine,
+				line: lastLineNo,
 				match: match[1],
 				range: [lastLine.lastIndexOf('^'), lastLine.length]
 			};
@@ -651,10 +654,12 @@ export default class EasyCopy extends Plugin {
 		switch (contextType.type) {
 			case ContextType.BLOCKID:
 				// 显示文本来源：设置开启时取整个 block 的文本（多行块的别名才完整），
-				// 否则保持旧行为，仅用检测到块 ID 的那一行
+				// 否则保持旧行为，仅用检测到块 ID 的那一行。
+				// 从块 ID 实际所在的行（而不是光标行）展开，确保别名和链接
+				// 指向同一个 block——检测范围可能跨越列表项。
 				this.copyBlockLink(contextType.match!, filename, true,
 					this.settings.blockDisplayFullBlock
-						? this.getBlockText(editor, editor.getCursor().line)
+						? this.getBlockText(editor, contextType.line ?? editor.getCursor().line)
 						: contextType.curLine);
 				return;
 			case ContextType.BOLD:
@@ -921,9 +926,11 @@ export default class EasyCopy extends Plugin {
 		const cursor = editor.getCursor();
 		const { start, end } = this.detectBlockRange(editor, cursor.line);
 		// 在插入块 ID 之前取显示文本来源：设置开启时取整个 block 的文本
-		// （多行 → 一行），否则保持旧行为，仅用 block 的第一行
+		// （多行 → 一行），否则保持旧行为，仅用 block 的第一行。
+		// 从将要插入块 ID 的行（end）展开，确保别名和链接指向同一个
+		// block——检测范围可能跨越列表项。
 		const blockText = this.settings.blockDisplayFullBlock
-			? this.getBlockText(editor, cursor.line)
+			? this.getBlockText(editor, end)
 			: editor.getLine(start);
 		const lastLine = editor.getLine(end);
 

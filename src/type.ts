@@ -37,6 +37,7 @@ export enum ContextType {
 export interface ContextData {
     type: ContextType;
     curLine: string;
+    line?: number; // curLine 所在的行号（目前仅 BLOCKID 上下文会设置）
     match: string | null;
     range: [number, number] | null;
 }
