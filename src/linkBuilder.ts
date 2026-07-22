@@ -189,30 +189,30 @@ export function extractBlockDisplayText(
 	let text = firstLine;
 	// 先去掉结尾的 ^ 及其后面的内容（如果有的话）
 	text = text.replace(/\^.*\s*$/, '');
-	text = text.trim().replace(/- \[.\]\s+/, '').replace('- ', '').replace(/=|\*|\[|\]|\(|\)|`|>\s+/g, '');
+	text = text.trim().replace(/- \[.\]\s+/, '').replace('- ', '').replace(/=|\*|\[|\]|\(|\)|`|>\s+/g, '').normalize('NFC');
 
 	if (!text) return blockId;
 
-	// 判断是否是纯英文，如果是纯英文（以及英文常用标点符号），提取前几个单词；否则，按下面的逻辑处理
-	// 根据 ASCII 来判断"英文"
-	const isEnglish = /^[a-zA-Z\s,.!?"()[\]_^-~:;0-9]*$/.test(text);
+	// CJK 文本通常不依赖空格分词；其余文字默认按空白分隔的单词截取。
+	const usesCharacterLimit = /[\p{Script_Extensions=Han}\p{Script_Extensions=Hiragana}\p{Script_Extensions=Katakana}\p{Script_Extensions=Hangul}]/u.test(text);
 
-	if (isEnglish) {
+	if (!usesCharacterLimit) {
 		const limit = wordLimit || 3;
-		return text.trim().split(' ').slice(0, limit).join(' ');
+		return text.trim().split(/\s+/u).slice(0, limit).join(' ');
 	}
 
-	// CJK / 非英文语言
 	const limit = charLimit || 5;
+	const characters = Array.from(text);
 
-	if (text.length > limit) {
+	if (characters.length > limit) {
 		const separated = text.trim().match(/(\S+?)[~,.\-=[，。？！…：\n\s]/);
 		const tempText = separated ? separated[1] : text;
+		const tempCharacters = Array.from(tempText);
 
-		if (tempText.length > limit) {
-			return tempText.slice(0, limit) + '...';
-		} else if (tempText.length < 3) {
-			return text.slice(0, limit);
+		if (tempCharacters.length > limit) {
+			return tempCharacters.slice(0, limit).join('') + '...';
+		} else if (tempCharacters.length < 3) {
+			return characters.slice(0, limit).join('');
 		} else {
 			return tempText;
 		}

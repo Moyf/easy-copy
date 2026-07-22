@@ -1,9 +1,10 @@
 import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile, getLanguage } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
-import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from './type';
+import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { detectCodeBlockFromLines } from './codeBlockDetect';
+import { buildCopyMatchers, getMatchInfo, normalizeMatcherOrder } from './copyMatcher';
 import { buildHeadingLink, buildBlockLink, buildFileLink, buildExplicitPasteLink } from './linkBuilder';
 import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
 import { decidePasteResolution, shouldOmitAliasForSameFile, shouldRegisterPasteHandler } from './pasteResolution';
@@ -160,6 +161,11 @@ export default class EasyCopy extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings.customMatchers = (this.settings.customMatchers ?? []).map(matcher => ({
+			note: '',
+			...matcher,
+		}));
+		this.settings.matcherOrder = normalizeMatcherOrder(this.settings.matcherOrder, this.settings.customMatchers);
 	}
 
 	async saveSettings() {
@@ -330,7 +336,7 @@ export default class EasyCopy extends Plugin {
 	/*
 	 * 从给定的块里查找 Block ID（最多延伸至下一个空行+下第二行）
 	*/
-	private detectBlockId(editor: Editor, view: MarkdownView): ContextData | null {
+	private detectBlockId(editor: Editor): ContextData | null {
 		const cursor = editor.getCursor();
 		const { end } = this.detectBlockRange(editor, cursor.line);
 		let lastLine = editor.getLine(end);
@@ -414,48 +420,35 @@ export default class EasyCopy extends Plugin {
 		const afterCursor = curLine.slice(curCh); // 光标后的内容
 
 
-		// iOS 16.4 之前不支持后视（Lookbehinds），但支持前视（Lookaheads）
-		// 所以针对 iOS 平台使用只带前视的正则表达式，其他平台使用完整版本
-		const italicRegex = Platform.isIosApp ? 
-			/(?:\*([^*]+)\*(?!\*)|_([^_]+)_(?!_))/g :  // iOS 版本：支持 * 和 _ 格式，只使用前视
-			/(?:(?<!\*)\*([^*]+)\*(?!\*)|(?<!_)_([^_]+)_(?!_))/g;  // 其他平台：支持 * 和 _ 格式，使用前视和后视
-		
-		const boldRegex = /(?:\*\*([^*]+)\*\*|__([^_]+)__)/g;  // 粗体：支持 ** 和 __ 格式
-		
-		// 匹配优先级：加粗 > 斜体 > 高亮 > 删除线 > 行内代码 > 行内Latex > 块ID > 双链
-		const matchers = [
-			{ type: ContextType.BOLD, regex: boldRegex , enable: !this.settings.customizeTargets || this.settings.enableBold},
-			// 使用前后断言确保不被包裹在更长的语法中，同时支持 * 和 _ 两种格式
-			{ type: ContextType.ITALIC, regex: italicRegex , enable: !this.settings.customizeTargets || this.settings.enableItalic},
-			{ type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g , enable: !this.settings.customizeTargets || this.settings.enableHighlight},
-			{ type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g , enable: !this.settings.customizeTargets || this.settings.enableStrikethrough},
-			{ type: ContextType.INLINECODE, regex: /`([^`]+)`/g , enable: !this.settings.customizeTargets || this.settings.enableInlineCode},
-			{ type: ContextType.INLINELATEX, regex: /\$([^$]+)\$/g , enable: !this.settings.customizeTargets || this.settings.enableInlineLatex},
-			{ type: ContextType.WIKILINK, regex: /\[\[([^\]]+)\]\]/g, enable: !this.settings.customizeTargets || this.settings.enableWikiLink },
-		];
+		// 匹配优先级由设置中的 matcherOrder 决定；regex matcher 和特殊 detector 共用同一排序
+		const matcherById = new Map(buildCopyMatchers(this.settings, Platform.isIosApp).map(matcher => [matcher.id, matcher]));
+		const orderedTargetIds = normalizeMatcherOrder(this.settings.matcherOrder, this.settings.customMatchers);
 	
-		for (const matcher of matchers) {
-			if (!matcher.enable) continue; // 如果当前类型未启用，则跳过
-			const matchInfo = this.getMatchInfo(beforeCursor, afterCursor, matcher.regex);
+		for (const targetId of orderedTargetIds) {
+			if (targetId === 'link') {
+				if (this.settings.customizeTargets && !this.settings.enableLink) continue;
+				const linkInfo = this.isCursorInLink(beforeCursor, afterCursor);
+				if (linkInfo) {
+					return {
+						type: linkInfo.type,
+						curLine,
+						match: linkInfo.content,
+						range: linkInfo.range,
+					};
+				}
+				continue;
+			}
+
+			const matcher = matcherById.get(targetId);
+			if (!matcher?.enabled) continue; // 如果当前类型未启用，则跳过
+			const matchInfo = getMatchInfo(beforeCursor + afterCursor, beforeCursor.length, matcher.regex, matcher.captureGroup);
 			if (matchInfo) {
 				return {
 					type: matcher.type,
 					curLine,
 					match: matchInfo.content, // 返回内容，不包括语法
 					range: matchInfo.range,
-				};
-			}
-		}
-
-		// 检测链接
-		if (!this.settings.customizeTargets || this.settings.enableLink) {
-			const linkInfo = this.isCursorInLink(beforeCursor, afterCursor);
-			if (linkInfo) {
-				return {
-					type: linkInfo.type,
-					curLine,
-					match: linkInfo.content,
-					range: linkInfo.range,
+					matcherName: matcher.name,
 				};
 			}
 		}
@@ -467,7 +460,7 @@ export default class EasyCopy extends Plugin {
 		}
 
 		// 检测 block ID
-		const blockIdInfo = this.detectBlockId(editor, view);
+		const blockIdInfo = this.detectBlockId(editor);
 		if (blockIdInfo) {
 			return blockIdInfo;
 		}
@@ -504,32 +497,6 @@ export default class EasyCopy extends Plugin {
 	 * @param regex 匹配的正则表达式
 	 * @returns 匹配信息，包括匹配内容和范围
 	 */
-	private getMatchInfo(beforeCursor: string, afterCursor: string, regex: RegExp): { content: string; range: [number, number] } | null {
-		let match;
-		while ((match = regex.exec(beforeCursor + afterCursor)) !== null) {
-			const matchStart = match.index;
-			const matchEnd = match.index + match[0].length;
-	
-			// 判断光标是否在匹配范围内
-			if (beforeCursor.length >= matchStart && beforeCursor.length <= matchEnd) {
-				// 找到第一个非空且非整体匹配的捕获组作为内容
-				let content = '';
-				for (let i = 1; i < match.length; i++) {
-					if (match[i] !== undefined) {
-						content = match[i];
-						break;
-					}
-				}
-				
-				return {
-					content: content, // 返回内容，不包括语法
-					range: [matchStart, matchEnd],
-				};
-			}
-		}
-		return null;
-	}
-
 	private isCursorInLink(beforeCursor: string, afterCursor: string): {type: ContextType.LINKTITLE | ContextType.LINEURL, content: string, range: [number, number]} | null {
 		// 匹配链接的正则表达式
 		const linkRegex = /\[([^\]]*?)\]\(([^)]*?)\)/g;
@@ -636,6 +603,12 @@ export default class EasyCopy extends Plugin {
 				void navigator.clipboard.writeText(contextType.match!);
 				if (this.settings.showNotice) {
 					new Notice(this.t('inline-latex-copied'));
+				}
+				return;
+			case ContextType.CUSTOM:
+				void navigator.clipboard.writeText(contextType.match!);
+				if (this.settings.showNotice) {
+					new Notice(`${this.t('custom-prefix')}${contextType.matcherName ?? this.t('custom-matcher')}${this.t('custom-matcher-copied')}`);
 				}
 				return;
 			

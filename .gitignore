@@ -31,3 +31,4 @@ easy-copy/
 # env
 .env
 /.sisyphus
+/.omo
