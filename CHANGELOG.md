@@ -8,6 +8,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.2] - 2026-07-22
+
+### ✨ New Features
+
+- **Custom regex copy matchers**: add named copy rules with configurable regular expressions, flags, capture groups, descriptions, and enable toggles to copy project-specific text formats.
+- **Reorderable copy targets**: drag built-in and custom matchers into the desired priority order, including Markdown links.
+- **AI regex prompt helper**: copy a ready-to-use prompt from the matcher editor to help generate a suitable regular expression.
+
+### 🐛 Bug Fixes
+
+- **Unicode block display text** (fixes [#41](https://github.com/Moyf/easy-copy/issues/41)): block link aliases now apply word limits to space-separated text containing Latin Extended letters, Cyrillic, or Unicode punctuation instead of incorrectly truncating them by character count. CJK text continues to use the character limit, and character truncation no longer splits Unicode surrogate pairs.
+
+### ♻️ Changed
+
+- **Block display text settings**: renamed the English/CJK-oriented labels to word and character limits, with descriptions that reflect the actual truncation strategy.
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### ✨ 新功能
+
+- **自定义正则复制规则**：支持添加带名称、说明、正则表达式、标志、捕获组和启用开关的复制规则，用于复制项目特有的文本格式。
+- **复制目标排序**：支持拖动内置与自定义匹配器来调整优先级，并将 Markdown 链接纳入可排序目标。
+- **AI 正则提示词助手**：可从匹配器编辑界面复制即用型提示词，辅助生成合适的正则表达式。
+
+### 🐛 修复
+
+- **Unicode 块显示文本**（修复 [#41](https://github.com/Moyf/easy-copy/issues/41)）：包含拉丁扩展字母、西里尔字母或 Unicode 标点的空格分词文本，现在会正确采用单词数上限，不再被错误地按字符截短。CJK 文本仍使用字符数上限，按字符截取时也不会再拆断 Unicode 代理对。
+
+### ♻️ 变更
+
+- **块显示文本设置**：将原先面向英语/CJK 的标签调整为按词和按字符截取上限，并更新说明以准确反映实际截取策略。
+
+</details>
+
+---
+
 ## [1.7.1] - 2026-05-28
 
 ### ✨ New Features
