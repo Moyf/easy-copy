@@ -8,6 +8,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.0] - 2026-09-04
+
+### ⚠️ Breaking Changes
+
+- **Minimum Obsidian version is now 1.13.0**: the settings tab is rebuilt on Obsidian 1.13's declarative settings API. Update your Obsidian app before updating the plugin.
+
+### ✨ New Features
+
+- **Settings reorganized into sub-pages**:
+  - **Copy targets**: a "General elements" sub-page (copyable markup targets, callout copy, code block behavior) and a "Block ID" sub-page
+  - **Copy format**: a "Link format" sub-page with new **Heading link** / **Note link** groups, and an "Advanced options" sub-page
+- **Declarative settings API**: migrated to `getSettingDefinitions()` — dependent settings now show/hide instantly via visibility predicates instead of a full re-render, and every sub-page entry carries its own description
+
+### 🐛 Fixed
+
+- **Settings description rendering**: the info icon in "Resolve link path on paste" no longer renders as `[object DocumentFragment]`; the tooltip icon is now attached directly to the description element
+- **Descriptions punctuation**: all setting descriptions now end with a period, matching Obsidian core style
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### ⚠️ 破坏性变更
+
+- **最低 Obsidian 版本提升至 1.13.0**：设置页基于 Obsidian 1.13 的声明式设置 API 重构。更新插件前请先升级 Obsidian。
+
+### ✨ 新功能
+
+- **设置页重组为子页面**：
+  - **复制目标**：「通用元素」子页面（可复制的标记对象、标注复制、代码块行为）与「块ID」子页面
+  - **复制格式**：「链接格式」子页面（内含全新的**标题链接** / **笔记链接**分组）与「进阶选项」子页面
+- **声明式设置 API**：迁移到 `getSettingDefinitions()`——依赖设置项通过可见性谓词即时显示/隐藏，无需整页刷新；每个子页面入口都带有说明
+
+### 🐛 修复
+
+- **设置描述渲染**：「粘贴时解析链接路径」的 info 图标不再显示为 `[object DocumentFragment]`，tooltip 图标现在直接挂载到描述元素上
+- **描述标点**：所有设置描述统一以句号结尾，与 Obsidian 官方风格一致
+
+</details>
+
+---
+
 ## [1.7.1] - 2026-05-28
 
 ### ✨ New Features
