@@ -128,20 +128,9 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		// 「跟随 Obsidian 设置」时遵循 vault 的路径风格（最短/相对/绝对）；
 		// 选择明确的 Wiki/Markdown 格式时仅使用最短唯一路径。
 		formatGroup.addSetting(setting => {
-		const descFragment = activeDocument.createDocumentFragment();
-		descFragment.append(this.plugin.t('resolve-link-path-on-paste-desc') + ' ');
-		const infoIcon = descFragment.createEl('span', {
-			attr: {
-				'aria-label': this.plugin.t('resolve-link-path-on-paste-tooltip'),
-				'class': 'clickable-icon setting-editor-extra-setting-button',
-				'style': 'display:inline; vertical-align:middle; cursor:help;',
-			},
-		});
-		setIcon(infoIcon, 'info');
-
 			setting
 				.setName(this.plugin.t('resolve-link-path-on-paste'))
-				.setDesc(descFragment)
+				.setDesc(this.plugin.t('resolve-link-path-on-paste-desc') + ' ')
 				.addToggle(toggle => toggle
 					.setValue(this.plugin.settings.resolveLinkPathOnPaste)
 					.onChange( (value) => {
@@ -149,6 +138,15 @@ export class EasyCopySettingTab extends PluginSettingTab {
 						void this.plugin.saveSettings();
 						this.plugin.syncPasteHandlerRegistration();
 					}));
+			// setDesc 不支持 DocumentFragment，直接把 info 图标追加到 descEl
+			const infoIcon = setting.descEl.createEl('span', {
+				attr: {
+					'aria-label': this.plugin.t('resolve-link-path-on-paste-tooltip'),
+					'class': 'clickable-icon setting-editor-extra-setting-button',
+					'style': 'display:inline; vertical-align:middle; cursor:help;',
+				},
+			});
+			setIcon(infoIcon, 'info');
 		});
 
 		formatGroup.addSetting(setting => setting
