@@ -2,7 +2,7 @@
 	"id": "easy-copy",
 	"name": "Easy Copy",
 	"version": "1.7.1",
-	"minAppVersion": "1.8.7",
+	"minAppVersion": "1.13.0",
 	"description": "Easily copy the text within inline code, bold text (and many other formats), or quickly generate an elegant link to a heading.",
 	"author": "Moy",
 	"authorUrl": "https://github.com/Moyf",

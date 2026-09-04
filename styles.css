@@ -25,3 +25,26 @@ If your plugin does not need CSS, delete this file.
   margin-top: 0.5em;
   margin-bottom: 0.5em;
 }
+
+/* 设置描述里的 info 提示图标：常驻但低调，hover 时轻微提亮 */
+.easy-copy-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  margin-left: 3px;
+  color: var(--text-faint);
+  vertical-align: -0.125em;
+  cursor: help;
+  transition: color 150ms ease;
+}
+
+.easy-copy-info-icon:hover {
+  color: var(--text-muted);
+}
+
+.easy-copy-info-icon svg {
+  width: 100%;
+  height: 100%;
+}
