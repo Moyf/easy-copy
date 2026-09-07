@@ -231,11 +231,11 @@ export class EasyCopySettingTab extends PluginSettingTab {
 											void this.plugin.saveSettings();
 											this.plugin.syncPasteHandlerRegistration();
 										}));
-									const infoIcon = setting.descEl.createEl('span', {
+									const infoIcon = setting.descEl.createSpan({
 										attr: {
 											'aria-label': this.plugin.t('resolve-link-path-on-paste-tooltip'),
-											'class': 'easy-copy-info-icon',
 										},
+										cls: 'easy-copy-info-icon',
 									});
 									setIcon(infoIcon, 'info');
 								},
