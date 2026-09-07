@@ -1,6 +1,6 @@
 {
 	"name": "easy-copy",
-	"version": "1.8.0",
+	"version": "1.8.1",
 	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
 	"main": "main.js",
 	"scripts": {
@@ -26,7 +26,7 @@
 		"@typescript-eslint/parser": "^8.58.0",
 		"esbuild": "0.17.3",
 		"eslint": "^9.39.4",
-		"eslint-plugin-obsidianmd": "^0.1.9",
+		"eslint-plugin-obsidianmd": "^0.4.2",
 		"obsidian": "^1.13.1",
 		"tslib": "2.4.0",
 		"typescript": "^5.9.3",
