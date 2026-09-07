@@ -5,6 +5,22 @@ All notable changes to Easy Copy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1](https://github.com/Moyf/easy-copy/compare/1.8.0...1.8.1) - 2026-09-07
+
+### 🐛 Fixed
+
+- **Obsidian plugin review compliance**: use Obsidian's element creation helpers, replace the workspace event return-type union with `EventRef`, remove unnecessary console logging, and update the official review scanner.
+- **pnpm lockfile**: synchronize the Obsidian 1.13.1 dependency metadata so frozen-lockfile installs succeed.
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### 🐛 修复
+
+- **Obsidian 插件审核规范**：使用 Obsidian 元素创建辅助方法，以 `EventRef` 替换 workspace 事件返回类型联合，移除不必要的控制台日志，并更新官方审核扫描器。
+- **pnpm 锁文件**：同步 Obsidian 1.13.1 依赖元数据，确保 frozen-lockfile 安装成功。
+
+</details>
 
 ---
 
