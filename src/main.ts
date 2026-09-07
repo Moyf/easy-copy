@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile, getLanguage } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile, getLanguage, type EventRef } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
 import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
 import { EasyCopySettingTab } from './settingTab';
@@ -14,7 +14,7 @@ export default class EasyCopy extends Plugin {
 	settings: EasyCopySettings;
 	i18n: I18n;
 	private lastCopyMeta: CopyMetadata | null = null;
-	private pasteEventRef: ReturnType<typeof this.app.workspace.on> | null = null;
+	private pasteEventRef: EventRef | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -179,13 +179,6 @@ export default class EasyCopy extends Plugin {
 	 */
 	private handlePaste(evt: ClipboardEvent, editor: Editor, info: MarkdownFileInfo): boolean {
 		const clipboardText = evt.clipboardData?.getData('text/plain');
-
-		// 如果有活跃的 meta 且剪贴板内容匹配，但被其他插件抢先处理了，输出提示
-		// （外层已在 defaultPrevented 时 return，此处作为二次保险）
-		if (evt.defaultPrevented && this.lastCopyMeta && clipboardText === this.lastCopyMeta.clipboardText) {
-			console.log('[Easy Copy] Paste event was already handled by another plugin. Link path resolution skipped. You can adjust plugin load order in the community-plugins.json file inside your vault\'s config folder (' + this.app.vault.configDir + ').');
-			return false;
-		}
 
 		const decision = decidePasteResolution({
 			defaultPrevented: evt.defaultPrevented,
