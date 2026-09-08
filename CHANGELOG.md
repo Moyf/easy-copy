@@ -5,6 +5,23 @@ All notable changes to Easy Copy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.2](https://github.com/Moyf/easy-copy/compare/1.8.1...1.8.2) - 2026-09-08
+
+### 🐛 Fixed
+
+- **Block display text word limit** ([#42](https://github.com/Moyf/easy-copy/issues/42)): English text containing hyphens (e.g. "task-management") or apostrophes ("don't") was misdetected as CJK and truncated to the first word. Language detection now checks for CJK characters instead of an ASCII whitelist, so the word limit works for all space-separated languages; pure symbol lines like horizontal rules (`---`) now fall back to the block ID.
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### 🐛 修复
+
+- **块显示文本词数上限**（[#42](https://github.com/Moyf/easy-copy/issues/42)）：含连字符（如 "task-management"）或撇号（"don't"）的英文文本会被误判为 CJK，导致别名只截取到第一个词。现在改为检测 CJK 字符来区分语言，词数上限对所有以空格分词的语言生效；水平线（`---`）等纯符号行直接回退为块 ID。
+
+</details>
+
+---
+
 ## [1.8.1](https://github.com/Moyf/easy-copy/compare/1.8.0...1.8.1) - 2026-09-07
 
 ### 🐛 Fixed
