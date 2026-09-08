@@ -193,11 +193,17 @@ export function extractBlockDisplayText(
 
 	if (!text) return blockId;
 
-	// 判断是否是纯英文，如果是纯英文（以及英文常用标点符号），提取前几个单词；否则，按下面的逻辑处理
-	// 根据 ASCII 来判断"英文"
-	const isEnglish = /^[a-zA-Z\s,.!?"()[\]_^-~:;0-9]*$/.test(text);
+	// 水平线等纯符号行（--- *** ___）没有可读文本，直接退回 blockId
+	if (/^[-_=*~\s]+$/.test(text)) return blockId;
 
-	if (isEnglish) {
+	// 判断是否是「英文类」文本：采用「检测 CJK」而非「ASCII 白名单」。
+	// 白名单永远列不全——此前 `^-~` 被解析为范围导致字面量 `-` 缺失，
+	// 含连字符（task-management）的英文句子被误判为非英文，
+	// 落入下方 CJK 分支后被截成第一个词（#42）。
+	// CJK（汉字/假名等）不以空格分词，走字符数上限；其余语言按词截断。
+	const isCJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(text);
+
+	if (!isCJK) {
 		const limit = wordLimit || 3;
 		return text.trim().split(' ').slice(0, limit).join(' ');
 	}

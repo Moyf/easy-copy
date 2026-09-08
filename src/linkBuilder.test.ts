@@ -790,6 +790,25 @@ describe('extractBlockDisplayText', () => {
 			const result = extractBlockDisplayText('one two three four', 'fallback', 0, 5);
 			expect(result).toBe('one two three');
 		});
+
+		it('handles hyphenated words (issue #42)', () => {
+			// 回归：`^-~` 被解析为字符类范围，字面量 `-` 不在白名单内，
+			// 导致含连字符的英文被误判为 CJK，只取到第一个词 "Has"
+			const result = extractBlockDisplayText(
+				'Has anyone used it  or compared it with Operon, TaskNotes, Task Genius, or other task-management plugins',
+				'fallback',
+				3,
+				5,
+			);
+			expect(result).toBe('Has anyone used');
+		});
+
+		it('handles apostrophes and accented letters as English-like', () => {
+			expect(extractBlockDisplayText("Don't stop believing now", 'fallback', 3, 5))
+				.toBe("Don't stop believing");
+			expect(extractBlockDisplayText('Déjà vu in café talks', 'fallback', 3, 5))
+				.toBe('Déjà vu in');
+		});
 	});
 
 	describe('CJK text', () => {
@@ -865,9 +884,16 @@ describe('extractBlockDisplayText', () => {
 
 	describe('mixed content', () => {
 		it('mixed English/CJK is treated as non-English', () => {
-			// 出现任意非 ASCII 字符时，纯 ASCII 正则会失败
+			// 含 CJK 字符时走字符数上限分支
 			const result = extractBlockDisplayText('Hello 世界 and more text', 'fallback', 3, 5);
 			expect(result).toBe('Hello');
+		});
+
+		it('horizontal rule lines fall back to blockId', () => {
+			expect(extractBlockDisplayText('---', 'myId', 3, 5)).toBe('myId');
+			expect(extractBlockDisplayText('___', 'myId', 3, 5)).toBe('myId');
+			expect(extractBlockDisplayText('***', 'myId', 3, 5)).toBe('myId');
+			expect(extractBlockDisplayText('--- ', 'myId', 3, 5)).toBe('myId');
 		});
 
 		it('text that is all markdown syntax becomes empty after cleaning', () => {
