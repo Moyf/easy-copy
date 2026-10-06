@@ -22,7 +22,7 @@ export type TranslationKey =
 	| 'link-format'| 'link-format-desc' | 'link-format-obsidian' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
 	| 'resolve-link-path-on-paste' | 'resolve-link-path-on-paste-desc' | 'resolve-link-path-on-paste-tooltip'
 	| 'copy-current-file-link' | 'file-link-copied'
-	| 'target' | 'copy-targets' | 'copy-targets-desc' | 'general-elements' | 'block-id-desc' | 'customize-targets' | 'customize-targets-desc'
+	| 'target' | 'copy-targets' | 'copy-targets-desc' | 'formatted-text' | 'formatted-text-desc' | 'customize-targets' | 'customize-targets-desc'
 	| 'enable-bold' | 'enable-bold-desc' 
 	| 'enable-highlight'| 'enable-highlight-desc' 
 	| 'enable-italic' | 'enable-italic-desc'
@@ -34,11 +34,12 @@ export type TranslationKey =
 	| 'keep-wiki-brackets' | 'keep-wiki-brackets-desc'
 	| 'special-format' | 'special-format-desc'
 	| 'auto-embed-block-link' | 'auto-embed-block-link-desc'
+	| 'special-text-blocks' | 'special-text-blocks-desc' | 'multi-line-text'
+	| 'no-copy-action' | 'no-copy-action-desc' | 'no-copy-action-none' | 'no-copy-action-block-link' | 'no-copy-action-file-link'
 	| 'enable-callout-copy' | 'enable-callout-copy-desc'
 	| 'callout-copy-priority' | 'callout-copy-priority-desc'
 	| 'code-block-behavior' | 'code-block-behavior-desc'
 	| 'code-block' | 'code-block-copy-content' | 'code-block-copy-with-fences' | 'code-block-generate-block-link' | 'code-block-disabled'
-    | 'auto-add-block-id' | 'auto-add-block-id-desc'
     | 'manual-block-id' | 'manual-block-id-desc'
     | 'block-id-insert-position' | 'block-id-insert-position-desc'
     | 'block-id-end-of-block' | 'block-id-next-line' | 'block-id-next-line-with-gap'
@@ -56,8 +57,6 @@ export type TranslationKey =
 export const translations: Record<Language, Record<TranslationKey, string>> = {
 	[Language.EN]: {
 		// 复制 Block ID
-        'auto-add-block-id': 'Auto generate block ID',
-        'auto-add-block-id-desc': 'When enabled, if there is no copyable content, a random block ID (^xxxx) will be automatically added to the end of the current line.' ,
 		'manual-block-id': 'Manually enter Block ID',
         'manual-block-id-desc': 'If enabled, you will be prompted to enter a block ID manually.',
         'block-id-insert-position': 'Block ID insert position',
@@ -72,7 +71,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
         
 		// 通知信息
 		'no-file': 'Cannot get current file',
-		'no-content': 'No content to copy at current cursor position',
+		'no-content': 'No content to copy at current cursor position (you can change this fallback in settings: Special text blocks)',
 		'inline-code-copied': 'Inline code copied!',
 		'block-id-copied': 'Block ID link copied!',
 		'note-link-copied': 'Note link copied!',
@@ -99,11 +98,19 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'frontmatter-key': 'Note property name',
 		'frontmatter-key-desc': 'The property name used as display text (default: title).',
 		'block-id': 'Block ID',
-		'block-id-desc': 'Auto-generate block IDs, manual input, and block link display text.',
 		'target': 'Target',
 		'copy-targets': 'Copy targets',
-		'copy-targets-desc': 'General elements that can be copied (bold, italic, etc). Besides, configure callout copy and code block behavior.',
-		'general-elements': 'General elements',
+		'copy-targets-desc': 'Copyable formatted text (bold, italic, etc.), and copy behaviors for special text blocks such as callouts, code blocks and block IDs.',
+		'formatted-text': 'Formatted text',
+		'formatted-text-desc': 'Inline formatting elements that can be copied, like bold, italic and inline code.',
+		'special-text-blocks': 'Special text blocks',
+		'special-text-blocks-desc': 'Copy behaviors for callouts, code blocks and block IDs, plus the fallback when there is nothing to copy.',
+		'multi-line-text': 'Multi-line text',
+		'no-copy-action': 'Copy when there is nothing to copy',
+		'no-copy-action-desc': 'Choose what happens when the cursor has no copyable content: "Block Link" generates a block ID link for the current block, "File link" copies a link to the current note.',
+		'no-copy-action-none': 'None',
+		'no-copy-action-block-link': 'Block link',
+		'no-copy-action-file-link': 'File link',
 		'add-to-menu': 'Add to menu',
 		'add-to-menu-desc': 'Add the command to the context menu.',
 		'add-extra-commands': 'Add extra commands',
@@ -184,8 +191,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 	},
 	[Language.ZH]: {
 		// 复制 Block ID
-        'auto-add-block-id': '自动生成块ID',
-        'auto-add-block-id-desc': '启用后，如果没有可复制内容时会自动在当前文本末尾添加一个随机生成的块ID（^xxxx）。',
 		'manual-block-id': '手动输入块ID',
         'manual-block-id-desc': '启用后，可以在弹窗中手动输入块ID。',
         'block-id-insert-position': '块ID插入位置',
@@ -199,7 +204,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
         'error-block-id-invalid': '只允许字母、数字、-、_' ,
 		// 通知信息
 		'no-file': '无法获取当前文件',
-		'no-content': '当前光标处没有可复制的内容',
+		'no-content': '当前光标处没有可复制的内容（可在设置「特殊文本块」中修改此回退行为）',
 		'inline-code-copied': '行内代码已复制！',
 		'block-id-copied': '块ID链接已复制！',
 		'note-link-copied': '笔记链接已复制！',
@@ -222,11 +227,19 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'heading-link': '标题链接',
 		'note-link': '笔记链接',
 		'block-id': '块ID',
-		'block-id-desc': '自动生成块ID、手动输入，以及块链接显示文本。',
 		'target': '复制对象',
 		'copy-targets': '复制目标',
-		'copy-targets-desc': '可复制的通用元素（加粗、斜体等）。此外，还可配置标注复制与代码块行为。',
-		'general-elements': '通用元素',
+		'copy-targets-desc': '可复制的格式文本（加粗、斜体等），以及标注、代码块、块 ID 等特殊文本块的复制行为。',
+		'formatted-text': '格式文本',
+		'formatted-text-desc': '可复制的行内格式文本，如加粗、斜体、行内代码等。',
+		'special-text-blocks': '特殊文本块',
+		'special-text-blocks-desc': '标注、代码块与块 ID 的复制行为，以及无可复制内容时的回退行为。',
+		'multi-line-text': '多行文本',
+		'no-copy-action': '无任何可复制对象时复制',
+		'no-copy-action-desc': '当光标处没有可复制内容时的处理方式：「Block Link」为当前块生成块 ID 链接，「文件链接」复制当前笔记的链接。',
+		'no-copy-action-none': '无',
+		'no-copy-action-block-link': 'Block Link',
+		'no-copy-action-file-link': '文件链接',
 		'add-to-menu': '添加到菜单',
 		'add-to-menu-desc': '将命令添加到右键菜单。',
 		'add-extra-commands': '添加拓展命令',
@@ -310,8 +323,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 	},
 	[Language.ZH_TW]: {
 		// 复制 Block ID
-		'auto-add-block-id': '自動新增塊ID',
-		'auto-add-block-id-desc': '啟用後，若沒有可複製內容時，會自動在當前文本末尾新增一個隨機的塊ID（^xxxx）。',
 		'add-extra-commands': '添加擴展命令',
 		'add-extra-commands-desc': '啟用後，會在命令面板中新增「複製當前筆記鏈接」和「生成並複製當前塊鏈接」命令。',
 		'auto-block-display-text': '生成塊連結的顯示文本',
@@ -334,7 +345,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
         
 		// 通知信息
 		'no-file': '無法獲取當前文件',
-		'no-content': '當前光標處沒有可複製的內容',
+		'no-content': '當前光標處沒有可複製的內容（可在設定「特殊文字塊」中修改此回退行為）',
 		'inline-code-copied': '行內代碼已複製！',
 		'block-id-copied': '塊ID連結已複製！',
 		'note-link-copied': '筆記連結已複製！',
@@ -356,11 +367,19 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'heading-link': '標題連結',
 		'note-link': '筆記連結',
 		'block-id': '塊ID',
-		'block-id-desc': '自動生成塊ID、手動輸入，以及塊連結顯示文本。',
 		'target': '複製對象',
 		'copy-targets': '複製目標',
-		'copy-targets-desc': '可複製的通用元素（加粗、斜體等）。此外，還可配置標註複製與代碼塊行為。',
-		'general-elements': '通用元素',
+		'copy-targets-desc': '可複製的格式文字（加粗、斜體等），以及標註、代碼塊、塊 ID 等特殊文字塊的複製行為。',
+		'formatted-text': '格式文字',
+		'formatted-text-desc': '可複製的行內格式文字，如加粗、斜體、行內代碼等。',
+		'special-text-blocks': '特殊文字塊',
+		'special-text-blocks-desc': '標註、代碼塊與塊 ID 的複製行為，以及無可複製內容時的回退行為。',
+		'multi-line-text': '多行文字',
+		'no-copy-action': '無任何可複製對象時複製',
+		'no-copy-action-desc': '當游標處沒有可複製內容時的處理方式：「Block Link」為當前塊生成塊 ID 連結，「檔案連結」複製當前筆記的連結。',
+		'no-copy-action-none': '無',
+		'no-copy-action-block-link': 'Block Link',
+		'no-copy-action-file-link': '檔案連結',
 		'add-to-menu': '添加到菜單',
 		'add-to-menu-desc': '將命令添加到右鍵菜單。',
 		'show-notice': '顯示通知',

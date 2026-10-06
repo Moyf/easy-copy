@@ -5,7 +5,7 @@ import {
 } from "obsidian";
 import type { SettingDefinitionItem } from "obsidian";
 import EasyCopy from "./main";
-import { LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from "./type";
+import { LinkFormat, BlockIdInsertPosition, CodeBlockBehavior, NoCopyAction } from "./type";
 
 export class EasyCopySettingTab extends PluginSettingTab {
 	plugin: EasyCopy;
@@ -38,16 +38,16 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				control: { type: 'toggle', key: 'showNotice' },
 			},
 
-			// Copy Targets 分组：组内两个一级子页面（Copy Targets / Block ID）
+			// Copy Targets 分组：组内两个一级子页面（格式文本 / 特殊文本块）
 			{
 				type: 'group',
 				heading: this.plugin.t('copy-targets'),
 				items: [
-					// General elements 子页面：自定义复制对象、标注、代码块
+					// 格式文本子页面：行内格式元素
 					{
 						type: 'page',
-						name: this.plugin.t('general-elements'),
-						desc: this.plugin.t('copy-targets-desc'),
+						name: this.plugin.t('formatted-text'),
+						desc: this.plugin.t('formatted-text-desc'),
 						items: [
 							{
 								name: this.plugin.t('customize-targets'),
@@ -102,89 +102,117 @@ export class EasyCopySettingTab extends PluginSettingTab {
 								visible: () => settings.customizeTargets,
 								control: { type: 'toggle', key: 'enableWikiLink', defaultValue: true },
 							},
-							{
-								name: this.plugin.t('enable-callout-copy'),
-								desc: this.plugin.t('enable-callout-copy-desc'),
-								control: { type: 'toggle', key: 'enableCalloutCopy', defaultValue: true },
-							},
-							{
-								name: this.plugin.t('callout-copy-priority'),
-								desc: this.plugin.t('callout-copy-priority-desc'),
-								visible: () => settings.enableCalloutCopy,
-								control: { type: 'toggle', key: 'calloutCopyPriority', defaultValue: true },
-							},
-							{
-								name: this.plugin.t('code-block-behavior'),
-								desc: this.plugin.t('code-block-behavior-desc'),
-								control: {
-									type: 'dropdown',
-									key: 'codeBlockBehavior',
-									options: {
-										[CodeBlockBehavior.COPY_CONTENT]: this.plugin.t('code-block-copy-content'),
-										[CodeBlockBehavior.COPY_WITH_FENCES]: this.plugin.t('code-block-copy-with-fences'),
-										[CodeBlockBehavior.GENERATE_BLOCK_LINK]: this.plugin.t('code-block-generate-block-link'),
-										[CodeBlockBehavior.DISABLED]: this.plugin.t('code-block-disabled'),
-									},
-								},
-							},
 						],
 					},
-					// Block ID 子页面：自动生成、手动输入、显示文本
+					// 特殊文本块子页面：无可复制对象时的回退行为、多行文本（标注/代码块）、块ID
 					{
 						type: 'page',
-						name: this.plugin.t('block-id'),
-						desc: this.plugin.t('block-id-desc'),
+						name: this.plugin.t('special-text-blocks'),
+						desc: this.plugin.t('special-text-blocks-desc'),
 						items: [
+							// 未命名分组：无可复制对象时的回退行为
 							{
-								name: this.plugin.t('auto-add-block-id'),
-								desc: this.plugin.t('auto-add-block-id-desc'),
-								control: { type: 'toggle', key: 'autoAddBlockId' },
-							},
-							{
-								name: this.plugin.t('block-id-insert-position'),
-								desc: this.plugin.t('block-id-insert-position-desc'),
-								visible: () => settings.autoAddBlockId,
-								control: {
-									type: 'dropdown',
-									key: 'blockIdInsertPosition',
-									options: {
-										[BlockIdInsertPosition.END_OF_BLOCK]: this.plugin.t('block-id-end-of-block'),
-										[BlockIdInsertPosition.NEXT_LINE]: this.plugin.t('block-id-next-line'),
+								type: 'group',
+								items: [
+									{
+										name: this.plugin.t('no-copy-action'),
+										desc: this.plugin.t('no-copy-action-desc'),
+										control: {
+											type: 'dropdown',
+											key: 'noCopyAction',
+											options: {
+												[NoCopyAction.NONE]: this.plugin.t('no-copy-action-none'),
+												[NoCopyAction.BLOCK_LINK]: this.plugin.t('no-copy-action-block-link'),
+												[NoCopyAction.FILE_LINK]: this.plugin.t('no-copy-action-file-link'),
+											},
+										},
 									},
-								},
+								],
 							},
+							// 多行文本分组：标注与代码块的复制行为
 							{
-								name: this.plugin.t('manual-block-id'),
-								desc: this.plugin.t('manual-block-id-desc'),
-								visible: () => settings.autoAddBlockId,
-								control: { type: 'toggle', key: 'allowManualBlockId' },
+								type: 'group',
+								heading: this.plugin.t('multi-line-text'),
+								items: [
+									{
+										name: this.plugin.t('enable-callout-copy'),
+										desc: this.plugin.t('enable-callout-copy-desc'),
+										control: { type: 'toggle', key: 'enableCalloutCopy', defaultValue: true },
+									},
+									{
+										name: this.plugin.t('callout-copy-priority'),
+										desc: this.plugin.t('callout-copy-priority-desc'),
+										// 仅当标注复制启用且回退行为为块链接（存在冲突）时才有意义
+										visible: () => settings.enableCalloutCopy && settings.noCopyAction === NoCopyAction.BLOCK_LINK,
+										control: { type: 'toggle', key: 'calloutCopyPriority', defaultValue: true },
+									},
+									{
+										name: this.plugin.t('code-block-behavior'),
+										desc: this.plugin.t('code-block-behavior-desc'),
+										control: {
+											type: 'dropdown',
+											key: 'codeBlockBehavior',
+											options: {
+												[CodeBlockBehavior.COPY_CONTENT]: this.plugin.t('code-block-copy-content'),
+												[CodeBlockBehavior.COPY_WITH_FENCES]: this.plugin.t('code-block-copy-with-fences'),
+												[CodeBlockBehavior.GENERATE_BLOCK_LINK]: this.plugin.t('code-block-generate-block-link'),
+												[CodeBlockBehavior.DISABLED]: this.plugin.t('code-block-disabled'),
+											},
+										},
+									},
+								],
 							},
+							// Block ID 分组：仅在回退行为为「Block Link」时显示
 							{
-								name: this.plugin.t('auto-block-display-text'),
-								desc: this.plugin.t('auto-block-display-text-desc'),
-								control: { type: 'toggle', key: 'autoBlockDisplayText' },
-							},
-							{
-								name: this.plugin.t('block-display-word-limit'),
-								desc: this.plugin.t('block-display-word-limit-desc'),
-								visible: () => settings.autoBlockDisplayText,
-								control: {
-									type: 'number',
-									key: 'blockDisplayWordLimit',
-									min: 1,
-									placeholder: '3',
-								},
-							},
-							{
-								name: this.plugin.t('block-display-char-limit'),
-								desc: this.plugin.t('block-display-char-limit-desc'),
-								visible: () => settings.autoBlockDisplayText,
-								control: {
-									type: 'number',
-									key: 'blockDisplayCharLimit',
-									min: 1,
-									placeholder: '5',
-								},
+								type: 'group',
+								heading: this.plugin.t('block-id'),
+								visible: () => settings.noCopyAction === NoCopyAction.BLOCK_LINK,
+								items: [
+									{
+										name: this.plugin.t('block-id-insert-position'),
+										desc: this.plugin.t('block-id-insert-position-desc'),
+										control: {
+											type: 'dropdown',
+											key: 'blockIdInsertPosition',
+											options: {
+												[BlockIdInsertPosition.END_OF_BLOCK]: this.plugin.t('block-id-end-of-block'),
+												[BlockIdInsertPosition.NEXT_LINE]: this.plugin.t('block-id-next-line'),
+											},
+										},
+									},
+									{
+										name: this.plugin.t('manual-block-id'),
+										desc: this.plugin.t('manual-block-id-desc'),
+										control: { type: 'toggle', key: 'allowManualBlockId' },
+									},
+									{
+										name: this.plugin.t('auto-block-display-text'),
+										desc: this.plugin.t('auto-block-display-text-desc'),
+										control: { type: 'toggle', key: 'autoBlockDisplayText' },
+									},
+									{
+										name: this.plugin.t('block-display-word-limit'),
+										desc: this.plugin.t('block-display-word-limit-desc'),
+										visible: () => settings.autoBlockDisplayText,
+										control: {
+											type: 'number',
+											key: 'blockDisplayWordLimit',
+											min: 1,
+											placeholder: '3',
+										},
+									},
+									{
+										name: this.plugin.t('block-display-char-limit'),
+										desc: this.plugin.t('block-display-char-limit-desc'),
+										visible: () => settings.autoBlockDisplayText,
+										control: {
+											type: 'number',
+											key: 'blockDisplayCharLimit',
+											min: 1,
+											placeholder: '5',
+										},
+									},
+								],
 							},
 						],
 					},

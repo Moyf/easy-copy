@@ -17,6 +17,12 @@ export enum BlockIdInsertPosition {
 	// NEXT_LINE_WITH_GAP = 'next-line-with-gap'  // 当前块的下方两行（中间隔一个空行）
 }
 
+export enum NoCopyAction {
+	NONE = 'none',                // 显示通知，不做任何操作
+	BLOCK_LINK = 'block-link',    // 自动生成块 ID 并复制块链接
+	FILE_LINK = 'file-link',      // 复制当前文件的链接
+}
+
 export enum ContextType {
     NULL = 'null',
     HEADING = 'heading',
@@ -67,7 +73,7 @@ export interface EasyCopySettings {
     enableCalloutCopy: boolean; // 是否启用复制 Callout 内文本
     calloutCopyPriority: boolean; // Callout 与块ID冲突时，优先复制 Callout
     codeBlockBehavior: CodeBlockBehavior; // 代码块内的复制行为
-    autoAddBlockId: boolean; // 是否自动添加 Block ID
+    noCopyAction: NoCopyAction; // 无可复制内容时的回退行为
     allowManualBlockId: boolean; // 是否允许手动输入 Block ID
     blockIdInsertPosition: BlockIdInsertPosition; // 块ID的插入位置
     autoBlockDisplayText: boolean; // 自动为 Block 添加显示文本
@@ -104,7 +110,7 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableCalloutCopy: true,
     calloutCopyPriority: true,
     codeBlockBehavior: CodeBlockBehavior.COPY_CONTENT, // 默认复制代码块纯文本
-    autoAddBlockId: false, // 默认关闭
+    noCopyAction: NoCopyAction.BLOCK_LINK, // 默认生成块 ID 链接
     allowManualBlockId: false, // 默认关闭
     blockIdInsertPosition: BlockIdInsertPosition.END_OF_BLOCK, // 默认在块末尾插入
     autoBlockDisplayText: true,

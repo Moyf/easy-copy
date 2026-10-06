@@ -1,6 +1,6 @@
 import { Editor, MarkdownView, Notice, Plugin, Menu, Platform, MarkdownFileInfo, TFile, getLanguage, type EventRef } from 'obsidian';
 import { Language, TranslationKey, I18n } from './i18n';
-import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition } from './type';
+import { ContextData, ContextType, DEFAULT_SETTINGS, EasyCopySettings, LinkFormat, BlockIdInsertPosition, NoCopyAction } from './type';
 import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { detectCodeBlockFromLines } from './codeBlockDetect';
@@ -159,7 +159,14 @@ export default class EasyCopy extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = await this.loadData();
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+
+		// 迁移：旧版本的 autoAddBlockId 布尔开关 → noCopyAction 三选一
+		// 旧版开启 = 生成块链接；旧版关闭 = 仅提示（即「无」）
+		if (typeof data?.autoAddBlockId === 'boolean' && data?.noCopyAction === undefined) {
+			this.settings.noCopyAction = data.autoAddBlockId ? NoCopyAction.BLOCK_LINK : NoCopyAction.NONE;
+		}
 	}
 
 	async saveSettings() {
@@ -466,7 +473,9 @@ export default class EasyCopy extends Plugin {
 		}
 
 		// 检测 Callout
-		if (this.settings.enableCalloutCopy && (!this.settings.autoAddBlockId || this.settings.calloutCopyPriority)) {
+		// 回退行为是块链接时，标注复制与块 ID 生成存在冲突，由 calloutCopyPriority 决定优先级；
+		// 其他回退行为（无/文件链接）没有冲突，只要启用了标注复制就优先检测
+		if (this.settings.enableCalloutCopy && (this.settings.noCopyAction !== NoCopyAction.BLOCK_LINK || this.settings.calloutCopyPriority)) {
 			const calloutInfo = detectCallout();
 			if (calloutInfo) {
 				return calloutInfo;
@@ -575,20 +584,28 @@ export default class EasyCopy extends Plugin {
 		const contextType = this.determineContextType(editor, view);
 		// console.log('contextType:', contextType);
 
-		// Generate Block ID （自动生成 Block ID）
+		// Generate Block ID（无可复制内容时的回退行为）
 		if (contextType.type == ContextType.NULL) {
-			// 如果启用自动添加 Block ID
-			if (this.settings.autoAddBlockId) {
-				const isManual = this.settings.allowManualBlockId;
+			switch (this.settings.noCopyAction) {
+				case NoCopyAction.BLOCK_LINK: {
+					// 自动生成 Block ID 并复制块链接
+					const isManual = this.settings.allowManualBlockId;
 
-				await this.insertBlockIdAndCopyLink(editor, filename, isManual);
+					await this.insertBlockIdAndCopyLink(editor, filename, isManual);
 
-				return;
+					return;
+				}
+				case NoCopyAction.FILE_LINK:
+					// 复制当前文件链接
+					this.copyCurrentFileLink();
+					return;
+				case NoCopyAction.NONE:
+				default:
+					// 仅提示，不做任何操作
+					new Notice(this.t('no-content'));
+
+					return;
 			}
-			
-			new Notice(this.t('no-content'));
-
-			return;
 		}
 
 		switch (contextType.type) {
