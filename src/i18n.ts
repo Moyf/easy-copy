@@ -22,7 +22,7 @@ export type TranslationKey =
 	| 'link-format'| 'link-format-desc' | 'link-format-obsidian' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
 	| 'resolve-link-path-on-paste' | 'resolve-link-path-on-paste-desc' | 'resolve-link-path-on-paste-tooltip'
 	| 'copy-current-file-link' | 'file-link-copied'
-	| 'target' | 'copy-targets' | 'copy-targets-desc' | 'formatted-text' | 'formatted-text-desc' | 'customize-targets' | 'customize-targets-desc'
+	| 'target' | 'copy-targets' | 'formatted-text' | 'formatted-text-desc' | 'customize-targets' | 'customize-targets-desc'
 	| 'enable-bold' | 'enable-bold-desc' 
 	| 'enable-highlight'| 'enable-highlight-desc' 
 	| 'enable-italic' | 'enable-italic-desc'
@@ -100,7 +100,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'block-id': 'Block ID',
 		'target': 'Target',
 		'copy-targets': 'Copy targets',
-		'copy-targets-desc': 'Copyable formatted text (bold, italic, etc.), and copy behaviors for special text blocks such as callouts, code blocks and block IDs.',
 		'formatted-text': 'Formatted text',
 		'formatted-text-desc': 'Inline formatting elements that can be copied, like bold, italic and inline code.',
 		'special-text-blocks': 'Special text blocks',
@@ -229,7 +228,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'block-id': '块ID',
 		'target': '复制对象',
 		'copy-targets': '复制目标',
-		'copy-targets-desc': '可复制的格式文本（加粗、斜体等），以及标注、代码块、块 ID 等特殊文本块的复制行为。',
 		'formatted-text': '格式文本',
 		'formatted-text-desc': '可复制的行内格式文本，如加粗、斜体、行内代码等。',
 		'special-text-blocks': '特殊文本块',
@@ -369,7 +367,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'block-id': '塊ID',
 		'target': '複製對象',
 		'copy-targets': '複製目標',
-		'copy-targets-desc': '可複製的格式文字（加粗、斜體等），以及標註、代碼塊、塊 ID 等特殊文字塊的複製行為。',
 		'formatted-text': '格式文字',
 		'formatted-text-desc': '可複製的行內格式文字，如加粗、斜體、行內代碼等。',
 		'special-text-blocks': '特殊文字塊',
