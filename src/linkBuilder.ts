@@ -193,10 +193,18 @@ export function extractBlockDisplayText(
 
 	if (!text) return blockId;
 
-	// CJK 文本通常不依赖空格分词；其余文字默认按空白分隔的单词截取。
-	const usesCharacterLimit = /[\p{Script_Extensions=Han}\p{Script_Extensions=Hiragana}\p{Script_Extensions=Katakana}\p{Script_Extensions=Hangul}]/u.test(text);
+	// 水平线等纯符号行（--- *** ___）没有可读文本，直接退回 blockId
+	if (/^[-_=*~\s]+$/.test(text)) return blockId;
 
-	if (!usesCharacterLimit) {
+	// 判断是否是「CJK 类」文本：采用「检测 CJK」而非「ASCII 白名单」。
+	// 白名单永远列不全——此前 `^-~` 被解析为范围导致字面量 `-` 缺失，
+	// 含连字符（task-management）的英文句子被误判为非英文，
+	// 落入下方 CJK 分支后被截成第一个词（#42）。
+	// 用 Unicode 属性匹配汉字/假名/谚文（含 BMP 之外的扩展区块，#41）；
+	// CJK 不以空格分词，走字符数上限；其余语言按词截断。
+	const isCJK = /[\p{Script_Extensions=Han}\p{Script_Extensions=Hiragana}\p{Script_Extensions=Katakana}\p{Script_Extensions=Hangul}]/u.test(text);
+
+	if (!isCJK) {
 		const limit = wordLimit || 3;
 		return text.trim().split(/\s+/u).slice(0, limit).join(' ');
 	}

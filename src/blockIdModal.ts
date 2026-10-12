@@ -32,13 +32,13 @@ export class BlockIdInputModal extends Modal {
         this.inputEl.focus();
 
         // 说明文本
-        contentEl.createEl('div', {
+        contentEl.createDiv({
             text: this.desc,
             cls: 'blockid-modal-desc'
         });
 
         // 样式已交由 style.css 控制
-        this.errorEl = contentEl.createEl('div', { text: '', cls: 'blockid-modal-error' });
+        this.errorEl = contentEl.createDiv({ text: '', cls: 'blockid-modal-error' });
 
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {

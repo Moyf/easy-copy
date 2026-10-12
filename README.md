@@ -110,3 +110,7 @@ The plugin is now available in the community plugins list, you can search for "E
 Issues and feature requests are welcome! If you'd like to contribute to this project, feel free to submit a PR.
 
 This plugin really improved my workflow, and I hope it can help you too! 🌟
+
+## ☕ Support
+
+If you like Easy Copy, consider [buying me a coffee on Ko-fi](https://ko-fi.com/moy) ☕

@@ -5,41 +5,78 @@ All notable changes to Easy Copy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.2](https://github.com/Moyf/easy-copy/compare/1.8.1...1.8.2) - 2026-09-08
 
----
+### 🐛 Fixed
 
-## [1.7.2] - 2026-07-22
-
-### ✨ New Features
-
-- **Custom regex copy matchers**: add named copy rules with configurable regular expressions, flags, capture groups, descriptions, and enable toggles to copy project-specific text formats.
-- **Reorderable copy targets**: drag built-in and custom matchers into the desired priority order, including Markdown links.
-- **AI regex prompt helper**: copy a ready-to-use prompt from the matcher editor to help generate a suitable regular expression.
-
-### 🐛 Bug Fixes
-
-- **Unicode block display text** (fixes [#41](https://github.com/Moyf/easy-copy/issues/41)): block link aliases now apply word limits to space-separated text containing Latin Extended letters, Cyrillic, or Unicode punctuation instead of incorrectly truncating them by character count. CJK text continues to use the character limit, and character truncation no longer splits Unicode surrogate pairs.
-
-### ♻️ Changed
-
-- **Block display text settings**: renamed the English/CJK-oriented labels to word and character limits, with descriptions that reflect the actual truncation strategy.
+- **Block display text word limit** ([#42](https://github.com/Moyf/easy-copy/issues/42)): English text containing hyphens (e.g. "task-management") or apostrophes ("don't") was misdetected as CJK and truncated to the first word. Language detection now checks for CJK characters instead of an ASCII whitelist, so the word limit works for all space-separated languages; pure symbol lines like horizontal rules (`---`) now fall back to the block ID.
 
 <details>
 <summary>中文说明（点击展开）</summary>
 
-### ✨ 新功能
+### 🐛 修复
 
-- **自定义正则复制规则**：支持添加带名称、说明、正则表达式、标志、捕获组和启用开关的复制规则，用于复制项目特有的文本格式。
-- **复制目标排序**：支持拖动内置与自定义匹配器来调整优先级，并将 Markdown 链接纳入可排序目标。
-- **AI 正则提示词助手**：可从匹配器编辑界面复制即用型提示词，辅助生成合适的正则表达式。
+- **块显示文本词数上限**（[#42](https://github.com/Moyf/easy-copy/issues/42)）：含连字符（如 "task-management"）或撇号（"don't"）的英文文本会被误判为 CJK，导致别名只截取到第一个词。现在改为检测 CJK 字符来区分语言，词数上限对所有以空格分词的语言生效；水平线（`---`）等纯符号行直接回退为块 ID。
+
+</details>
+
+---
+
+## [1.8.1](https://github.com/Moyf/easy-copy/compare/1.8.0...1.8.1) - 2026-09-07
+
+### 🐛 Fixed
+
+- **Obsidian plugin review compliance**: use Obsidian's element creation helpers, replace the workspace event return-type union with `EventRef`, remove unnecessary console logging, and update the official review scanner.
+- **pnpm lockfile**: synchronize the Obsidian 1.13.1 dependency metadata so frozen-lockfile installs succeed.
+
+<details>
+<summary>中文说明（点击展开）</summary>
 
 ### 🐛 修复
 
-- **Unicode 块显示文本**（修复 [#41](https://github.com/Moyf/easy-copy/issues/41)）：包含拉丁扩展字母、西里尔字母或 Unicode 标点的空格分词文本，现在会正确采用单词数上限，不再被错误地按字符截短。CJK 文本仍使用字符数上限，按字符截取时也不会再拆断 Unicode 代理对。
+- **Obsidian 插件审核规范**：使用 Obsidian 元素创建辅助方法，以 `EventRef` 替换 workspace 事件返回类型联合，移除不必要的控制台日志，并更新官方审核扫描器。
+- **pnpm 锁文件**：同步 Obsidian 1.13.1 依赖元数据，确保 frozen-lockfile 安装成功。
 
-### ♻️ 变更
+</details>
 
-- **块显示文本设置**：将原先面向英语/CJK 的标签调整为按词和按字符截取上限，并更新说明以准确反映实际截取策略。
+---
+
+## [1.8.0] - 2026-09-04
+
+### ⚠️ Breaking Changes
+
+- **Minimum Obsidian version is now 1.13.0**: the settings tab is rebuilt on Obsidian 1.13's declarative settings API. Update your Obsidian app before updating the plugin.
+
+### ✨ New Features
+
+- **Settings reorganized into sub-pages**:
+  - **Copy targets**: a "General elements" sub-page (copyable markup targets, callout copy, code block behavior) and a "Block ID" sub-page
+  - **Copy format**: a "Link format" sub-page with new **Heading link** / **Note link** groups, and an "Advanced options" sub-page
+- **Declarative settings API**: migrated to `getSettingDefinitions()` — dependent settings now show/hide instantly via visibility predicates instead of a full re-render, and every sub-page entry carries its own description
+
+### 🐛 Fixed
+
+- **Settings description rendering**: the info icon in "Resolve link path on paste" no longer renders as `[object DocumentFragment]`; the tooltip icon is now attached directly to the description element
+- **Descriptions punctuation**: all setting descriptions now end with a period, matching Obsidian core style
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### ⚠️ 破坏性变更
+
+- **最低 Obsidian 版本提升至 1.13.0**：设置页基于 Obsidian 1.13 的声明式设置 API 重构。更新插件前请先升级 Obsidian。
+
+### ✨ 新功能
+
+- **设置页重组为子页面**：
+  - **复制目标**：「通用元素」子页面（可复制的标记对象、标注复制、代码块行为）与「块ID」子页面
+  - **复制格式**：「链接格式」子页面（内含全新的**标题链接** / **笔记链接**分组）与「进阶选项」子页面
+- **声明式设置 API**：迁移到 `getSettingDefinitions()`——依赖设置项通过可见性谓词即时显示/隐藏，无需整页刷新；每个子页面入口都带有说明
+
+### 🐛 修复
+
+- **设置描述渲染**：「粘贴时解析链接路径」的 info 图标不再显示为 `[object DocumentFragment]`，tooltip 图标现在直接挂载到描述元素上
+- **描述标点**：所有设置描述统一以句号结尾，与 Obsidian 官方风格一致
 
 </details>
 
