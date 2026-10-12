@@ -14,7 +14,8 @@ export interface BuildBlockCopyMetadataInput {
 	sourceFilePath: string;
 	blockId: string;
 	useBrief: boolean;
-	firstLine: string;
+	/** 块的完整文本（可多行，行尾块 ID 会被清理） */
+	blockText: string;
 	autoBlockDisplayText: boolean;
 	autoEmbedBlockLink: boolean;
 	blockDisplayWordLimit: number;
@@ -27,7 +28,7 @@ export function buildBlockCopyMetadata(input: BuildBlockCopyMetadataInput): Copy
 		sourceFilePath,
 		blockId,
 		useBrief,
-		firstLine,
+		blockText,
 		autoBlockDisplayText,
 		autoEmbedBlockLink,
 		blockDisplayWordLimit,
@@ -35,8 +36,8 @@ export function buildBlockCopyMetadata(input: BuildBlockCopyMetadataInput): Copy
 	} = input;
 
 	let alias = blockId;
-	if (useBrief && firstLine) {
-		alias = extractBlockDisplayText(firstLine, blockId, blockDisplayWordLimit, blockDisplayCharLimit);
+	if (useBrief && blockText) {
+		alias = extractBlockDisplayText(blockText, blockId, blockDisplayWordLimit, blockDisplayCharLimit);
 	}
 	if (!autoBlockDisplayText) {
 		alias = '';

@@ -44,7 +44,8 @@ export type TranslationKey =
     | 'block-id-insert-position' | 'block-id-insert-position-desc'
     | 'block-id-end-of-block' | 'block-id-next-line' | 'block-id-next-line-with-gap'
     | 'modal-block-id' | 'modal-block-id-desc'
-	| 'auto-block-display-text' | 'auto-block-display-text-desc' 
+	| 'auto-block-display-text' | 'auto-block-display-text-desc'
+	| 'block-display-full-block' | 'block-display-full-block-desc'
 	| 'block-display-word-limit' | 'block-display-word-limit-desc'
 	| 'block-display-char-limit' | 'block-display-char-limit-desc' 
 	| 'generate-current-block-link-auto' | 'generate-current-block-link-manual'
@@ -162,6 +163,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'enable-link-desc': 'Enable copying Markdown links like [title](link). The copied content depends on the cursor position.',
 		'auto-block-display-text': 'Generate display text for block links',
 		'auto-block-display-text-desc': 'If enabled, display text will be automatically added to generated block ID links.',
+		'block-display-full-block': 'Use the whole block as display text',
+		'block-display-full-block-desc': 'If enabled, the display text is taken from the whole (multi-line) block: soft-wrapped continuation lines are joined with spaces. If disabled, only a single line is used (legacy behavior). Tables, code blocks and math blocks fall back to the block ID.',
 		'block-display-word-limit': 'Block display text: Word limit',
 		'block-display-word-limit-desc': 'Maximum number of words for space-separated text, such as English or Polish.',
 		'block-display-char-limit': 'Block display text: Character limit',
@@ -349,6 +352,8 @@ I want to extract:`,
 		'frontmatter-key-desc': '用于显示文本的笔记属性名（默认：title）。',
 		'auto-block-display-text': '生成块链接的显示文本',
 		'auto-block-display-text-desc': '启用后，会自动为生成的块ID链接添加显示文本。',
+		'block-display-full-block': '显示文本取整个块',
+		'block-display-full-block-desc': '启用后，显示文本取自整个（多行）块：软换行的后续行会用空格拼接。关闭时仅使用单独一行（旧版行为）。表格、代码块和数学块会回退到块 ID。',
 		'block-display-word-limit': '块显示文本：单词数限制',
 		'block-display-word-limit-desc': '以空格分词的语言（如英语、波兰语）在块显示文本中显示的最大单词数。',
 		'block-display-char-limit': '块显示文本：字符数限制',
@@ -393,6 +398,8 @@ I want to extract:`,
 		'add-extra-commands-desc': '啟用後，會在命令面板中新增「複製當前筆記鏈接」和「生成並複製當前塊鏈接」命令。',
 		'auto-block-display-text': '生成塊連結的顯示文本',
 		'auto-block-display-text-desc': '啟用後，會自動為生成的塊ID連結添加顯示文本。',
+		'block-display-full-block': '顯示文本取整個塊',
+		'block-display-full-block-desc': '啟用後，顯示文本取自整個（多行）塊：軟換行的後續行會用空格拼接。關閉時僅使用單獨一行（舊版行為）。表格、代碼塊和數學塊會回退到塊 ID。',
 		'block-display-word-limit': '塊顯示文本：單詞數限制',
 		'block-display-word-limit-desc': '以空格分詞的語言（如英語、波蘭語）在塊顯示文本中顯示的最大單詞數。',
 		'block-display-char-limit': '塊顯示文本：字符數限制',

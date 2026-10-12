@@ -188,6 +188,12 @@ export class EasyCopySettingTab extends PluginSettingTab {
 										control: { type: 'toggle', key: 'autoBlockDisplayText' },
 									},
 									{
+										name: this.plugin.t('block-display-full-block'),
+										desc: this.plugin.t('block-display-full-block-desc'),
+										visible: () => settings.autoBlockDisplayText,
+										control: { type: 'toggle', key: 'blockDisplayFullBlock', defaultValue: false },
+									},
+									{
 										name: this.plugin.t('block-display-word-limit'),
 										desc: this.plugin.t('block-display-word-limit-desc'),
 										visible: () => settings.autoBlockDisplayText,
