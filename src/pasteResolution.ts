@@ -1,5 +1,4 @@
 import { CopyMetadata } from './copyMetadata';
-import { sanitizeHeadingForLink } from './linkBuilder';
 import { EasyCopySettings, LinkFormat } from './type';
 
 /**
@@ -40,26 +39,24 @@ export interface ShouldOmitAliasInput {
 	sourceFilePath: string;
 	destFilePath: string;
 	subpath: string;
-	alias: string;
-	useHeadingAsDisplayText: boolean;
 }
 
 /**
  * 判断粘贴时的 alias 是否冗余、应当省略。
  *
- * 同文件标题 wiki 粘贴时，链接渲染本就只显示标题文本——
- * `[[#Heading]]` 会显示为「Heading」，无需额外的 alias。
+ * 同文件标题 wiki 粘贴一律省略 alias，生成 `[[#Heading]]` 短形式：
+ * 读者已经在目标文件内，「文件名#标题」里的文件名前缀不携带信息，
+ * 且这与 Obsidian 原生行为一致——同笔记内自动补全、拖拽标题
+ * 生成的就是无 alias 的 `[[#Heading]]`。
  * 跨文件 wiki 粘贴必须保留 alias（否则 Obsidian 会显示成
  * 「Filename > Heading」）。Markdown 粘贴永远需要 alias，
  * 因为 alias 就是用户看到的链接文本。
- * 块链接不在本预判范围内：其简短 alias 永远不会与 `#^id`
- * 字面量相同，且块链接有自己的显示设置。
+ * 块链接（`#^id`）排除在外：其 alias 是内容摘要而非锚点复述，
+ * 省略会退化成渲染随机块 ID。
  */
 export function shouldOmitAliasForSameFile(input: ShouldOmitAliasInput): boolean {
 	if (input.effectiveLinkFormat !== LinkFormat.WIKILINK) return false;
 	if (input.sourceFilePath !== input.destFilePath) return false;
-	if (!input.subpath || !input.alias) return false;
-	if (!input.useHeadingAsDisplayText) return false;
-	if (input.subpath.startsWith('#^')) return false;
-	return input.subpath === `#${sanitizeHeadingForLink(input.alias)}`;
+	if (!input.subpath) return false;
+	return !input.subpath.startsWith('#^');
 }
