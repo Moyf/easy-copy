@@ -84,16 +84,19 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				type: 'group',
 				heading: this.plugin.t('copy-targets'),
 				items: [
-					// 格式文本子页面：自定义复制对象开关 + 可拖拽排序的匹配器列表
+					// 格式文本子页面：可拖拽排序的匹配器列表（每行开关即启用状态，所见即所拷）
 					{
 						type: 'page',
 						name: this.plugin.t('formatted-text'),
 						desc: this.plugin.t('formatted-text-desc'),
 						items: [
+							// list 定义不支持 desc，用空 name + render 生成列表标题下的说明行
 							{
-								name: this.plugin.t('customize-targets'),
-								desc: this.plugin.t('customize-targets-desc'),
-								control: { type: 'toggle', key: 'customizeTargets' },
+								name: '',
+								searchable: false,
+								render: (setting: Setting) => {
+									setting.setName('').setDesc(this.plugin.t('matcher-priority-desc'));
+								},
 							},
 							this.buildMatcherListDefinition(),
 						],
@@ -388,7 +391,6 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		return {
 			type: 'list',
 			heading: this.plugin.t('matcher-priority'),
-			visible: () => settings.customizeTargets,
 			extraButtons: [
 				button => button
 					.setIcon('rotate-ccw')

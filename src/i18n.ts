@@ -22,7 +22,7 @@ export type TranslationKey =
 	| 'link-format'| 'link-format-desc' | 'link-format-obsidian' | 'markdown-link' | 'wiki-link' | 'contextual-copy'
 	| 'resolve-link-path-on-paste' | 'resolve-link-path-on-paste-desc' | 'resolve-link-path-on-paste-tooltip'
 	| 'copy-current-file-link' | 'file-link-copied'
-	| 'target' | 'copy-targets' | 'formatted-text' | 'formatted-text-desc' | 'customize-targets' | 'customize-targets-desc'
+	| 'target' | 'copy-targets' | 'formatted-text' | 'formatted-text-desc'
 	| 'enable-bold' | 'enable-bold-desc' 
 	| 'enable-highlight'| 'enable-highlight-desc' 
 	| 'enable-italic' | 'enable-italic-desc'
@@ -52,7 +52,7 @@ export type TranslationKey =
 	| 'enable-display-name-regex' | 'enable-display-name-regex-desc'
 	| 'display-name-regex-from' | 'display-name-regex-from-desc'
 	| 'display-name-regex-to' | 'display-name-regex-to-desc'
-	| 'matcher-priority' | 'reset-order'
+	| 'matcher-priority' | 'matcher-priority-desc' | 'reset-order'
 	| 'add-custom-matcher' | 'delete-custom-matcher' | 'configure-custom-matcher'
 	| 'custom-matcher-name' | 'custom-matcher-name-desc'
 	| 'custom-matcher-note' | 'custom-matcher-note-desc'
@@ -146,8 +146,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'resolve-link-path-on-paste': 'Resolve link path on paste',
 		'resolve-link-path-on-paste-desc': 'Regenerate the link path at paste time based on the destination file. Under "Follow Obsidian settings", uses your link format in "Files and links" settings. Otherwise, use shortest link.',
 		'resolve-link-path-on-paste-tooltip': 'Plugins loaded earlier take priority for paste handling. If another plugin (e.g. Linter) intercepts paste first, this feature will be bypassed. You can adjust plugin load order in the community-plugins.json file.',
-		'customize-targets': 'Customize targets',
-		'customize-targets-desc': 'Enable to customize which elements can be copied (disable to copy all built-in elements; custom rules always require this option).',
 		'enable-inline-code': 'Inline code',
 		'enable-inline-code-desc': 'Enable copying inline code like `code example`.',
 		'enable-bold': 'Bold text',
@@ -203,7 +201,8 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 		'display-name-regex-to-desc': 'Replacement string, supports capture groups like $1, $2 (e.g. $1 to keep only the first captured group).',
 
 		// 自定义复制规则
-		'matcher-priority': 'Custom copy order',
+		'matcher-priority': 'Customizable formatted text',
+		'matcher-priority-desc': 'Drag to set the matching priority — higher rows are copied first. Toggle each target on or off, and use + to add custom regex rules.',
 		'reset-order': 'Reset order',
 		'add-custom-matcher': 'Add custom target',
 		'delete-custom-matcher': 'Delete',
@@ -304,8 +303,6 @@ I want to extract:`,
 		'resolve-link-path-on-paste': '粘贴时解析链接路径',
 		'resolve-link-path-on-paste-desc': '粘贴时根据目标文件重新生成链接路径。使用"跟随 Obsidian 设置"时，沿用"文件与链接"设置中的链接格式；否则，使用最短链接。',
 		'resolve-link-path-on-paste-tooltip': '越早加载的插件越先处理粘贴事件。若其他插件（如 Linter）抢先处理，本功能会被跳过。可在 community-plugins.json 文件中调整插件加载顺序。',
-		'customize-targets': '自定义复制对象',
-		'customize-targets-desc': '启用后可以自定义哪些元素可以被复制（不启用则默认复制所有内置对象，如加粗、高亮等；自定义规则需启用本选项后生效）。',
 		'enable-inline-code': '行内代码',
 		'enable-inline-code-desc': '启用复制行内代码，如 `代码示例`。',
 		'enable-bold': '加粗文本',
@@ -364,7 +361,8 @@ I want to extract:`,
 		'display-name-regex-to-desc': '替换字符串，支持捕获组引用如 $1、$2（如 $1 只保留第一个捕获组的内容）。',
 
 		// 自定义复制规则
-		'matcher-priority': '自定义复制顺序',
+		'matcher-priority': '自定义复制的格式文本',
+		'matcher-priority-desc': '拖动调整匹配优先级，越靠上越优先复制；每行开关控制是否启用，点击右上角 + 可添加自定义正则规则。',
 		'reset-order': '重置顺序',
 		'add-custom-matcher': '添加自定义对象',
 		'delete-custom-matcher': '删除',
@@ -467,8 +465,6 @@ I want to extract:`,
 		'resolve-link-path-on-paste': '貼上時解析連結路徑',
 		'resolve-link-path-on-paste-desc': '貼上時根據目標檔案重新生成連結路徑。使用「跟隨 Obsidian 設定」時，沿用「檔案與連結」設定中的連結格式；否則，使用最短連結。',
 		'resolve-link-path-on-paste-tooltip': '越早載入的外掛越先處理貼上事件。若其他外掛（如 Linter）搶先處理，本功能會被略過。可在 community-plugins.json 檔案中調整外掛載入順序。',
-		'customize-targets': '自定義複製對象',
-		'customize-targets-desc': '啟用後可以自定義哪些元素可以被複製（不啟用則默認複製所有內置對象，如加粗、高亮等；自定義規則需啟用本選項後生效）。',
 		'enable-inline-code': '行內代碼',
 		'enable-inline-code-desc': '啟用複製行內代碼，如 `代碼示例`。',
 		'enable-bold': '加粗文本',
@@ -526,7 +522,8 @@ I want to extract:`,
 		'display-name-regex-to-desc': '替換字符串，支持捕獲組引用如 $1、$2。',
 
 		// 自定義複製規則
-		'matcher-priority': '自定義複製順序',
+		'matcher-priority': '自定義複製的格式文字',
+		'matcher-priority-desc': '拖動調整匹配優先級，越靠上越優先複製；每行開關控制是否啟用，點擊右上角 + 可添加自定義正規表示式規則。',
 		'reset-order': '重置順序',
 		'add-custom-matcher': '添加自定義對象',
 		'delete-custom-matcher': '刪除',
