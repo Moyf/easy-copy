@@ -84,16 +84,19 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				type: 'group',
 				heading: this.plugin.t('copy-targets'),
 				items: [
-					// 格式文本子页面：自定义复制对象开关 + 可拖拽排序的匹配器列表
+					// 格式文本子页面：可拖拽排序的匹配器列表（每行开关即启用状态，所见即所拷）
 					{
 						type: 'page',
 						name: this.plugin.t('formatted-text'),
 						desc: this.plugin.t('formatted-text-desc'),
 						items: [
+							// list 定义不支持 desc，用空 name + render 生成列表标题下的说明行
 							{
-								name: this.plugin.t('customize-targets'),
-								desc: this.plugin.t('customize-targets-desc'),
-								control: { type: 'toggle', key: 'customizeTargets' },
+								name: '',
+								searchable: false,
+								render: (setting: Setting) => {
+									setting.setName('').setDesc(this.plugin.t('matcher-priority-desc'));
+								},
 							},
 							this.buildMatcherListDefinition(),
 						],
@@ -388,7 +391,6 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		return {
 			type: 'list',
 			heading: this.plugin.t('matcher-priority'),
-			visible: () => settings.customizeTargets,
 			extraButtons: [
 				button => button
 					.setIcon('rotate-ccw')
@@ -425,6 +427,8 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			desc: this.getMatcherDesc(matcherId),
 			searchable: false,
 			render: (setting: Setting) => {
+				// 标记行元素：拖拽预览会把行移出分组容器，样式需跟随行本身
+				setting.settingEl.addClass('easy-copy-matcher-row');
 				if (customMatcher) {
 					setting.addExtraButton(button => button
 						.setIcon('trash-2')
@@ -491,6 +495,10 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				if (isNew) {
 					settings.customMatchers.push(saved);
 					settings.matcherOrder = normalizeMatcherOrder([...settings.matcherOrder, getCustomMatcherOrderId(saved)], settings.customMatchers);
+				} else {
+					// 弹窗编辑的是副本，需写回数组中的原条目
+					const index = settings.customMatchers.findIndex(matcher => matcher.id === saved.id);
+					if (index !== -1) settings.customMatchers[index] = saved;
 				}
 				void this.plugin.saveSettings();
 				// 新增/删除/改名都会改变列表行集，需整体重建定义
