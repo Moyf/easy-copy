@@ -112,6 +112,9 @@ describe('decidePasteResolution', () => {
 });
 
 describe('shouldOmitAliasForSameFile', () => {
+	// 行为变更：同文件标题 wiki 粘贴一律省略 alias，生成 `[[#Heading]]` 短形式。
+	// 不再依赖复制时的显示文本设置——「文件名#标题」前缀在同文件语境下
+	// 是冗余信息，且短形式与 Obsidian 原生行为一致。
 	const sameFile = 'notes/SomeThing.md';
 	const otherFile = 'notes/MyNote.md';
 
@@ -120,24 +123,10 @@ describe('shouldOmitAliasForSameFile', () => {
 		sourceFilePath: sameFile,
 		destFilePath: sameFile,
 		subpath: '#Other Heading',
-		alias: 'Other Heading',
-		useHeadingAsDisplayText: true,
 	};
 
-	it('omits when WIKI + same-file + heading subpath matches alias (sanitized)', () => {
+	it('omits for same-file heading wikilink regardless of alias shape', () => {
 		expect(shouldOmitAliasForSameFile(base)).toBe(true);
-	});
-
-	it('keeps alias when WIKI + same-file but alias does not match heading', () => {
-		expect(shouldOmitAliasForSameFile({ ...base, alias: 'Different' })).toBe(false);
-	});
-
-	it('keeps alias when useHeadingAsDisplayText is false', () => {
-		expect(shouldOmitAliasForSameFile({
-			...base,
-			useHeadingAsDisplayText: false,
-			alias: 'SomeThing#Other Heading',
-		})).toBe(false);
 	});
 
 	it('keeps alias on cross-file paste (WIKI)', () => {
@@ -152,25 +141,11 @@ describe('shouldOmitAliasForSameFile', () => {
 		expect(shouldOmitAliasForSameFile({ ...base, subpath: '' })).toBe(false);
 	});
 
-	it('keeps alias when alias is empty', () => {
-		expect(shouldOmitAliasForSameFile({ ...base, alias: '' })).toBe(false);
-	});
-
 	it('keeps alias on block-link subpath (#^id)', () => {
 		expect(shouldOmitAliasForSameFile({
 			...base,
 			subpath: '#^abc123',
-			alias: 'The quick brown',
 		})).toBe(false);
-	});
-
-	it('omits when sanitization round-trip collapses alias to subpath', () => {
-		// alias 中的 | 会被 sanitizeHeadingForLink 折叠为空格
-		expect(shouldOmitAliasForSameFile({
-			...base,
-			subpath: '#Some Heading',
-			alias: 'Some|Heading',
-		})).toBe(true);
 	});
 
 	it('keeps alias when OBSIDIAN is passed (helper expects already-resolved format)', () => {

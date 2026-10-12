@@ -230,8 +230,6 @@ export default class EasyCopy extends Plugin {
 				sourceFilePath: meta.sourceFilePath,
 				destFilePath: destFile.path,
 				subpath: meta.subpath,
-				alias: meta.alias,
-				useHeadingAsDisplayText: this.settings.useHeadingAsDisplayText,
 			});
 
 			let link: string;

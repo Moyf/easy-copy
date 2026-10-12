@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Custom regex copy targets**: create named copy rules with your own regular expressions (flags, capture group, description, enable toggle) to copy text in syntax the built-in targets don't cover. The rule editor validates the regex as you type and can copy a ready-to-use AI prompt to help generate one.
 - **Reorderable copy targets**: built-in and custom targets now share one drag-to-reorder list under *Settings → Copy targets → Formatted text*; the order is the matching priority, and Markdown links are included. Each row has its own enable toggle — the old "Customize targets" master switch was removed, the row toggles now always apply.
+- **Short same-file heading links**: with *Resolve link path on paste* enabled, pasting a copied heading link within the same note now always produces the short `[[#Heading]]` form — matching Obsidian's native behavior — regardless of the heading display-text setting.
 
 ### 🐛 Fixed
 
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **自定义正则复制对象**：可用自定义正则表达式（标志、捕获组、说明、启用开关）创建命名复制规则，复制内置对象不支持的文本格式。规则编辑器支持正则实时校验，并可复制即用型 AI 提示词辅助生成正则。
 - **复制对象排序**：内置与自定义对象合并为「设置 → 复制目标 → 格式文本」下的一个可拖拽排序列表，顺序即匹配优先级，Markdown 链接也参与排序。每行自带启用开关——原「自定义复制对象」总开关已移除，行开关始终生效。
+- **同文件标题短链接**：启用「粘贴时解析链接路径」后，在同一笔记内粘贴复制的标题链接时，始终生成 `[[#Heading]]` 短形式（与 Obsidian 原生行为一致），不再受标题显示文本设置影响。
 
 ### 🐛 修复
 
