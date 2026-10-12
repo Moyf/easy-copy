@@ -69,6 +69,17 @@ describe('getBlockTextFromLines', () => {
 		expect(getBlockTextFromLines(lines, 0)).toBe('## Intro');
 	});
 
+	it('does not treat a line-start tag as a heading boundary', () => {
+		// `#tag` 是内联标签，不打断段落
+		const lines = ['intro line', '#tag somewhere', 'more text'];
+		expect(getBlockTextFromLines(lines, 2)).toBe('intro line\n#tag somewhere\nmore text');
+	});
+
+	it('still treats real headings as boundaries', () => {
+		const lines = ['para', '# Heading', 'other'];
+		expect(getBlockTextFromLines(lines, 0)).toBe('para');
+	});
+
 	it('starts the block below a heading, not at the heading itself', () => {
 		const lines = ['# Title', 'para one', 'para two'];
 		expect(getBlockTextFromLines(lines, 2)).toBe('para one\npara two');
@@ -90,6 +101,11 @@ describe('getBlockTextFromLines', () => {
 
 	it('returns empty for fenced code blocks', () => {
 		const lines = ['```js', 'const x = 1;', '```'];
+		expect(getBlockTextFromLines(lines, 1)).toBe('');
+	});
+
+	it('returns empty for tilde-fenced code blocks', () => {
+		const lines = ['~~~', 'code', '~~~'];
 		expect(getBlockTextFromLines(lines, 1)).toBe('');
 	});
 

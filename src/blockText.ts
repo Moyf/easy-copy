@@ -10,9 +10,9 @@ export function isListItemStart(trimmedLine: string): boolean {
 	return /^(?:[-*+]|\d+[.)])\s/.test(trimmedLine);
 }
 
-/** 行首 `#`（含 `#tag` 这类行首标签）按标题边界处理——沿用 detectBlockRange 的粗略语义。入参应已 trim。 */
-function isHeadingLike(trimmedLine: string): boolean {
-	return trimmedLine.startsWith('#');
+/** ATX 标题行（`#`~`######` 后跟空格）。行首的 `#tag` 是内联标签，不算标题。入参应已 trim。 */
+function isHeadingLine(trimmedLine: string): boolean {
+	return /^#{1,6}\s/.test(trimmedLine);
 }
 
 /**
@@ -26,7 +26,7 @@ export function stripTrailingBlockId(line: string): string {
 /** 有效的一行连续文本：非空、非标题行、非 `- ` 列表项。 */
 function isContinuousText(line: string): boolean {
 	const trimmed = line.trim();
-	return trimmed !== '' && !isHeadingLike(trimmed) && !trimmed.startsWith('- ');
+	return trimmed !== '' && !isHeadingLine(trimmed) && !trimmed.startsWith('- ');
 }
 
 /**
@@ -52,18 +52,18 @@ export function getBlockTextFromLines(lines: string[], cursorLine: number): stri
 	let start = cursorLine;
 	while (start > 0) {
 		const line = lines[start].trim();
-		if (line === '' || isListItemStart(line) || isHeadingLike(line)) {
+		if (line === '' || isListItemStart(line) || isHeadingLine(line)) {
 			break; // 本行自己就是 block 的开头
 		}
 		const prev = lines[start - 1].trim();
-		if (prev === '' || isHeadingLike(prev)) {
+		if (prev === '' || isHeadingLine(prev)) {
 			break; // 上一行是空行或标题：本行是段落开头
 		}
 		start--;
 	}
 	let end = start;
 	// 标题自成一个（单行）block，不向下延伸
-	const startIsHeading = isHeadingLike(lines[start].trim());
+	const startIsHeading = isHeadingLine(lines[start].trim());
 	while (
 		!startIsHeading &&
 		end < lines.length - 1 &&
@@ -76,7 +76,8 @@ export function getBlockTextFromLines(lines: string[], cursorLine: number): stri
 	for (let i = start; i <= end; i++) {
 		const line = lines[i];
 		const trimmed = line.trim();
-		if (trimmed.startsWith('|') || trimmed.startsWith('```') || trimmed.startsWith('$$')) {
+		// 围栏代码块（``` 和 ~~~）、表格、数学块不做文本展开，回退到块 ID
+		if (trimmed.startsWith('|') || trimmed.startsWith('```') || trimmed.startsWith('~~~') || trimmed.startsWith('$$')) {
 			return '';
 		}
 		blockLines.push(stripTrailingBlockId(line));
