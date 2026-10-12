@@ -66,7 +66,7 @@ export function normalizeMatcherOrder(order: readonly string[] | undefined, cust
 	return orderedIds;
 }
 
-function buildCustomCopyMatcher(setting: CustomCopyMatcherSetting, enabled: boolean): CopyMatcher | null {
+function buildCustomCopyMatcher(setting: CustomCopyMatcherSetting): CopyMatcher | null {
 	if (!setting.pattern.trim()) return null;
 
 	try {
@@ -75,7 +75,7 @@ function buildCustomCopyMatcher(setting: CustomCopyMatcherSetting, enabled: bool
 			id: getCustomMatcherOrderId(setting),
 			type: ContextType.CUSTOM,
 			regex: new RegExp(setting.pattern, flags),
-			enabled: enabled && setting.enabled,
+			enabled: setting.enabled,
 			captureGroup: setting.captureGroup,
 			name: setting.name.trim() || 'Custom matcher',
 		};
@@ -124,13 +124,13 @@ export function buildBuiltinCopyMatchers(settings: EasyCopySettings, isIosApp: b
 	const boldRegex = /(?:\*\*([^*]+)\*\*|__([^_]+)__)/g;
 
 	const matchers: CopyMatcher[] = [
-		{ id: 'bold', type: ContextType.BOLD, regex: boldRegex, enabled: !settings.customizeTargets || settings.enableBold },
-		{ id: 'italic', type: ContextType.ITALIC, regex: italicRegex, enabled: !settings.customizeTargets || settings.enableItalic },
-		{ id: 'highlight', type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g, enabled: !settings.customizeTargets || settings.enableHighlight },
-		{ id: 'strikethrough', type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g, enabled: !settings.customizeTargets || settings.enableStrikethrough },
-		{ id: 'inline-code', type: ContextType.INLINECODE, regex: /`([^`]+)`/g, enabled: !settings.customizeTargets || settings.enableInlineCode },
-		{ id: 'inline-latex', type: ContextType.INLINELATEX, regex: /\$([^$]+)\$/g, enabled: !settings.customizeTargets || settings.enableInlineLatex },
-		{ id: 'wiki-link', type: ContextType.WIKILINK, regex: /\[\[([^\]]+)\]\]/g, enabled: !settings.customizeTargets || settings.enableWikiLink },
+		{ id: 'bold', type: ContextType.BOLD, regex: boldRegex, enabled: settings.enableBold },
+		{ id: 'italic', type: ContextType.ITALIC, regex: italicRegex, enabled: settings.enableItalic },
+		{ id: 'highlight', type: ContextType.HIGHLIGHT, regex: /==([^=]+)==/g, enabled: settings.enableHighlight },
+		{ id: 'strikethrough', type: ContextType.STRIKETHROUGH, regex: /~~([^~]+)~~/g, enabled: settings.enableStrikethrough },
+		{ id: 'inline-code', type: ContextType.INLINECODE, regex: /`([^`]+)`/g, enabled: settings.enableInlineCode },
+		{ id: 'inline-latex', type: ContextType.INLINELATEX, regex: /\$([^$]+)\$/g, enabled: settings.enableInlineLatex },
+		{ id: 'wiki-link', type: ContextType.WIKILINK, regex: /\[\[([^\]]+)\]\]/g, enabled: settings.enableWikiLink },
 	];
 
 	const matcherById = new Map(matchers.map(matcher => [matcher.id, matcher]));
@@ -142,7 +142,7 @@ export function buildBuiltinCopyMatchers(settings: EasyCopySettings, isIosApp: b
 export function buildCopyMatchers(settings: EasyCopySettings, isIosApp: boolean): CopyMatcher[] {
 	const matchers = [
 		...buildBuiltinCopyMatchers(settings, isIosApp),
-		...settings.customMatchers.map(matcher => buildCustomCopyMatcher(matcher, settings.customizeTargets)).filter(matcher => matcher !== null),
+		...settings.customMatchers.map(matcher => buildCustomCopyMatcher(matcher)).filter(matcher => matcher !== null),
 	];
 	const matcherById = new Map(matchers.map(matcher => [matcher.id, matcher]));
 

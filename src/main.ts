@@ -426,7 +426,7 @@ export default class EasyCopy extends Plugin {
 	
 		for (const targetId of orderedTargetIds) {
 			if (targetId === 'link') {
-				if (this.settings.customizeTargets && !this.settings.enableLink) continue;
+				if (!this.settings.enableLink) continue;
 				const linkInfo = this.isCursorInLink(beforeCursor, afterCursor);
 				if (linkInfo) {
 					return {

@@ -94,9 +94,9 @@ export class CustomMatcherModal extends Modal {
 
 	// 正则输入 + AI 提示词助手：点击说明中的图标复制提示词，交给 AI 生成正则
 	private addPatternField(): void {
-		const desc = activeDocument.createDocumentFragment();
+		const desc = createFragment();
 		desc.append(this.t('custom-matcher-pattern-desc') + ' ');
-		const infoIcon = desc.createEl('span', {
+		const infoIcon = desc.createSpan({
 			attr: { 'aria-label': this.t('custom-matcher-pattern-tooltip') },
 			cls: 'easy-copy-info-icon',
 		});
