@@ -56,4 +56,17 @@ If your plugin does not need CSS, delete this file.
   min-height: 1em;
   margin: 0.25em 0 0.5em 0;
 }
+
+/* 声明式列表拖拽时，行元素被移出分组容器（.drag-reorder-ghost > .mod-dragged-item）：
+   空的图标槽位重新占据宽度、内边距脱离分组规则后会被基础样式与第三方覆盖
+   （如主题/插件对 .setting-item 的 padding-block 修改）改变，导致预览文本错位。
+   此处显式声明与列表内一致的内边距（双类选择器提高优先级），并隐藏空槽位；
+   列表内的呈现由分组规则（更高优先级）控制，不受影响。 */
+.easy-copy-matcher-row.easy-copy-matcher-row {
+  padding: var(--size-4-2) var(--size-4-4);
+}
+
+.easy-copy-matcher-row .setting-item-icon {
+  display: none;
+}
 }

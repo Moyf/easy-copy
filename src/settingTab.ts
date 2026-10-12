@@ -425,6 +425,8 @@ export class EasyCopySettingTab extends PluginSettingTab {
 			desc: this.getMatcherDesc(matcherId),
 			searchable: false,
 			render: (setting: Setting) => {
+				// 标记行元素：拖拽预览会把行移出分组容器，样式需跟随行本身
+				setting.settingEl.addClass('easy-copy-matcher-row');
 				if (customMatcher) {
 					setting.addExtraButton(button => button
 						.setIcon('trash-2')
