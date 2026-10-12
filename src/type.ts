@@ -17,6 +17,12 @@ export enum BlockIdInsertPosition {
 	// NEXT_LINE_WITH_GAP = 'next-line-with-gap'  // 当前块的下方两行（中间隔一个空行）
 }
 
+export enum NoCopyAction {
+	NONE = 'none',                // 显示通知，不做任何操作
+	BLOCK_LINK = 'block-link',    // 自动生成块 ID 并复制块链接
+	FILE_LINK = 'file-link',      // 复制当前文件的链接
+}
+
 export enum ContextType {
     NULL = 'null',
     HEADING = 'heading',
@@ -30,9 +36,20 @@ export enum ContextType {
     LINKTITLE = 'link-title',
     LINEURL = 'line-url',
     WIKILINK = 'wiki-link', // 光标在 [[双链]] 内
+    CUSTOM = 'custom', // 用户自定义正则复制对象
     CALLOUT = 'callout', // 光标在 callout 区块内
     CODEBLOCK = 'code-block', // 光标在代码块内
 }
+
+export type BuiltinCopyMatcherId =
+    | 'bold'
+    | 'italic'
+    | 'highlight'
+    | 'strikethrough'
+    | 'inline-code'
+    | 'inline-latex'
+    | 'link'
+    | 'wiki-link';
 
 export interface ContextData {
     type: ContextType;
@@ -40,6 +57,17 @@ export interface ContextData {
     line?: number; // curLine 所在的行号（目前仅 BLOCKID 上下文会设置）
     match: string | null;
     range: [number, number] | null;
+    matcherName?: string;
+}
+
+export interface CustomCopyMatcherSetting {
+    id: string;
+    name: string;
+    note?: string;
+    pattern: string;
+    flags: string;
+    captureGroup: number;
+    enabled: boolean;
 }
 
 export interface EasyCopySettings {
@@ -63,12 +91,14 @@ export interface EasyCopySettings {
     enableInlineLatex: boolean;
     enableLink: boolean;
     enableWikiLink: boolean; // 是否启用 Wiki 链接复制
+    matcherOrder: string[]; // 复制对象匹配优先级
+    customMatchers: CustomCopyMatcherSetting[]; // 用户自定义正则复制对象
     keepWikiBrackets: boolean; // 复制 wiki-link 时保留 [[ ]]
     autoEmbedBlockLink: boolean; // 复制块链接时自动添加 !（嵌入块）
     enableCalloutCopy: boolean; // 是否启用复制 Callout 内文本
     calloutCopyPriority: boolean; // Callout 与块ID冲突时，优先复制 Callout
     codeBlockBehavior: CodeBlockBehavior; // 代码块内的复制行为
-    autoAddBlockId: boolean; // 是否自动添加 Block ID
+    noCopyAction: NoCopyAction; // 无可复制内容时的回退行为
     allowManualBlockId: boolean; // 是否允许手动输入 Block ID
     blockIdInsertPosition: BlockIdInsertPosition; // 块ID的插入位置
     autoBlockDisplayText: boolean; // 自动为 Block 添加显示文本
@@ -101,12 +131,14 @@ export const DEFAULT_SETTINGS: EasyCopySettings = {
     enableInlineLatex: true,
     enableLink: true,
     enableWikiLink: true,
+    matcherOrder: ['bold', 'italic', 'highlight', 'strikethrough', 'inline-code', 'inline-latex', 'link', 'wiki-link'],
+    customMatchers: [],
     keepWikiBrackets: true,
     autoEmbedBlockLink: false,
     enableCalloutCopy: true,
     calloutCopyPriority: true,
     codeBlockBehavior: CodeBlockBehavior.COPY_CONTENT, // 默认复制代码块纯文本
-    autoAddBlockId: false, // 默认关闭
+    noCopyAction: NoCopyAction.BLOCK_LINK, // 默认生成块 ID 链接
     allowManualBlockId: false, // 默认关闭
     blockIdInsertPosition: BlockIdInsertPosition.END_OF_BLOCK, // 默认在块末尾插入
     autoBlockDisplayText: true,

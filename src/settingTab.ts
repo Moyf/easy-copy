@@ -1,64 +1,52 @@
-import { 
-	App, 
-	PluginSettingTab, 
+import {
+	App,
+	PluginSettingTab,
 	Setting,
-	requireApiVersion,
 	setIcon,
 } from "obsidian";
-import * as ObsidianModule from "obsidian";
+import type { SettingDefinition, SettingDefinitionItem, SettingDefinitionList } from "obsidian";
 import EasyCopy from "./main";
-import { LinkFormat, BlockIdInsertPosition, CodeBlockBehavior } from "./type";
+import { BuiltinCopyMatcherId, CustomCopyMatcherSetting, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior, NoCopyAction } from "./type";
+import { DEFAULT_BUILTIN_COPY_MATCHER_IDS, getCustomMatcherOrderId, normalizeMatcherOrder } from "./copyMatcher";
+import { createCustomMatcher, CustomMatcherModal } from "./customMatcherModal";
 
-interface SettingsContainer {
-	addSetting(cb: (setting: Setting) => void): void;
-}
+// 内置复制对象 id → 设置界面文案 key / 开关设置 key 的映射
+type BuiltinMatcherLabelKey = 'enable-bold' | 'enable-italic' | 'enable-highlight' | 'enable-strikethrough' | 'enable-inline-code' | 'enable-inline-latex' | 'enable-link' | 'enable-wikilink';
+type BuiltinMatcherDescKey = 'enable-bold-desc' | 'enable-italic-desc' | 'enable-highlight-desc' | 'enable-strikethrough-desc' | 'enable-inline-code-desc' | 'enable-inline-latex-desc' | 'enable-link-desc' | 'enable-wikilink-desc';
+type BuiltinMatcherSettingKey = 'enableBold' | 'enableItalic' | 'enableHighlight' | 'enableStrikethrough' | 'enableInlineCode' | 'enableInlineLatex' | 'enableLink' | 'enableWikiLink';
 
-function createSettingsGroup(containerEl: HTMLElement, heading?: string): SettingsContainer {
-	// Check if SettingGroup is available (API 1.11.0+)
-	// requireApiVersion is the official Obsidian API method for version checking
-	if (requireApiVersion('1.11.0')) {
-		// Use SettingGroup - it's guaranteed to exist if requireApiVersion returns true
-		// Access SettingGroup via type assertion since it may not be in type definitions
-		// for older TypeScript versions, but exists at runtime in Obsidian 1.11.0+
-		// Using unknown instead of any to satisfy eslint while maintaining type safety
-		const SettingGroupClass = (ObsidianModule as unknown as { SettingGroup?: new (containerEl: HTMLElement) => {
-			setHeading(heading: string): {
-				addSetting(cb: (setting: Setting) => void): void;
-			};
-			addSetting(cb: (setting: Setting) => void): void;
-		} }).SettingGroup;
-		
-		if (SettingGroupClass) {
-			const group = heading 
-				? new SettingGroupClass(containerEl).setHeading(heading)
-				: new SettingGroupClass(containerEl);
-			return {
-				addSetting(cb: (setting: Setting) => void) {
-					group.addSetting(cb);
-				}
-			};
-		}
-	}
-	
-	// Fallback path (either API < 1.11.0 or SettingGroup not found)
-	{
-		// Fallback: Create a heading manually for older API versions
-		// Note: While best practice prefers Setting.setHeading(), the fallback path
-		// is for versions that may not support it, so manual heading is appropriate here
-		if (heading) {
-			const headingEl = containerEl.createDiv('setting-group-heading');
-			headingEl.createEl('h3', { text: heading });
-		}
-		
-		return {
-			addSetting(cb: (setting: Setting) => void) {
-				const setting = new Setting(containerEl);
-				cb(setting);
-			}
-		};
-	}
-}
+const BUILTIN_MATCHER_LABEL_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherLabelKey> = {
+	'bold': 'enable-bold',
+	'italic': 'enable-italic',
+	'highlight': 'enable-highlight',
+	'strikethrough': 'enable-strikethrough',
+	'inline-code': 'enable-inline-code',
+	'inline-latex': 'enable-inline-latex',
+	'link': 'enable-link',
+	'wiki-link': 'enable-wikilink',
+};
 
+const BUILTIN_MATCHER_DESC_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherDescKey> = {
+	'bold': 'enable-bold-desc',
+	'italic': 'enable-italic-desc',
+	'highlight': 'enable-highlight-desc',
+	'strikethrough': 'enable-strikethrough-desc',
+	'inline-code': 'enable-inline-code-desc',
+	'inline-latex': 'enable-inline-latex-desc',
+	'link': 'enable-link-desc',
+	'wiki-link': 'enable-wikilink-desc',
+};
+
+const BUILTIN_MATCHER_SETTING_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherSettingKey> = {
+	'bold': 'enableBold',
+	'italic': 'enableItalic',
+	'highlight': 'enableHighlight',
+	'strikethrough': 'enableStrikethrough',
+	'inline-code': 'enableInlineCode',
+	'inline-latex': 'enableInlineLatex',
+	'link': 'enableLink',
+	'wiki-link': 'enableWikiLink',
+};
 
 export class EasyCopySettingTab extends PluginSettingTab {
 	plugin: EasyCopy;
@@ -70,459 +58,458 @@ export class EasyCopySettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	display(): void {
-		const {containerEl} = this;
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		const settings = this.plugin.settings;
 
-		containerEl.empty();
-
-		const generalGroup = createSettingsGroup(containerEl);
-
-		generalGroup.addSetting(setting => setting
-			.setName(this.plugin.t('add-to-menu'))
-			.setDesc(this.plugin.t('add-to-menu-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.addToMenu)
-				.onChange( value => {
-					this.plugin.settings.addToMenu = value;
-					void this.plugin.saveSettings();
-				})));
-
-		generalGroup.addSetting(setting => setting
-			.setName(this.plugin.t('add-extra-commands'))
-			.setDesc(this.plugin.t('add-extra-commands-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.addExtraCommands)
-				.onChange( value => {
-					this.plugin.settings.addExtraCommands = value;
-					void this.plugin.saveSettings();
-				})));
-
-		generalGroup.addSetting(setting => setting
-			.setName(this.plugin.t('show-notice'))
-			.setDesc(this.plugin.t('show-notice-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showNotice)
-				.onChange( value => {
-					this.plugin.settings.showNotice = value;
-					void this.plugin.saveSettings();
-				})));
-
-		const formatGroup = createSettingsGroup(containerEl, this.plugin.t('format'));
-
-		formatGroup.addSetting(setting => setting
-			.setName(this.plugin.t('link-format'))
-			.setDesc(this.plugin.t('link-format-desc'))
-			.addDropdown(dropdown => dropdown
-				.addOption(LinkFormat.OBSIDIAN, this.plugin.t('link-format-obsidian'))
-				.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
-				.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
-				.setValue(this.plugin.settings.linkFormat)
-				.onChange( (value) => {
-					this.plugin.settings.linkFormat = value as LinkFormat;
-					void this.plugin.saveSettings();
-					this.plugin.syncPasteHandlerRegistration();
-					this.display();
-				})));
-
-		// 解析器在粘贴时拦截事件，根据目标文件重新生成链接。
-		// 「跟随 Obsidian 设置」时遵循 vault 的路径风格（最短/相对/绝对）；
-		// 选择明确的 Wiki/Markdown 格式时仅使用最短唯一路径。
-		formatGroup.addSetting(setting => {
-		const descFragment = activeDocument.createDocumentFragment();
-		descFragment.append(this.plugin.t('resolve-link-path-on-paste-desc') + ' ');
-		const infoIcon = descFragment.createEl('span', {
-			attr: {
-				'aria-label': this.plugin.t('resolve-link-path-on-paste-tooltip'),
-				'class': 'clickable-icon setting-editor-extra-setting-button',
-				'style': 'display:inline; vertical-align:middle; cursor:help;',
+		return [
+			// General（首个分组不加标题）
+			{
+				name: this.plugin.t('add-to-menu'),
+				desc: this.plugin.t('add-to-menu-desc'),
+				control: { type: 'toggle', key: 'addToMenu' },
 			},
-		});
-		setIcon(infoIcon, 'info');
+			{
+				name: this.plugin.t('add-extra-commands'),
+				desc: this.plugin.t('add-extra-commands-desc'),
+				control: { type: 'toggle', key: 'addExtraCommands' },
+			},
+			{
+				name: this.plugin.t('show-notice'),
+				desc: this.plugin.t('show-notice-desc'),
+				control: { type: 'toggle', key: 'showNotice' },
+			},
 
-			setting
-				.setName(this.plugin.t('resolve-link-path-on-paste'))
-				.setDesc(descFragment)
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.resolveLinkPathOnPaste)
-					.onChange( (value) => {
-						this.plugin.settings.resolveLinkPathOnPaste = value;
+			// Copy Targets 分组：组内两个一级子页面（格式文本 / 特殊文本块）
+			{
+				type: 'group',
+				heading: this.plugin.t('copy-targets'),
+				items: [
+					// 格式文本子页面：自定义复制对象开关 + 可拖拽排序的匹配器列表
+					{
+						type: 'page',
+						name: this.plugin.t('formatted-text'),
+						desc: this.plugin.t('formatted-text-desc'),
+						items: [
+							{
+								name: this.plugin.t('customize-targets'),
+								desc: this.plugin.t('customize-targets-desc'),
+								control: { type: 'toggle', key: 'customizeTargets' },
+							},
+							this.buildMatcherListDefinition(),
+						],
+					},
+					// 特殊文本块子页面：无可复制对象时的回退行为、多行文本（标注/代码块）、块ID
+					{
+						type: 'page',
+						name: this.plugin.t('special-text-blocks'),
+						desc: this.plugin.t('special-text-blocks-desc'),
+						items: [
+							// 未命名分组：无可复制对象时的回退行为
+							{
+								type: 'group',
+								items: [
+									{
+										name: this.plugin.t('no-copy-action'),
+										desc: this.plugin.t('no-copy-action-desc'),
+										control: {
+											type: 'dropdown',
+											key: 'noCopyAction',
+											options: {
+												[NoCopyAction.NONE]: this.plugin.t('no-copy-action-none'),
+												[NoCopyAction.BLOCK_LINK]: this.plugin.t('no-copy-action-block-link'),
+												[NoCopyAction.FILE_LINK]: this.plugin.t('no-copy-action-file-link'),
+											},
+										},
+									},
+								],
+							},
+							// 多行文本分组：标注与代码块的复制行为
+							{
+								type: 'group',
+								heading: this.plugin.t('multi-line-text'),
+								items: [
+									{
+										name: this.plugin.t('enable-callout-copy'),
+										desc: this.plugin.t('enable-callout-copy-desc'),
+										control: { type: 'toggle', key: 'enableCalloutCopy', defaultValue: true },
+									},
+									{
+										name: this.plugin.t('callout-copy-priority'),
+										desc: this.plugin.t('callout-copy-priority-desc'),
+										// 仅当标注复制启用且回退行为为块链接（存在冲突）时才有意义
+										visible: () => settings.enableCalloutCopy && settings.noCopyAction === NoCopyAction.BLOCK_LINK,
+										control: { type: 'toggle', key: 'calloutCopyPriority', defaultValue: true },
+									},
+									{
+										name: this.plugin.t('code-block-behavior'),
+										desc: this.plugin.t('code-block-behavior-desc'),
+										control: {
+											type: 'dropdown',
+											key: 'codeBlockBehavior',
+											options: {
+												[CodeBlockBehavior.COPY_CONTENT]: this.plugin.t('code-block-copy-content'),
+												[CodeBlockBehavior.COPY_WITH_FENCES]: this.plugin.t('code-block-copy-with-fences'),
+												[CodeBlockBehavior.GENERATE_BLOCK_LINK]: this.plugin.t('code-block-generate-block-link'),
+												[CodeBlockBehavior.DISABLED]: this.plugin.t('code-block-disabled'),
+											},
+										},
+									},
+								],
+							},
+							// Block ID 分组：仅在回退行为为「Block Link」时显示
+							{
+								type: 'group',
+								heading: this.plugin.t('block-id'),
+								visible: () => settings.noCopyAction === NoCopyAction.BLOCK_LINK,
+								items: [
+									{
+										name: this.plugin.t('block-id-insert-position'),
+										desc: this.plugin.t('block-id-insert-position-desc'),
+										control: {
+											type: 'dropdown',
+											key: 'blockIdInsertPosition',
+											options: {
+												[BlockIdInsertPosition.END_OF_BLOCK]: this.plugin.t('block-id-end-of-block'),
+												[BlockIdInsertPosition.NEXT_LINE]: this.plugin.t('block-id-next-line'),
+											},
+										},
+									},
+									{
+										name: this.plugin.t('manual-block-id'),
+										desc: this.plugin.t('manual-block-id-desc'),
+										control: { type: 'toggle', key: 'allowManualBlockId' },
+									},
+									{
+										name: this.plugin.t('auto-block-display-text'),
+										desc: this.plugin.t('auto-block-display-text-desc'),
+										control: { type: 'toggle', key: 'autoBlockDisplayText' },
+									},
+									{
+										name: this.plugin.t('block-display-full-block'),
+										desc: this.plugin.t('block-display-full-block-desc'),
+										visible: () => settings.autoBlockDisplayText,
+										control: { type: 'toggle', key: 'blockDisplayFullBlock', defaultValue: false },
+									},
+									{
+										name: this.plugin.t('block-display-word-limit'),
+										desc: this.plugin.t('block-display-word-limit-desc'),
+										visible: () => settings.autoBlockDisplayText,
+										control: {
+											type: 'number',
+											key: 'blockDisplayWordLimit',
+											min: 1,
+											placeholder: '3',
+										},
+									},
+									{
+										name: this.plugin.t('block-display-char-limit'),
+										desc: this.plugin.t('block-display-char-limit-desc'),
+										visible: () => settings.autoBlockDisplayText,
+										control: {
+											type: 'number',
+											key: 'blockDisplayCharLimit',
+											min: 1,
+											placeholder: '5',
+										},
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+
+			// Format 分组：Link format / Advanced options 两个子页面
+			{
+				type: 'group',
+				heading: this.plugin.t('format'),
+				items: [
+					// Link format 子页面：链接格式、粘贴路径解析 + Heading link / Note link 两个分组
+					{
+						type: 'page',
+						name: this.plugin.t('link-format'),
+						desc: this.plugin.t('link-format-page-desc'),
+						items: [
+							{
+								name: this.plugin.t('link-format'),
+								desc: this.plugin.t('link-format-desc'),
+								// 需要 syncPasteHandlerRegistration，无法用 control 绑定
+								render: (setting) => {
+									setting.addDropdown(dropdown => dropdown
+										.addOption(LinkFormat.OBSIDIAN, this.plugin.t('link-format-obsidian'))
+										.addOption(LinkFormat.MDLINK, this.plugin.t('markdown-link'))
+										.addOption(LinkFormat.WIKILINK, this.plugin.t('wiki-link'))
+										.setValue(settings.linkFormat)
+										.onChange(value => {
+											settings.linkFormat = value as LinkFormat;
+											void this.plugin.saveSettings();
+											this.plugin.syncPasteHandlerRegistration();
+										}));
+								},
+							},
+							{
+								name: this.plugin.t('resolve-link-path-on-paste'),
+								desc: this.plugin.t('resolve-link-path-on-paste-desc') + ' ',
+								// 需要 syncPasteHandlerRegistration 和 desc 里的 info 提示图标
+								render: (setting) => {
+									setting.addToggle(toggle => toggle
+										.setValue(settings.resolveLinkPathOnPaste)
+										.onChange(value => {
+											settings.resolveLinkPathOnPaste = value;
+											void this.plugin.saveSettings();
+											this.plugin.syncPasteHandlerRegistration();
+										}));
+									const infoIcon = setting.descEl.createSpan({
+										attr: {
+											'aria-label': this.plugin.t('resolve-link-path-on-paste-tooltip'),
+										},
+										cls: 'easy-copy-info-icon',
+									});
+									setIcon(infoIcon, 'info');
+								},
+							},
+							// Heading link 分组：显示文本、连接符、简化为笔记链接
+							{
+								type: 'group',
+								heading: this.plugin.t('heading-link'),
+								items: [
+									{
+										name: this.plugin.t('use-heading-as-display'),
+										desc: this.plugin.t('use-heading-as-display-desc'),
+										control: { type: 'toggle', key: 'useHeadingAsDisplayText' },
+									},
+									{
+										name: this.plugin.t('heading-link-separator'),
+										desc: this.plugin.t('heading-link-separator-desc'),
+										visible: () => !settings.useHeadingAsDisplayText,
+										// 空值回退到 '#'，无法用 control 绑定表达
+										render: (setting) => {
+											setting.addText(text => text
+												.setPlaceholder('#')
+												.setValue(settings.headingLinkSeparator)
+												.onChange(value => {
+													settings.headingLinkSeparator = value || '#';
+													void this.plugin.saveSettings();
+												}));
+										},
+									},
+									{
+										name: this.plugin.t('simplified-heading-to-note-link'),
+										desc: this.plugin.t('simplified-heading-to-note-link-desc'),
+										control: { type: 'toggle', key: 'simplifiedHeadingToNoteLink' },
+									},
+									{
+										name: this.plugin.t('strict-heading-match'),
+										desc: this.plugin.t('strict-heading-match-desc'),
+										visible: () => settings.simplifiedHeadingToNoteLink,
+										control: { type: 'toggle', key: 'strictHeadingMatch' },
+									},
+								],
+							},
+							// Note link 分组：frontmatter 属性作为显示文本
+							{
+								type: 'group',
+								heading: this.plugin.t('note-link'),
+								items: [
+									{
+										name: this.plugin.t('use-frontmatter-as-display'),
+										desc: this.plugin.t('use-frontmatter-as-display-desc'),
+										control: { type: 'toggle', key: 'useFrontmatterAsDisplay' },
+									},
+									{
+										name: this.plugin.t('frontmatter-key'),
+										desc: this.plugin.t('frontmatter-key-desc'),
+										visible: () => settings.useFrontmatterAsDisplay,
+										// 空值回退到 'title'，无法用 control 绑定表达
+										render: (setting) => {
+											setting.addText(text => text
+												.setPlaceholder('title')
+												.setValue(settings.frontmatterKey)
+												.onChange(value => {
+													settings.frontmatterKey = value || 'title';
+													void this.plugin.saveSettings();
+												}));
+										},
+									},
+								],
+							},
+						],
+					},
+					// Advanced options 子页面：嵌入、Wiki 括号、显示文本正则
+					{
+						type: 'page',
+						name: this.plugin.t('special-format'),
+						desc: this.plugin.t('special-format-desc'),
+						items: [
+							{
+								name: this.plugin.t('auto-embed-block-link'),
+								desc: this.plugin.t('auto-embed-block-link-desc'),
+								control: { type: 'toggle', key: 'autoEmbedBlockLink', defaultValue: false },
+							},
+							{
+								name: this.plugin.t('keep-wiki-brackets'),
+								desc: this.plugin.t('keep-wiki-brackets-desc'),
+								visible: () => settings.enableWikiLink,
+								control: { type: 'toggle', key: 'keepWikiBrackets', defaultValue: true },
+							},
+							{
+								name: this.plugin.t('enable-display-name-regex'),
+								desc: this.plugin.t('enable-display-name-regex-desc'),
+								control: { type: 'toggle', key: 'enableDisplayNameRegex', defaultValue: false },
+							},
+							{
+								name: this.plugin.t('display-name-regex-from'),
+								desc: this.plugin.t('display-name-regex-from-desc'),
+								visible: () => settings.enableDisplayNameRegex,
+								control: {
+									type: 'text',
+									key: 'displayNameRegexFrom',
+									defaultValue: '',
+									placeholder: 'e.g. ^\\d+\\.\\s*',
+								},
+							},
+							{
+								name: this.plugin.t('display-name-regex-to'),
+								desc: this.plugin.t('display-name-regex-to-desc'),
+								visible: () => settings.enableDisplayNameRegex,
+								control: {
+									type: 'text',
+									key: 'displayNameRegexTo',
+									defaultValue: '',
+									placeholder: 'e.g. $1',
+								},
+							},
+						],
+					},
+				],
+			},
+		];
+	}
+
+	// 匹配器列表：内置 + 自定义复制对象共用同一排序（即匹配优先级），
+	// 使用声明式 list 获得拖拽排序手柄；每行渲染启用开关，自定义行附加配置/删除按钮
+	private buildMatcherListDefinition(): SettingDefinitionList {
+		const settings = this.plugin.settings;
+
+		return {
+			type: 'list',
+			heading: this.plugin.t('matcher-priority'),
+			visible: () => settings.customizeTargets,
+			extraButtons: [
+				button => button
+					.setIcon('rotate-ccw')
+					.setTooltip(this.plugin.t('reset-order'))
+					.onClick(() => {
+						settings.matcherOrder = normalizeMatcherOrder(DEFAULT_BUILTIN_COPY_MATCHER_IDS, settings.customMatchers);
 						void this.plugin.saveSettings();
-						this.plugin.syncPasteHandlerRegistration();
-					}));
-		});
+						this.update();
+					}),
+			],
+			onReorder: (oldIndex, newIndex) => {
+				const order = normalizeMatcherOrder(settings.matcherOrder, settings.customMatchers);
+				const [moved] = order.splice(oldIndex, 1);
+				order.splice(newIndex, 0, moved);
+				settings.matcherOrder = order;
+				void this.plugin.saveSettings();
+			},
+			addItem: {
+				name: this.plugin.t('add-custom-matcher'),
+				action: () => {
+					const draft = createCustomMatcher(key => this.plugin.t(key));
+					this.openCustomMatcherModal(draft, true);
+				},
+			},
+			items: settings.matcherOrder.map(matcherId => this.buildMatcherRowDefinition(matcherId)),
+		};
+	}
 
-		formatGroup.addSetting(setting => setting
-			.setName(this.plugin.t('use-heading-as-display'))
-			.setDesc(this.plugin.t('use-heading-as-display-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.useHeadingAsDisplayText)
-				.onChange( (value) => {
-					this.plugin.settings.useHeadingAsDisplayText = value;
-					void this.plugin.saveSettings();
-					this.display();
-				})));
+	private buildMatcherRowDefinition(matcherId: string): SettingDefinition {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
 
-		// 新增：标题链接连接符设置，仅在禁用"使用标题作为显示文本"时显示
-		if (!this.plugin.settings.useHeadingAsDisplayText) {
-			formatGroup.addSetting(setting => setting
-				.setName(this.plugin.t('heading-link-separator'))
-				.setDesc(this.plugin.t('heading-link-separator-desc'))
-				.addText(text => text
-					.setPlaceholder('#')
-					.setValue(this.plugin.settings.headingLinkSeparator)
-				.onChange( value => {
-					this.plugin.settings.headingLinkSeparator = value || '#';
-					void this.plugin.saveSettings();
-				})
-				));
+		return {
+			name: this.getMatcherName(matcherId) ?? matcherId,
+			desc: this.getMatcherDesc(matcherId),
+			searchable: false,
+			render: (setting: Setting) => {
+				if (customMatcher) {
+					setting.addExtraButton(button => button
+						.setIcon('trash-2')
+						.setTooltip(this.plugin.t('delete-custom-matcher'))
+						.onClick(() => this.deleteCustomMatcher(customMatcher.id)));
+					setting.addExtraButton(button => button
+						.setIcon('settings')
+						.setTooltip(this.plugin.t('configure-custom-matcher'))
+						.onClick(() => this.openCustomMatcherModal(customMatcher, false)));
+				}
+				setting.addToggle(toggle => toggle
+					.setValue(this.isMatcherEnabled(matcherId))
+					.onChange(value => this.setMatcherEnabled(matcherId, value)));
+			},
+		};
+	}
+
+	private getMatcherName(matcherId: string): string | null {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) return customMatcher.name || this.plugin.t('custom-matcher-default-name');
+
+		const builtinKey = BUILTIN_MATCHER_LABEL_KEYS[matcherId as BuiltinCopyMatcherId];
+		return builtinKey ? this.plugin.t(builtinKey) : null;
+	}
+
+	private getMatcherDesc(matcherId: string): string {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) return customMatcher.note ?? '';
+
+		const builtinDescKey = BUILTIN_MATCHER_DESC_KEYS[matcherId as BuiltinCopyMatcherId];
+		return builtinDescKey ? this.plugin.t(builtinDescKey) : '';
+	}
+
+	private isMatcherEnabled(matcherId: string): boolean {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) return customMatcher.enabled;
+
+		const settingKey = BUILTIN_MATCHER_SETTING_KEYS[matcherId as BuiltinCopyMatcherId];
+		return settingKey ? Boolean(this.plugin.settings[settingKey]) : false;
+	}
+
+	private setMatcherEnabled(matcherId: string, enabled: boolean): void {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) {
+			customMatcher.enabled = enabled;
+			void this.plugin.saveSettings();
+			return;
 		}
 
-		// 后续新增：文件名包含标题时，简化为复制文件链接（通常用于复制一级标题时）
-		// 「跟随 Obsidian 设置」时，格式与路径选择应交给 Obsidian——
-		formatGroup.addSetting(setting => setting
-			.setName(this.plugin.t('simplified-heading-to-note-link'))
-			.setDesc(this.plugin.t('simplified-heading-to-note-link-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.simplifiedHeadingToNoteLink)
-				.onChange( value => {
-					this.plugin.settings.simplifiedHeadingToNoteLink = value;
-					void this.plugin.saveSettings();
-					this.display();
-				})));
+		const settingKey = BUILTIN_MATCHER_SETTING_KEYS[matcherId as BuiltinCopyMatcherId];
+		if (!settingKey) return;
+		this.plugin.settings[settingKey] = enabled;
+		void this.plugin.saveSettings();
+	}
 
-		if (this.plugin.settings.simplifiedHeadingToNoteLink) {
-			formatGroup.addSetting(setting => setting
-				.setName(this.plugin.t('strict-heading-match'))
-				.setDesc(this.plugin.t('strict-heading-match-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.strictHeadingMatch)
-				.onChange( value => {
-					this.plugin.settings.strictHeadingMatch = value;
-					void this.plugin.saveSettings();
-				})));
-		}
+	private openCustomMatcherModal(matcher: CustomCopyMatcherSetting, isNew: boolean): void {
+		new CustomMatcherModal(
+			this.app,
+			key => this.plugin.t(key),
+			matcher,
+			isNew,
+			saved => {
+				const settings = this.plugin.settings;
+				if (isNew) {
+					settings.customMatchers.push(saved);
+					settings.matcherOrder = normalizeMatcherOrder([...settings.matcherOrder, getCustomMatcherOrderId(saved)], settings.customMatchers);
+				}
+				void this.plugin.saveSettings();
+				// 新增/删除/改名都会改变列表行集，需整体重建定义
+				this.update();
+			},
+		).open();
+	}
 
-
-		// 新增：是否使用 frontmatter 属性作为显示文本
-		formatGroup.addSetting(setting => setting
-			.setName(this.plugin.t('use-frontmatter-as-display'))
-			.setDesc(this.plugin.t('use-frontmatter-as-display-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.useFrontmatterAsDisplay)
-				.onChange( value => {
-					this.plugin.settings.useFrontmatterAsDisplay = value;
-					void this.plugin.saveSettings();
-					this.display();
-				})
-			));
-
-		// 新增：自定义 frontmatter 属性名，仅在上方开启时显示
-		if (this.plugin.settings.useFrontmatterAsDisplay) {
-			formatGroup.addSetting(setting => setting
-				.setName(this.plugin.t('frontmatter-key'))
-				.setDesc(this.plugin.t('frontmatter-key-desc'))
-				.addText(text => text
-					.setPlaceholder('title')
-					.setValue(this.plugin.settings.frontmatterKey)
-					.onChange( value => {
-						this.plugin.settings.frontmatterKey = value || 'title';
-						void this.plugin.saveSettings();
-					})
-				));
-		}
-
-
-		const codeBlockGroup = createSettingsGroup(containerEl, this.plugin.t('code-block'));
-
-		codeBlockGroup.addSetting(setting => setting
-			.setName(this.plugin.t('code-block-behavior'))
-			.setDesc(this.plugin.t('code-block-behavior-desc'))
-			.addDropdown(dropdown => dropdown
-				.addOption(CodeBlockBehavior.COPY_CONTENT, this.plugin.t('code-block-copy-content'))
-				.addOption(CodeBlockBehavior.COPY_WITH_FENCES, this.plugin.t('code-block-copy-with-fences'))
-				.addOption(CodeBlockBehavior.GENERATE_BLOCK_LINK, this.plugin.t('code-block-generate-block-link'))
-				.addOption(CodeBlockBehavior.DISABLED, this.plugin.t('code-block-disabled'))
-				.setValue(this.plugin.settings.codeBlockBehavior)
-				.onChange( value => {
-					this.plugin.settings.codeBlockBehavior = value as CodeBlockBehavior;
-					void this.plugin.saveSettings();
-				})));
-
-		const blockIdGroup = createSettingsGroup(containerEl, this.plugin.t('block-id'));
-
-		blockIdGroup.addSetting(setting => setting
-			.setName(this.plugin.t('auto-add-block-id'))
-			.setDesc(this.plugin.t('auto-add-block-id-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.autoAddBlockId)
-				.onChange( value => {
-					this.plugin.settings.autoAddBlockId = value;
-					void this.plugin.saveSettings();
-					this.display();
-				})));
-
-		if (this.plugin.settings.autoAddBlockId) {
-			// 新增：块ID插入位置设置
-			blockIdGroup.addSetting(setting => setting
-				.setName(this.plugin.t('block-id-insert-position'))
-				.setDesc(this.plugin.t('block-id-insert-position-desc'))
-				.addDropdown(dropdown => dropdown
-					.addOption(BlockIdInsertPosition.END_OF_BLOCK, this.plugin.t('block-id-end-of-block'))
-					.addOption(BlockIdInsertPosition.NEXT_LINE, this.plugin.t('block-id-next-line'))
-					.setValue(this.plugin.settings.blockIdInsertPosition)
-					.onChange( value => {
-						this.plugin.settings.blockIdInsertPosition = value as BlockIdInsertPosition;
-						void this.plugin.saveSettings();
-					})));
-		}
-
-		if (this.plugin.settings.autoAddBlockId) {
-			blockIdGroup.addSetting(setting => setting
-				.setName(this.plugin.t('manual-block-id'))
-				.setDesc(this.plugin.t('manual-block-id-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.allowManualBlockId)
-					.onChange( value => {
-						this.plugin.settings.allowManualBlockId = value;
-						void this.plugin.saveSettings();
-					})));
-		}
-		
-		// 新增：自动为 Block 链接添加显示文本
-		blockIdGroup.addSetting(setting => setting
-			.setName(this.plugin.t('auto-block-display-text'))
-			.setDesc(this.plugin.t('auto-block-display-text-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.autoBlockDisplayText)
-				.onChange( value => {
-					this.plugin.settings.autoBlockDisplayText = value;
-					void this.plugin.saveSettings();
-					this.display();
-				})
-			));
-
-		// 新增：块显示文本限制设置，仅在启用 autoBlockDisplayText 时显示
-		if (this.plugin.settings.autoBlockDisplayText) {
-			blockIdGroup.addSetting(setting => setting
-				.setName(this.plugin.t('block-display-full-block'))
-				.setDesc(this.plugin.t('block-display-full-block-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.blockDisplayFullBlock)
-					.onChange( value => {
-						this.plugin.settings.blockDisplayFullBlock = value;
-						void this.plugin.saveSettings();
-					})
-				));
-
-			blockIdGroup.addSetting(setting => setting
-				.setName(this.plugin.t('block-display-word-limit'))
-				.setDesc(this.plugin.t('block-display-word-limit-desc'))
-				.addText(text => text
-					.setPlaceholder('3')
-					.setValue(String(this.plugin.settings.blockDisplayWordLimit))
-					.onChange( value => {
-						const numValue = parseInt(value) || 3;
-						this.plugin.settings.blockDisplayWordLimit = Math.max(1, numValue);
-						void this.plugin.saveSettings();
-					})
-				));
-
-			blockIdGroup.addSetting(setting => setting
-				.setName(this.plugin.t('block-display-char-limit'))
-				.setDesc(this.plugin.t('block-display-char-limit-desc'))
-				.addText(text => text
-					.setPlaceholder('5')
-					.setValue(String(this.plugin.settings.blockDisplayCharLimit))
-					.onChange( value => {
-						const numValue = parseInt(value) || 5;
-						this.plugin.settings.blockDisplayCharLimit = Math.max(1, numValue);
-						void this.plugin.saveSettings();
-					})
-				));
-		}
-
-		const targetGroup = createSettingsGroup(containerEl, this.plugin.t('target'));
-
-		targetGroup.addSetting(setting => setting
-			.setName(this.plugin.t('customize-targets'))
-			.setDesc(this.plugin.t('customize-targets-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.customizeTargets)
-				.onChange( value => {
-					this.plugin.settings.customizeTargets = value;
-					void this.plugin.saveSettings();
-					this.display();
-				})));
-
-		// 只有当自定义复制对象选项开启时才显示具体的复制对象选项
-		if (this.plugin.settings.customizeTargets) {
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('enable-inline-code'))
-				.setDesc(this.plugin.t('enable-inline-code-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableInlineCode)
-					.onChange( value => {
-						this.plugin.settings.enableInlineCode = value;
-						void this.plugin.saveSettings();
-					})));
-
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('enable-bold'))
-				.setDesc(this.plugin.t('enable-bold-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableBold)
-					.onChange( value => {
-						this.plugin.settings.enableBold = value;
-						void this.plugin.saveSettings();
-					})));
-
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('enable-highlight'))
-				.setDesc(this.plugin.t('enable-highlight-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableHighlight)
-					.onChange( value => {
-						this.plugin.settings.enableHighlight = value;
-						void this.plugin.saveSettings();
-					})));
-
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('enable-italic'))
-				.setDesc(this.plugin.t('enable-italic-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.enableItalic)
-					.onChange( value => {
-						this.plugin.settings.enableItalic = value;
-						void this.plugin.saveSettings();
-					})));
-            
-            targetGroup.addSetting(setting => setting
-                .setName(this.plugin.t('enable-strikethrough'))
-                .setDesc(this.plugin.t('enable-strikethrough-desc'))
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.enableStrikethrough)
-                    .onChange( value => {
-                        this.plugin.settings.enableStrikethrough = value;
-                        void this.plugin.saveSettings();
-                    })));
-            
-            targetGroup.addSetting(setting => setting
-                .setName(this.plugin.t('enable-inline-latex'))
-                .setDesc(this.plugin.t('enable-inline-latex-desc'))
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.enableInlineLatex)
-                    .onChange( value => {
-                        this.plugin.settings.enableInlineLatex = value;
-                        void this.plugin.saveSettings();
-                    })));
-            
-            targetGroup.addSetting(setting => setting
-                .setName(this.plugin.t('enable-link'))
-                .setDesc(this.plugin.t('enable-link-desc'))
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.enableLink)
-                    .onChange( value => {
-                        this.plugin.settings.enableLink = value;
-                        void this.plugin.saveSettings();
-                    })));
-
-            targetGroup.addSetting(setting => setting
-                .setName(this.plugin.t('enable-wikilink'))
-                .setDesc(this.plugin.t('enable-wikilink-desc'))
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.enableWikiLink ?? true)
-                    .onChange( value => {
-                        this.plugin.settings.enableWikiLink = value;
-                        void this.plugin.saveSettings();
-						this.display(); // 切换后刷新界面以显示/隐藏下方选项
-                    })));
-            
-		}
-
-		targetGroup.addSetting(setting => setting
-			.setName(this.plugin.t('enable-callout-copy'))
-			.setDesc(this.plugin.t('enable-callout-copy-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.enableCalloutCopy ?? true)
-				.onChange( value => {
-					this.plugin.settings.enableCalloutCopy = value;
-					void this.plugin.saveSettings();
-					this.display();
-				})));
-		// 优先复制 Callout 内容
-		if (this.plugin.settings.enableCalloutCopy) {
-			targetGroup.addSetting(setting => setting
-				.setName(this.plugin.t('callout-copy-priority'))
-				.setDesc(this.plugin.t('callout-copy-priority-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.calloutCopyPriority ?? true)
-					.onChange( value => {
-						this.plugin.settings.calloutCopyPriority = value;
-						void this.plugin.saveSettings();
-					})));
-		}
-
-		
-		const specialFormatGroup = createSettingsGroup(containerEl, this.plugin.t('special-format'));
-				
-		// 块链接特殊格式选项
-		specialFormatGroup.addSetting(setting => setting
-			.setName(this.plugin.t('auto-embed-block-link'))
-			.setDesc(this.plugin.t('auto-embed-block-link-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.autoEmbedBlockLink ?? false)
-				.onChange( value => {
-					this.plugin.settings.autoEmbedBlockLink = value;
-					void this.plugin.saveSettings();
-				})));
-
-		// 仅当启用 Wiki 链接复制时显示
-		if (this.plugin.settings.enableWikiLink) {
-			specialFormatGroup.addSetting(setting => setting
-				.setName(this.plugin.t('keep-wiki-brackets'))
-				.setDesc(this.plugin.t('keep-wiki-brackets-desc'))
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.keepWikiBrackets ?? true)
-					.onChange( value => {
-						this.plugin.settings.keepWikiBrackets = value;
-						void this.plugin.saveSettings();
-					})));
-		}
-
-		// 正则替换显示名称
-		specialFormatGroup.addSetting(setting => setting
-			.setName(this.plugin.t('enable-display-name-regex'))
-			.setDesc(this.plugin.t('enable-display-name-regex-desc'))
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.enableDisplayNameRegex ?? false)
-				.onChange( value => {
-					this.plugin.settings.enableDisplayNameRegex = value;
-					void this.plugin.saveSettings();
-					this.display();
-				})));
-
-		if (this.plugin.settings.enableDisplayNameRegex) {
-			specialFormatGroup.addSetting(setting => setting
-				.setName(this.plugin.t('display-name-regex-from'))
-				.setDesc(this.plugin.t('display-name-regex-from-desc'))
-				.addText(text => text
-					.setPlaceholder('e.g. ^\\d+\\.\\s*')
-					.setValue(this.plugin.settings.displayNameRegexFrom ?? '')
-					.onChange( value => {
-						this.plugin.settings.displayNameRegexFrom = value;
-						void this.plugin.saveSettings();
-					})));
-
-			specialFormatGroup.addSetting(setting => setting
-				.setName(this.plugin.t('display-name-regex-to'))
-				.setDesc(this.plugin.t('display-name-regex-to-desc'))
-				.addText(text => text
-					.setPlaceholder('e.g. $1')
-					.setValue(this.plugin.settings.displayNameRegexTo ?? '')
-					.onChange( value => {
-						this.plugin.settings.displayNameRegexTo = value;
-						void this.plugin.saveSettings();
-					})));
-		}
+	private deleteCustomMatcher(id: string): void {
+		const settings = this.plugin.settings;
+		settings.customMatchers = settings.customMatchers.filter(matcher => matcher.id !== id);
+		settings.matcherOrder = normalizeMatcherOrder(settings.matcherOrder, settings.customMatchers);
+		void this.plugin.saveSettings();
+		this.update();
 	}
 }
