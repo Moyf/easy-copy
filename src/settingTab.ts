@@ -493,6 +493,10 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				if (isNew) {
 					settings.customMatchers.push(saved);
 					settings.matcherOrder = normalizeMatcherOrder([...settings.matcherOrder, getCustomMatcherOrderId(saved)], settings.customMatchers);
+				} else {
+					// 弹窗编辑的是副本，需写回数组中的原条目
+					const index = settings.customMatchers.findIndex(matcher => matcher.id === saved.id);
+					if (index !== -1) settings.customMatchers[index] = saved;
 				}
 				void this.plugin.saveSettings();
 				// 新增/删除/改名都会改变列表行集，需整体重建定义
