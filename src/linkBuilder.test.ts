@@ -765,7 +765,7 @@ describe('extractBlockDisplayText', () => {
 		});
 	});
 
-	describe('English text', () => {
+	describe('space-separated text', () => {
 		it('extracts first 3 words by default', () => {
 			const result = extractBlockDisplayText('The quick brown fox jumps', 'fallback', 3, 5);
 			expect(result).toBe('The quick brown');
@@ -791,6 +791,26 @@ describe('extractBlockDisplayText', () => {
 			expect(result).toBe('one two three');
 		});
 
+		it('treats Latin Extended text as words', () => {
+			const result = extractBlockDisplayText('Zażółć gęślą jaźń proszę', 'fallback', 3, 5);
+			expect(result).toBe('Zażółć gęślą jaźń');
+		});
+
+		it('treats other space-separated scripts as words', () => {
+			const result = extractBlockDisplayText('Привет как твои дела', 'fallback', 3, 5);
+			expect(result).toBe('Привет как твои');
+		});
+
+		it('does not switch strategies for Unicode punctuation', () => {
+			const result = extractBlockDisplayText('It’s a beautiful day today', 'fallback', 3, 5);
+			expect(result).toBe('It’s a beautiful');
+		});
+
+		it('splits words on consecutive Unicode whitespace', () => {
+			const result = extractBlockDisplayText('one   two\tthree four', 'fallback', 3, 5);
+			expect(result).toBe('one two three');
+		});
+
 		it('handles hyphenated words (issue #42)', () => {
 			// 回归：`^-~` 被解析为字符类范围，字面量 `-` 不在白名单内，
 			// 导致含连字符的英文被误判为 CJK，只取到第一个词 "Has"
@@ -811,10 +831,10 @@ describe('extractBlockDisplayText', () => {
 		});
 	});
 
-	describe('CJK text', () => {
+	describe('character-based text', () => {
 		it('returns text as-is when within char limit', () => {
 			const result = extractBlockDisplayText('Hello', 'fallback', 3, 5);
-			// "Hello" 是 ASCII / 英文，会走英文分支
+			// "Hello" 使用按词截取策略，但未超过限制。
 			expect(result).toBe('Hello');
 		});
 
@@ -844,6 +864,11 @@ describe('extractBlockDisplayText', () => {
 			const result = extractBlockDisplayText('这是一段很长的中文文本', 'fallback', 3, 0);
 			expect(result).toBe('这是一段很...');
 		});
+
+		it('does not split a surrogate pair at the character limit', () => {
+			const result = extractBlockDisplayText('😀中文测试', 'fallback', 3, 1);
+			expect(result).toBe('😀...');
+		});
 	});
 
 	// -- 边界值 ------------------------------------------------------
@@ -864,17 +889,17 @@ describe('extractBlockDisplayText', () => {
 			expect(result).toBe('Hello');
 		});
 
-		it('CJK: exactly charLimit chars returns text as-is', () => {
+		it('character-based: exactly charLimit characters returns text as-is', () => {
 			const result = extractBlockDisplayText('这是一段文', 'fallback', 3, 5);
 			expect(result).toBe('这是一段文');
 		});
 
-		it('CJK: charLimit + 1 chars with no separator triggers truncation', () => {
+		it('character-based: charLimit + 1 characters with no separator triggers truncation', () => {
 			const result = extractBlockDisplayText('这是一段文本', 'fallback', 3, 5);
 			expect(result).toBe('这是一段文...');
 		});
 
-		it('CJK: char limit of 1 truncates with ellipsis', () => {
+		it('character-based: character limit of 1 truncates with ellipsis', () => {
 			const result = extractBlockDisplayText('很长的文本', 'fallback', 3, 1);
 			expect(result).toBe('很...');
 		});
@@ -883,7 +908,7 @@ describe('extractBlockDisplayText', () => {
 	// -- 混合内容 --------------------------------------------------------
 
 	describe('mixed content', () => {
-		it('mixed English/CJK is treated as non-English', () => {
+		it('mixed word-based and CJK text uses the character strategy', () => {
 			// 含 CJK 字符时走字符数上限分支
 			const result = extractBlockDisplayText('Hello 世界 and more text', 'fallback', 3, 5);
 			expect(result).toBe('Hello');

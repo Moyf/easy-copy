@@ -189,36 +189,38 @@ export function extractBlockDisplayText(
 	let text = firstLine;
 	// 先去掉结尾的 ^ 及其后面的内容（如果有的话）
 	text = text.replace(/\^.*\s*$/, '');
-	text = text.trim().replace(/- \[.\]\s+/, '').replace('- ', '').replace(/=|\*|\[|\]|\(|\)|`|>\s+/g, '');
+	text = text.trim().replace(/- \[.\]\s+/, '').replace('- ', '').replace(/=|\*|\[|\]|\(|\)|`|>\s+/g, '').normalize('NFC');
 
 	if (!text) return blockId;
 
 	// 水平线等纯符号行（--- *** ___）没有可读文本，直接退回 blockId
 	if (/^[-_=*~\s]+$/.test(text)) return blockId;
 
-	// 判断是否是「英文类」文本：采用「检测 CJK」而非「ASCII 白名单」。
+	// 判断是否是「CJK 类」文本：采用「检测 CJK」而非「ASCII 白名单」。
 	// 白名单永远列不全——此前 `^-~` 被解析为范围导致字面量 `-` 缺失，
 	// 含连字符（task-management）的英文句子被误判为非英文，
 	// 落入下方 CJK 分支后被截成第一个词（#42）。
-	// CJK（汉字/假名等）不以空格分词，走字符数上限；其余语言按词截断。
-	const isCJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/.test(text);
+	// 用 Unicode 属性匹配汉字/假名/谚文（含 BMP 之外的扩展区块，#41）；
+	// CJK 不以空格分词，走字符数上限；其余语言按词截断。
+	const isCJK = /[\p{Script_Extensions=Han}\p{Script_Extensions=Hiragana}\p{Script_Extensions=Katakana}\p{Script_Extensions=Hangul}]/u.test(text);
 
 	if (!isCJK) {
 		const limit = wordLimit || 3;
-		return text.trim().split(' ').slice(0, limit).join(' ');
+		return text.trim().split(/\s+/u).slice(0, limit).join(' ');
 	}
 
-	// CJK / 非英文语言
 	const limit = charLimit || 5;
+	const characters = Array.from(text);
 
-	if (text.length > limit) {
+	if (characters.length > limit) {
 		const separated = text.trim().match(/(\S+?)[~,.\-=[，。？！…：\n\s]/);
 		const tempText = separated ? separated[1] : text;
+		const tempCharacters = Array.from(tempText);
 
-		if (tempText.length > limit) {
-			return tempText.slice(0, limit) + '...';
-		} else if (tempText.length < 3) {
-			return text.slice(0, limit);
+		if (tempCharacters.length > limit) {
+			return tempCharacters.slice(0, limit).join('') + '...';
+		} else if (tempCharacters.length < 3) {
+			return characters.slice(0, limit).join('');
 		} else {
 			return tempText;
 		}

@@ -5,6 +5,33 @@ All notable changes to Easy Copy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### ✨ New Features
+
+- **Custom regex copy targets**: create named copy rules with your own regular expressions (flags, capture group, description, enable toggle) to copy text in syntax the built-in targets don't cover. The rule editor validates the regex as you type and can copy a ready-to-use AI prompt to help generate one.
+- **Reorderable copy targets**: built-in and custom targets now share one drag-to-reorder list under *Settings → Copy targets → Formatted text*; the order is the matching priority, and Markdown links are included.
+
+### 🐛 Fixed
+
+- **Unicode block display text** ([#41](https://github.com/Moyf/easy-copy/issues/41)): block link aliases now apply the word limit to space-separated text containing Latin Extended letters, Cyrillic, or Unicode punctuation instead of truncating it by character count. CJK text keeps the character limit, and character truncation no longer splits surrogate pairs (e.g. emoji).
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### ✨ 新功能
+
+- **自定义正则复制对象**：可用自定义正则表达式（标志、捕获组、说明、启用开关）创建命名复制规则，复制内置对象不支持的文本格式。规则编辑器支持正则实时校验，并可复制即用型 AI 提示词辅助生成正则。
+- **复制对象排序**：内置与自定义对象合并为「设置 → 复制目标 → 格式文本」下的一个可拖拽排序列表，顺序即匹配优先级，Markdown 链接也参与排序。
+
+### 🐛 修复
+
+- **Unicode 块显示文本**（[#41](https://github.com/Moyf/easy-copy/issues/41)）：包含拉丁扩展字母、西里尔字母或 Unicode 标点的空格分词文本，现在会正确采用单词数上限，不再被错误地按字符截短。CJK 文本仍使用字符数上限，按字符截取时也不会再拆断代理对（如 emoji）。
+
+</details>
+
+---
+
 ## [1.8.2](https://github.com/Moyf/easy-copy/compare/1.8.1...1.8.2) - 2026-09-08
 
 ### 🐛 Fixed

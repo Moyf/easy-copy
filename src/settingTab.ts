@@ -1,11 +1,52 @@
 import {
 	App,
 	PluginSettingTab,
+	Setting,
 	setIcon,
 } from "obsidian";
-import type { SettingDefinitionItem } from "obsidian";
+import type { SettingDefinition, SettingDefinitionItem, SettingDefinitionList } from "obsidian";
 import EasyCopy from "./main";
-import { LinkFormat, BlockIdInsertPosition, CodeBlockBehavior, NoCopyAction } from "./type";
+import { BuiltinCopyMatcherId, CustomCopyMatcherSetting, LinkFormat, BlockIdInsertPosition, CodeBlockBehavior, NoCopyAction } from "./type";
+import { DEFAULT_BUILTIN_COPY_MATCHER_IDS, getCustomMatcherOrderId, normalizeMatcherOrder } from "./copyMatcher";
+import { createCustomMatcher, CustomMatcherModal } from "./customMatcherModal";
+
+// 内置复制对象 id → 设置界面文案 key / 开关设置 key 的映射
+type BuiltinMatcherLabelKey = 'enable-bold' | 'enable-italic' | 'enable-highlight' | 'enable-strikethrough' | 'enable-inline-code' | 'enable-inline-latex' | 'enable-link' | 'enable-wikilink';
+type BuiltinMatcherDescKey = 'enable-bold-desc' | 'enable-italic-desc' | 'enable-highlight-desc' | 'enable-strikethrough-desc' | 'enable-inline-code-desc' | 'enable-inline-latex-desc' | 'enable-link-desc' | 'enable-wikilink-desc';
+type BuiltinMatcherSettingKey = 'enableBold' | 'enableItalic' | 'enableHighlight' | 'enableStrikethrough' | 'enableInlineCode' | 'enableInlineLatex' | 'enableLink' | 'enableWikiLink';
+
+const BUILTIN_MATCHER_LABEL_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherLabelKey> = {
+	'bold': 'enable-bold',
+	'italic': 'enable-italic',
+	'highlight': 'enable-highlight',
+	'strikethrough': 'enable-strikethrough',
+	'inline-code': 'enable-inline-code',
+	'inline-latex': 'enable-inline-latex',
+	'link': 'enable-link',
+	'wiki-link': 'enable-wikilink',
+};
+
+const BUILTIN_MATCHER_DESC_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherDescKey> = {
+	'bold': 'enable-bold-desc',
+	'italic': 'enable-italic-desc',
+	'highlight': 'enable-highlight-desc',
+	'strikethrough': 'enable-strikethrough-desc',
+	'inline-code': 'enable-inline-code-desc',
+	'inline-latex': 'enable-inline-latex-desc',
+	'link': 'enable-link-desc',
+	'wiki-link': 'enable-wikilink-desc',
+};
+
+const BUILTIN_MATCHER_SETTING_KEYS: Record<BuiltinCopyMatcherId, BuiltinMatcherSettingKey> = {
+	'bold': 'enableBold',
+	'italic': 'enableItalic',
+	'highlight': 'enableHighlight',
+	'strikethrough': 'enableStrikethrough',
+	'inline-code': 'enableInlineCode',
+	'inline-latex': 'enableInlineLatex',
+	'link': 'enableLink',
+	'wiki-link': 'enableWikiLink',
+};
 
 export class EasyCopySettingTab extends PluginSettingTab {
 	plugin: EasyCopy;
@@ -43,7 +84,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				type: 'group',
 				heading: this.plugin.t('copy-targets'),
 				items: [
-					// 格式文本子页面：行内格式元素
+					// 格式文本子页面：自定义复制对象开关 + 可拖拽排序的匹配器列表
 					{
 						type: 'page',
 						name: this.plugin.t('formatted-text'),
@@ -54,54 +95,7 @@ export class EasyCopySettingTab extends PluginSettingTab {
 								desc: this.plugin.t('customize-targets-desc'),
 								control: { type: 'toggle', key: 'customizeTargets' },
 							},
-							{
-								name: this.plugin.t('enable-inline-code'),
-								desc: this.plugin.t('enable-inline-code-desc'),
-								visible: () => settings.customizeTargets,
-								control: { type: 'toggle', key: 'enableInlineCode' },
-							},
-							{
-								name: this.plugin.t('enable-bold'),
-								desc: this.plugin.t('enable-bold-desc'),
-								visible: () => settings.customizeTargets,
-								control: { type: 'toggle', key: 'enableBold' },
-							},
-							{
-								name: this.plugin.t('enable-highlight'),
-								desc: this.plugin.t('enable-highlight-desc'),
-								visible: () => settings.customizeTargets,
-								control: { type: 'toggle', key: 'enableHighlight' },
-							},
-							{
-								name: this.plugin.t('enable-italic'),
-								desc: this.plugin.t('enable-italic-desc'),
-								visible: () => settings.customizeTargets,
-								control: { type: 'toggle', key: 'enableItalic' },
-							},
-							{
-								name: this.plugin.t('enable-strikethrough'),
-								desc: this.plugin.t('enable-strikethrough-desc'),
-								visible: () => settings.customizeTargets,
-								control: { type: 'toggle', key: 'enableStrikethrough' },
-							},
-							{
-								name: this.plugin.t('enable-inline-latex'),
-								desc: this.plugin.t('enable-inline-latex-desc'),
-								visible: () => settings.customizeTargets,
-								control: { type: 'toggle', key: 'enableInlineLatex' },
-							},
-							{
-								name: this.plugin.t('enable-link'),
-								desc: this.plugin.t('enable-link-desc'),
-								visible: () => settings.customizeTargets,
-								control: { type: 'toggle', key: 'enableLink' },
-							},
-							{
-								name: this.plugin.t('enable-wikilink'),
-								desc: this.plugin.t('enable-wikilink-desc'),
-								visible: () => settings.customizeTargets,
-								control: { type: 'toggle', key: 'enableWikiLink', defaultValue: true },
-							},
+							this.buildMatcherListDefinition(),
 						],
 					},
 					// 特殊文本块子页面：无可复制对象时的回退行为、多行文本（标注/代码块）、块ID
@@ -384,5 +378,132 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				],
 			},
 		];
+	}
+
+	// 匹配器列表：内置 + 自定义复制对象共用同一排序（即匹配优先级），
+	// 使用声明式 list 获得拖拽排序手柄；每行渲染启用开关，自定义行附加配置/删除按钮
+	private buildMatcherListDefinition(): SettingDefinitionList {
+		const settings = this.plugin.settings;
+
+		return {
+			type: 'list',
+			heading: this.plugin.t('matcher-priority'),
+			visible: () => settings.customizeTargets,
+			extraButtons: [
+				button => button
+					.setIcon('rotate-ccw')
+					.setTooltip(this.plugin.t('reset-order'))
+					.onClick(() => {
+						settings.matcherOrder = normalizeMatcherOrder(DEFAULT_BUILTIN_COPY_MATCHER_IDS, settings.customMatchers);
+						void this.plugin.saveSettings();
+						this.update();
+					}),
+			],
+			onReorder: (oldIndex, newIndex) => {
+				const order = normalizeMatcherOrder(settings.matcherOrder, settings.customMatchers);
+				const [moved] = order.splice(oldIndex, 1);
+				order.splice(newIndex, 0, moved);
+				settings.matcherOrder = order;
+				void this.plugin.saveSettings();
+			},
+			addItem: {
+				name: this.plugin.t('add-custom-matcher'),
+				action: () => {
+					const draft = createCustomMatcher(key => this.plugin.t(key));
+					this.openCustomMatcherModal(draft, true);
+				},
+			},
+			items: settings.matcherOrder.map(matcherId => this.buildMatcherRowDefinition(matcherId)),
+		};
+	}
+
+	private buildMatcherRowDefinition(matcherId: string): SettingDefinition {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+
+		return {
+			name: this.getMatcherName(matcherId) ?? matcherId,
+			desc: this.getMatcherDesc(matcherId),
+			searchable: false,
+			render: (setting: Setting) => {
+				if (customMatcher) {
+					setting.addExtraButton(button => button
+						.setIcon('trash-2')
+						.setTooltip(this.plugin.t('delete-custom-matcher'))
+						.onClick(() => this.deleteCustomMatcher(customMatcher.id)));
+					setting.addExtraButton(button => button
+						.setIcon('settings')
+						.setTooltip(this.plugin.t('configure-custom-matcher'))
+						.onClick(() => this.openCustomMatcherModal(customMatcher, false)));
+				}
+				setting.addToggle(toggle => toggle
+					.setValue(this.isMatcherEnabled(matcherId))
+					.onChange(value => this.setMatcherEnabled(matcherId, value)));
+			},
+		};
+	}
+
+	private getMatcherName(matcherId: string): string | null {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) return customMatcher.name || this.plugin.t('custom-matcher-default-name');
+
+		const builtinKey = BUILTIN_MATCHER_LABEL_KEYS[matcherId as BuiltinCopyMatcherId];
+		return builtinKey ? this.plugin.t(builtinKey) : null;
+	}
+
+	private getMatcherDesc(matcherId: string): string {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) return customMatcher.note ?? '';
+
+		const builtinDescKey = BUILTIN_MATCHER_DESC_KEYS[matcherId as BuiltinCopyMatcherId];
+		return builtinDescKey ? this.plugin.t(builtinDescKey) : '';
+	}
+
+	private isMatcherEnabled(matcherId: string): boolean {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) return customMatcher.enabled;
+
+		const settingKey = BUILTIN_MATCHER_SETTING_KEYS[matcherId as BuiltinCopyMatcherId];
+		return settingKey ? Boolean(this.plugin.settings[settingKey]) : false;
+	}
+
+	private setMatcherEnabled(matcherId: string, enabled: boolean): void {
+		const customMatcher = this.plugin.settings.customMatchers.find(matcher => getCustomMatcherOrderId(matcher) === matcherId);
+		if (customMatcher) {
+			customMatcher.enabled = enabled;
+			void this.plugin.saveSettings();
+			return;
+		}
+
+		const settingKey = BUILTIN_MATCHER_SETTING_KEYS[matcherId as BuiltinCopyMatcherId];
+		if (!settingKey) return;
+		this.plugin.settings[settingKey] = enabled;
+		void this.plugin.saveSettings();
+	}
+
+	private openCustomMatcherModal(matcher: CustomCopyMatcherSetting, isNew: boolean): void {
+		new CustomMatcherModal(
+			this.app,
+			key => this.plugin.t(key),
+			matcher,
+			isNew,
+			saved => {
+				const settings = this.plugin.settings;
+				if (isNew) {
+					settings.customMatchers.push(saved);
+					settings.matcherOrder = normalizeMatcherOrder([...settings.matcherOrder, getCustomMatcherOrderId(saved)], settings.customMatchers);
+				}
+				void this.plugin.saveSettings();
+				// 新增/删除/改名都会改变列表行集，需整体重建定义
+				this.update();
+			},
+		).open();
+	}
+
+	private deleteCustomMatcher(id: string): void {
+		const settings = this.plugin.settings;
+		settings.customMatchers = settings.customMatchers.filter(matcher => matcher.id !== id);
+		settings.matcherOrder = normalizeMatcherOrder(settings.matcherOrder, settings.customMatchers);
+		void this.plugin.saveSettings();
+		this.update();
 	}
 }
