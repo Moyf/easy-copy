@@ -1,4 +1,5 @@
 import { LinkFormat } from './type';
+import { stripTrailingBlockId } from './blockText';
 
 // --- URL 编码 ---
 
@@ -191,9 +192,7 @@ export function extractBlockDisplayText(
 	// 所以显示文本要包含整个块，换行替换为空格。
 	let text = blockText
 		.split('\n')
-		.map((line) => line
-			// 块 ID 前必须有空白（或独占一行）才是真正的 ID——行尾的 2^10 这类不算
-			.replace(/(?:^|\s+)\^[a-zA-Z0-9_-]+\s*$/, '')
+		.map((line) => stripTrailingBlockId(line)
 			.trim()
 			.replace(/^- \[.\]\s+/, '')
 			.replace(/^- /, ''))

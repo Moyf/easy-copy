@@ -802,6 +802,11 @@ describe('extractBlockDisplayText', () => {
 			expect(result).toContain('col1');
 			expect(result).toContain('col2');
 		});
+
+		it('normalizes decomposed Unicode to NFC after joining lines', () => {
+			const result = extractBlockDisplayText('cafe\u0301\n  more', 'fallback', 99, 99);
+			expect(result).toBe('caf\u00e9 more');
+		});
 	});
 
 	describe('space-separated text', () => {
