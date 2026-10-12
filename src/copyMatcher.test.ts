@@ -48,7 +48,6 @@ describe('buildCopyMatchers', () => {
 		};
 		const settings = {
 			...DEFAULT_SETTINGS,
-			customizeTargets: true,
 			customMatchers: [customMatcher],
 			matcherOrder: [getCustomMatcherOrderId(customMatcher), ...DEFAULT_BUILTIN_COPY_MATCHER_IDS],
 		};
@@ -68,7 +67,6 @@ describe('buildCopyMatchers', () => {
 	it('skips invalid custom regex without removing valid matchers', () => {
 		const settings = {
 			...DEFAULT_SETTINGS,
-			customizeTargets: true,
 			customMatchers: [{
 				id: 'broken',
 				name: 'Broken',
@@ -86,17 +84,16 @@ describe('buildCopyMatchers', () => {
 		expect(matchers[0].id).toBe('bold');
 	});
 
-	it('disables custom regex matchers when target customization is off', () => {
+	it('keeps a disabled custom regex matcher inactive', () => {
 		const settings = {
 			...DEFAULT_SETTINGS,
-			customizeTargets: false,
 			customMatchers: [{
 				id: 'quotes',
 				name: 'Quotes',
 				pattern: '"([^"]+)"',
 				flags: 'g',
 				captureGroup: 1,
-				enabled: true,
+				enabled: false,
 			}],
 			matcherOrder: ['custom:quotes', ...DEFAULT_BUILTIN_COPY_MATCHER_IDS],
 		};
