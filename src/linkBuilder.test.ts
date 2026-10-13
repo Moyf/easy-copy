@@ -1128,7 +1128,7 @@ describe('buildFileLink', () => {
 				filePath: 'folder/MyNote.md',
 				linkFormat: LinkFormat.WIKILINK,
 			});
-			expect(result).toBe('[[MyNote|MyNote]]');
+			expect(result).toBe('[[MyNote]]');
 		});
 
 		it('uses custom display text', () => {
@@ -1202,14 +1202,26 @@ describe('buildFileLink', () => {
 	// -- 边缘情况 -----------------------------------------------------------
 
 	describe('edge cases', () => {
-		it('wiki format without displayText produces redundant alias', () => {
-			// [[name|name]]——alias 与文件名重复
+		it('wiki format omits redundant alias when no displayText (#48)', () => {
+			// 无 frontmatter 标题时 display 回退到 filename，
+			// 此时 alias 与链接目标重复，应省略生成 [[MyNote]]
 			const result = buildFileLink({
 				filename: 'MyNote',
 				filePath: 'folder/MyNote.md',
 				linkFormat: LinkFormat.WIKILINK,
 			});
-			expect(result).toBe('[[MyNote|MyNote]]');
+			expect(result).toBe('[[MyNote]]');
+		});
+
+		it('wiki format omits alias when displayText equals filename', () => {
+			// frontmatter 标题恰好等于文件名时同样冗余
+			const result = buildFileLink({
+				filename: 'MyNote',
+				filePath: 'folder/MyNote.md',
+				displayText: 'MyNote',
+				linkFormat: LinkFormat.WIKILINK,
+			});
+			expect(result).toBe('[[MyNote]]');
 		});
 
 		it('filename with parentheses in markdown format', () => {

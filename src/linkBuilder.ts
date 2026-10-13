@@ -334,7 +334,10 @@ export function buildFileLink(options: BuildFileLinkOptions): string {
 	const display = options.displayText || filename;
 
 	if (linkFormat === LinkFormat.WIKILINK) {
-		return `[[${filename}|${display}]]`;
+		// display 与 filename 相同（无 frontmatter 标题，或标题恰好等于文件名）时，
+		// 省略冗余 alias 生成 [[Filename]]——渲染结果不变，且与 Obsidian 原生
+		// generateMarkdownLink 及粘贴重写路径的行为一致（#48）。
+		return display === filename ? `[[${filename}]]` : `[[${filename}|${display}]]`;
 	}
 
 	let path = options.filePath.replace(/\\/g, '/');

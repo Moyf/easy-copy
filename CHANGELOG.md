@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.1](https://github.com/Moyf/easy-copy/compare/1.9.0...1.9.1) - 2026-10-13
+
+### 🐛 Fixed
+
+- **Redundant alias in file links** ([#48](https://github.com/Moyf/easy-copy/issues/48)): *Copy current file link* (and contextual copy on an empty line set to *File link*) no longer produces `[[Filename|Filename]]` in wiki format. When there is no frontmatter display text (or it equals the filename), the alias is omitted and a clean `[[Filename]]` is copied — matching Obsidian's native `generateMarkdownLink` behavior and the paste-resolution path. Markdown format is unaffected, and a frontmatter title is still used as a meaningful alias.
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### 🐛 修复
+
+- **文件链接的冗余别名**（[#48](https://github.com/Moyf/easy-copy/issues/48)）：*复制当前文件链接*（以及空行上下文复制设为「文件链接」时）在 Wiki 格式下不再生成 `[[Filename|Filename]]`。当没有 frontmatter 显示文本（或其恰好等于文件名）时，将省略别名，复制干净的 `[[Filename]]`——与 Obsidian 原生 `generateMarkdownLink` 及粘贴解析路径的行为一致。Markdown 格式不受影响，frontmatter 标题仍会作为有意义的别名使用。
+
+</details>
+
+---
+
 ## [1.9.0](https://github.com/Moyf/easy-copy/compare/1.8.2...1.9.0) - 2026-10-13
 
 ### ✨ New Features
