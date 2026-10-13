@@ -2,7 +2,7 @@
 
 English | [中文文档](https://github.com/Moyf/easy-copy/blob/master/README-zh.md)
 
-[![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&logoColor=white&color=%23483699&label=Downloads&query=%24%5B%22easy-copy%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)](https://obsidian.md/plugins?id=easy-copy) [![GitHub Issues](https://img.shields.io/github/issues/Moyf/easy-copy?label=Issues)](https://github.com/Moyf/easy-copy/issues) [![Release](https://img.shields.io/github/v/release/Moyf/easy-copy?label=Release)](https://github.com/Moyf/easy-copy/releases) [![Stars](https://img.shields.io/github/stars/Moyf/easy-copy?logo=github&label=Stars)](https://github.com/Moyf/easy-copy/stargazers)
+[![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&logoColor=white&color=%23483699&label=Downloads&query=%24%5B%22easy-copy%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)](https://obsidian.md/plugins?id=easy-copy) [![Release](https://img.shields.io/github/v/release/Moyf/easy-copy?label=Release)](https://github.com/Moyf/easy-copy/releases) [![GitHub Issues](https://img.shields.io/github/issues/Moyf/easy-copy?label=Issues)](https://github.com/Moyf/easy-copy/issues) [![Stars](https://img.shields.io/github/stars/Moyf/easy-copy?logo=github&label=Stars)](https://github.com/Moyf/easy-copy/stargazers)
 
 Easy Copy can smartly copy content based on your cursor position (e.g. code text inside `inline code`, without formatting symbols).  
 Besides, it also supports quickly generating and copying links to **headings** or **paragraphs(blocks)** in your notes.
@@ -111,7 +111,7 @@ Issues and feature requests are welcome! If you'd like to contribute to this pro
 
 This plugin really improved my workflow, and I hope it can help you too! 🌟
 
-## More from Moy
+## ❤️ More from Moy
 
 If you appreciate my plugin design and quality, check out my other Obsidian plugins:
 
