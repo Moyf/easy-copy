@@ -5,7 +5,7 @@ import { EasyCopySettingTab } from './settingTab';
 import { BlockIdInputModal } from './blockIdModal';
 import { detectCodeBlockFromLines } from './codeBlockDetect';
 import { getBlockTextFromLines } from './blockText';
-import { buildCopyMatchers, getMatchInfo, normalizeMatcherOrder } from './copyMatcher';
+import { buildCopyMatchers, getMatchInfo, normalizeMatcherOrder, unescapeTablePipe } from './copyMatcher';
 import { buildHeadingLink, buildBlockLink, buildFileLink, buildExplicitPasteLink } from './linkBuilder';
 import { CopyMetadata, buildBlockCopyMetadata, buildHeadingCopyMetadata, buildFileCopyMetadata } from './copyMetadata';
 import { decidePasteResolution, shouldOmitAliasForSameFile, shouldRegisterPasteHandler } from './pasteResolution';
@@ -591,6 +591,18 @@ export default class EasyCopy extends Plugin {
 
 					return;
 			}
+		}
+
+		if (contextType.match !== null && [
+			ContextType.BOLD,
+			ContextType.ITALIC,
+			ContextType.HIGHLIGHT,
+			ContextType.STRIKETHROUGH,
+			ContextType.INLINECODE,
+			ContextType.INLINELATEX,
+			ContextType.CUSTOM,
+		].includes(contextType.type)) {
+			contextType.match = unescapeTablePipe(contextType.match, contextType.curLine);
 		}
 
 		switch (contextType.type) {
