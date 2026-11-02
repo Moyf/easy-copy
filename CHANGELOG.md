@@ -5,7 +5,20 @@ All notable changes to Easy Copy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.9.2](https://github.com/Moyf/easy-copy/compare/1.9.1...1.9.2) - 2026-11-02
+
+### 🐛 Fixed
+
+- **Drag-to-reorder not persisting on Obsidian 1.15+**: Obsidian 1.15's new drop animation made the settings framework rebuild the drag list from the plugin's last-rendered definitions a moment after each drop. Since `onReorder` only mutated the saved data (per the pre-1.15 contract), that rebuild visually reverted the list to the old order, and a subsequent drag computed its indexes against the reverted DOM while applying them to the updated data — silently moving the wrong row. The matcher order is now re-synced by rebuilding the definitions (deferred so the framework's drop-handler DOM check still passes), keeping the rendered list, subsequent drag indexes, and saved data consistent.
+
+<details>
+<summary>中文说明（点击展开）</summary>
+
+### 🐛 修复
+
+- **Obsidian 1.15+ 拖拽排序不生效**：Obsidian 1.15 的新落定动画会让设置框架在每次拖放结束后，按插件上一次渲染的 definitions 重建列表。而 `onReorder` 此前按 1.15 之前的契约只修改数据并保存，于是重建会把列表视觉上回滚到旧顺序；随后的拖拽又按回滚后的 DOM 计算索引、应用到已更新的数据上，导致悄悄移动了错误的行。现在 `onReorder` 后会延迟重建 definitions（延迟以避开框架 end 处理器对旧 DOM 的结构校验），使渲染列表、后续拖拽索引与保存的数据保持一致。
+
+</details>
 
 ---
 

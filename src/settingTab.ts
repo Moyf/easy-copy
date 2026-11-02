@@ -413,6 +413,11 @@ export class EasyCopySettingTab extends PluginSettingTab {
 				order.splice(newIndex, 0, moved);
 				settings.matcherOrder = order;
 				void this.plugin.saveSettings();
+				// Obsidian 1.15+ 落定动画之后框架会按 definitions 重建列表：若不重建定义，
+				// 重建会把 DOM 回滚到旧顺序，且后续拖拽索引按旧 DOM 计算、应用到新数据上，
+				// 会移动错误的行。必须延迟重建——同步调用会干扰框架 end 处理器对
+				// 旧 DOM 的结构校验（条目数不符触发「还原」分支），导致重复行。
+				window.setTimeout(() => this.update(), 400);
 			},
 			addItem: {
 				name: this.plugin.t('add-custom-matcher'),
