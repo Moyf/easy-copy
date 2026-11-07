@@ -25,6 +25,11 @@ export interface CopyMatchInfo {
 	range: [number, number];
 }
 
+export function unescapeTablePipe(match: string, curLine: string): string {
+	// Table cells render escaped pipes literally, including inside inline code and LaTeX.
+	return /^\s*(?:>\s*)*\|/.test(curLine) ? match.replace(/\\\|/g, '|') : match;
+}
+
 export function getCustomMatcherOrderId(matcher: CustomCopyMatcherSetting): string {
 	return `custom:${matcher.id}`;
 }

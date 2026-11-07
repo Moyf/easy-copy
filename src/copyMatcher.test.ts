@@ -3,9 +3,61 @@ import {
 	buildCopyMatchers,
 	DEFAULT_BUILTIN_COPY_MATCHER_IDS,
 	getCustomMatcherOrderId,
+	getMatchInfo,
 	normalizeMatcherOrder,
+	unescapeTablePipe,
 } from './copyMatcher';
 import { ContextType, DEFAULT_SETTINGS } from './type';
+
+describe('unescapeTablePipe', () => {
+	it.each([
+		['inline-code', '`foo(a\\|b).bar`', 'foo(a|b).bar'],
+		['bold', '**a\\|b**', 'a|b'],
+		['italic', '*a\\|b*', 'a|b'],
+		['highlight', '==a\\|b==', 'a|b'],
+		['strikethrough', '~~a\\|b~~', 'a|b'],
+		['inline-latex', '$a\\|b$', 'a|b'],
+		['custom:quotes', '"a\\|b"', 'a|b'],
+	])('unescapes pipes captured by %s in a table row', (id, markup, expected) => {
+		const settings = {
+			...DEFAULT_SETTINGS,
+			customMatchers: [{
+				id: 'quotes',
+				name: 'Quotes',
+				pattern: '"([^"]+)"',
+				flags: 'g',
+				captureGroup: 1,
+				enabled: true,
+			}],
+		};
+		const curLine = `| Example | ${markup} |`;
+		const matcher = buildCopyMatchers(settings, false).find(matcher => matcher.id === id)!;
+		const match = getMatchInfo(curLine, curLine.indexOf(markup) + 2, matcher.regex, matcher.captureGroup)!;
+
+		expect(unescapeTablePipe(match.content, curLine)).toBe(expected);
+	});
+
+	it.each(['|', '  |', '> |', '  > |', '> > |', '>>|', '\t>\t>\t|'])(
+		'unescapes pipes with the table row prefix %j', prefix => {
+			expect(unescapeTablePipe('a\\|b\\|c', `${prefix} \`a\\|b\\|c\` |`)).toBe('a|b|c');
+		},
+	);
+
+	it.each(['`a\\|b`', '**a\\|b**', '> `a\\|b`', 'text | `a\\|b`', '\\| `a\\|b`', ''])(
+		'preserves escaped pipes outside a leading-pipe table row: %j', curLine => {
+			expect(unescapeTablePipe('a\\|b', curLine)).toBe('a\\|b');
+		},
+	);
+
+	it('preserves other backslashes and literal pipes in a table cell', () => {
+		const match = String.raw`\alpha a\|b | C:\temp \*`;
+		expect(unescapeTablePipe(match, `| ${match} |`)).toBe(String.raw`\alpha a|b | C:\temp \*`);
+	});
+
+	it('preserves an empty match', () => {
+		expect(unescapeTablePipe('', '| empty |')).toBe('');
+	});
+});
 
 describe('normalizeMatcherOrder', () => {
 	it('keeps saved order and appends missing built-in and custom matchers', () => {
